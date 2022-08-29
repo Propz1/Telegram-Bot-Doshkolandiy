@@ -25,7 +25,6 @@ var (
 	)
 
 	msgToUser       string
-	colorRed        = "\033[31m"
 	buttonRemainder = "Остатки"
 	buttonMovements = "Перемещения"
 	remainder       models.Remainder
