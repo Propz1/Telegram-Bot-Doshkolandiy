@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"telegrammBot/cons"
 	"telegrammBot/internal/handlers"
@@ -20,20 +21,14 @@ var (
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("Остатки"),
 			tgbotapi.NewKeyboardButton("Перемещения"),
-			//tgbotapi.NewKeyboardButton("Пустая1"),
 		),
-		//tgbotapi.NewKeyboardButtonRow(
-		//	tgbotapi.NewKeyboardButton("Пустая2"),
-		//	tgbotapi.NewKeyboardButton("Пустая3"),
-		//	tgbotapi.NewKeyboardButton("Пустая4"),
-		//),
-
 	)
 
 	msgToUser       string
+	colorRed        = "\033[31m"
 	buttonRemainder = "Остатки"
-	remainder models.Remainder
-
+	buttonMovements = "Перемещения"
+	remainder       models.Remainder
 )
 
 func main() {
@@ -42,11 +37,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: ")
 	}
-
-	// port, err := strconv.Atoi(os.Getenv("PORT"))
-	// if err != nil {
-	// 	port = 8081
-	// }
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
@@ -72,21 +62,8 @@ func main() {
 	}
 	updates := bot.ListenForWebhook("/" + bot.Token)
 
-	// router := mux.NewRouter()
-
-	// handler := webserver.NewHandler()
-	// handler.Register(router)
-
 	log.Println(fmt.Printf("Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
 
-	// if err := http.ListenAndServe(fmt.Sprintf("%s:%s", "95.52.245.250", os.Getenv("BOT_PORT")), router); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	//log.Fatal(http.ListenAndServeTLS("0.0.0.0:8443", cons.CERT_PAHT, cons.KEY_PATH, nil))
-
-	//log.Fatal(http.ListenAndServeTLS(fmt.Sprintf("%s:%s", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")), cons.CERT_PAHT, cons.KEY_PATH, nil))
-	//go http.ListenAndServeTLS(fmt.Sprintf("%s:%s", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")), cons.CERT_PAHT, cons.KEY_PATH, nil)
 	go http.ListenAndServeTLS("0.0.0.0:8443", cons.CERT_PAHT, cons.KEY_PATH, nil)
 
 	for update := range updates {
@@ -96,84 +73,99 @@ func main() {
 		}
 
 		//fmt.Printf("Получено сообщение от пользователя: %+v\n", update.Message.Text)
-		// log.Printf("LOG:%+v\n", update)
-		// fmt.Printf("%v\n", "New update")
-		// fmt.Printf("%v\n", update.Message)
 
 		switch update.Message.Text {
 
-		case "Остатки":
+		case "Перемещения":
 
-			err, remainderList := handlers.RemainderHandler()
+			err, remainderList := handlers.MovementsHandler()
 
 			if err != nil {
 				log.Printf("%+v\n", err.Error())
 				msgToUser = err.Error()
 			} else {
 
+				sort.Sort(models.ArrayRemainder(remainderList))
+
+				num := 1
 				i := 0
 				body := make([]string, i)
 				lenBody := make(map[int]int, i)
 
+				err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`-----` склад: \"%v\" `-----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, buttonMovements, "") //The first store
+
+				if err != nil {
+					log.Printf("Error sending to user: %+v\n", err.Error())
+					break
+				}
+
 				for i <= len(remainderList)-1 {
+
+					st := remainderList[i].Store
+
 					remainder = remainderList[i]
-					body = append(body, fmt.Sprintf("Номенклатура: %v, Код номенклатуры: %v, Склад: %v", remainder.Nomenclature, remainder.Code, remainder.Store))
+					body = append(body, fmt.Sprintf("%v", "___________________________________"))
+					body = append(body, fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
 					msgToUser = strings.Join(body, "\n")
 
 					lenBody[i] = len(msgToUser)
+
 					i++
-				}
 
-				totalLengMsg := len(msgToUser)
+					if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
 
-				if totalLengMsg > cons.MaxLengMsg {
-					max := totalLengMsg / cons.MaxLengMsg
+						err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextCommon, buttonMovements, st)
 
-					if (totalLengMsg % cons.MaxLengMsg) > 0 {
-						max++
-					}
+						body = nil
+						num = 0
 
-					count := 1
-					j := 0
-					start := 0
-
-					for count <= max {
-
-						for i := j; i <= (totalLengMsg-1) && lenBody[i] <= cons.MaxLengMsg*count; i++ {
-							j = i
-						}
-
-						end := lenBody[j]
-
-						if count == max {
-							end = totalLengMsg
-						}
-
-						err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser[start:end], buttonRemainder)
-
-						start = lenBody[j]
+						//body = make([]string, 0)
+						msgToUser = ""
+						lenBody = nil
+						//lenBody = make(map[int]int, 0)
 
 						if err != nil {
 							log.Printf("Error sending to user: %+v\n", err.Error())
 							break
 						}
 
-						count++
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`----`склад: \"%v\"`----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, buttonMovements, "")
+
+						if err != nil {
+							log.Printf("Error sending to user: %+v\n", err.Error())
+							break
+						}
 					}
 
-				} else {
-					err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, buttonRemainder)
+					num++
+				}
 
-					if err != nil {
-						log.Printf("Error sending to user: %+v\n", err.Error())
-						break
-					}
+				err = sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, buttonMovements, remainderList[i-1].Store)
+
+				if err != nil {
+					log.Printf("Error sending to user: %+v\n", err.Error())
+					break
 				}
 
 			}
 
-		case "Перемещения":
-			continue
+		case "Остатки":
+
+			err, remainderInformation := handlers.RemainderHandler()
+
+			if err != nil {
+				log.Printf("%+v\n", err.Error())
+				msgToUser = err.Error()
+				break
+			}
+
+			err = sentToTelegramm(bot, update.Message.Chat.ID, remainderInformation.Information, nil, cons.StyleTextCommon, buttonRemainder, "")
+
+			if err != nil {
+				log.Printf("Error sending to user: %+v\n", err.Error())
+				break
+			}
+
 		default:
 			msgToUser = update.Message.Text
 		}
@@ -182,11 +174,58 @@ func main() {
 
 }
 
-func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, button string) error {
+func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, button string, header string) error {
 
-	if button == buttonRemainder {
+	totalLengMsg := len(message)
 
-		msg := tgbotapi.NewMessage(id, message)
+	if totalLengMsg > cons.MaxLengMsg {
+
+		max := totalLengMsg / cons.MaxLengMsg
+
+		if (totalLengMsg % cons.MaxLengMsg) > 0 {
+			max++
+		}
+
+		count := 1
+		j := 0
+		start := 0
+
+		for count <= max {
+
+			for i := j; i <= (totalLengMsg-1) && lenBody[i] <= cons.MaxLengMsg*count; i++ {
+				j = i
+			}
+
+			end := lenBody[j]
+
+			if count == max {
+				end = totalLengMsg
+			}
+
+			formatMessage := message[start:end]
+
+			if button == buttonMovements && header != "" {
+
+				formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
+
+			}
+
+			msg := tgbotapi.NewMessage(id, formatMessage, styleText)
+			msg.ReplyMarkup = keyboard
+
+			if _, err := bot.Send(msg); err != nil {
+				log.Panic(err)
+				return err
+			}
+
+			start = lenBody[j]
+
+			count++
+		}
+
+	} else {
+
+		msg := tgbotapi.NewMessage(id, message, styleText)
 		msg.ReplyMarkup = keyboard
 
 		if _, err := bot.Send(msg); err != nil {
