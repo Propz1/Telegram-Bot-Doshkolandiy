@@ -12,6 +12,8 @@ import (
 	"telegrammBot/internal/models"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/rs/zerolog"
+	zrlog "github.com/rs/zerolog/log"
 
 	"github.com/joho/godotenv"
 )
@@ -32,36 +34,56 @@ var (
 
 func main() {
 
-	err := godotenv.Load("app.env")
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	logFile, err := os.OpenFile("./temp/info.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	zrlog.Logger.Output(logFile)
+	log.SetOutput(logFile)
+
 	if err != nil {
-		log.Fatalf("Error loading .env file: ")
+		zrlog.Fatal().Msg(err.Error())
+	}
+	defer logFile.Close()
+
+	err = godotenv.Load("app.env")
+	if err != nil {
+		zrlog.Fatal().Msg("Error loading .env file: ")
+		log.Printf("FATAL: %s", "Error loading .env file: ")
 	}
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
-		log.Fatal(err)
+		zrlog.Fatal().Msg(err.Error())
+		log.Printf("FATAL: %v", err.Error())
 	}
 
 	bot.Debug = true
 
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	zrlog.Info().Msg(fmt.Sprintf("Authorized on account %s", bot.Self.UserName))
+	log.Printf("%v", fmt.Sprintf("INFO: Authorized on account %s", bot.Self.UserName))
 
 	webHookInfo := tgbotapi.NewWebhookWithCert(fmt.Sprintf("https://%s:%s/%s", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT"), bot.Token), cons.CERT_PAHT)
 
 	_, err = bot.SetWebhook(webHookInfo)
 	if err != nil {
-		log.Fatal(err)
+		zrlog.Fatal().Msg(err.Error())
+		log.Printf("FATAL: %v", err.Error())
 	}
 	info, err := bot.GetWebhookInfo()
 	if err != nil {
-		log.Fatal(err)
+		zrlog.Fatal().Msg(err.Error())
+		log.Printf("FATAL: %v", err.Error())
 	}
 	if info.LastErrorDate != 0 {
-		log.Printf("Telegram callback failed: %s", info.LastErrorMessage)
+		zrlog.Fatal().Msg(fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
+		log.Printf("FATAL: %v", fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
 	}
 	updates := bot.ListenForWebhook("/" + bot.Token)
 
-	log.Println(fmt.Printf("Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
+	//infoLog := log.New(logFile, fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")), log.Ldate|log.Ltime)
+
+	zrlog.Info().Msg(fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
+	log.Printf("INFO: %v", fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
 
 	go http.ListenAndServeTLS("0.0.0.0:8443", cons.CERT_PAHT, cons.KEY_PATH, nil)
 
@@ -71,7 +93,7 @@ func main() {
 			continue
 		}
 
-		//fmt.Printf("Получено сообщение от пользователя: %+v\n", update.Message.Text)
+		fmt.Printf("Получено сообщение от пользователя: %+v\n", update.Message.Text)
 
 		switch update.Message.Text {
 
@@ -80,7 +102,8 @@ func main() {
 			err, remainderList := handlers.MovementsHandler()
 
 			if err != nil {
-				log.Printf("%+v\n", err.Error())
+				zrlog.Fatal().Msg(err.Error())
+				log.Printf("FATAL: %v", err.Error())
 				msgToUser = err.Error()
 			} else {
 
@@ -94,7 +117,8 @@ func main() {
 				err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`-----` склад: \"%v\" `-----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, buttonMovements, "") //The first store
 
 				if err != nil {
-					log.Printf("Error sending to user: %+v\n", err.Error())
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					break
 				}
 
@@ -124,14 +148,16 @@ func main() {
 						//lenBody = make(map[int]int, 0)
 
 						if err != nil {
-							log.Printf("Error sending to user: %+v\n", err.Error())
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							break
 						}
 
 						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`----`склад: \"%v\"`----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, buttonMovements, "")
 
 						if err != nil {
-							log.Printf("Error sending to user: %+v\n", err.Error())
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							break
 						}
 					}
@@ -142,7 +168,8 @@ func main() {
 				err = sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, buttonMovements, remainderList[i-1].Store)
 
 				if err != nil {
-					log.Printf("Error sending to user: %+v\n", err.Error())
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					break
 				}
 
@@ -153,7 +180,8 @@ func main() {
 			err, remainderInformation := handlers.RemainderHandler()
 
 			if err != nil {
-				log.Printf("%+v\n", err.Error())
+				zrlog.Fatal().Msg(err.Error())
+				log.Printf("FATAL: %v", err.Error())
 				msgToUser = err.Error()
 				break
 			}
@@ -161,7 +189,8 @@ func main() {
 			err = sentToTelegramm(bot, update.Message.Chat.ID, remainderInformation.Information, nil, cons.StyleTextCommon, buttonRemainder, "")
 
 			if err != nil {
-				log.Printf("Error sending to user: %+v\n", err.Error())
+				zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				break
 			}
 
@@ -213,7 +242,8 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = keyboard
 
 			if _, err := bot.Send(msg); err != nil {
-				log.Panic(err)
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
 				return err
 			}
 
@@ -228,7 +258,8 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = keyboard
 
 		if _, err := bot.Send(msg); err != nil {
-			log.Panic(err)
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
