@@ -14,6 +14,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/rs/zerolog"
 	zrlog "github.com/rs/zerolog/log"
+	"github.com/signintech/gopdf"
 
 	"github.com/joho/godotenv"
 )
@@ -24,12 +25,20 @@ var (
 			tgbotapi.NewKeyboardButton("Остатки"),
 			tgbotapi.NewKeyboardButton("Перемещения"),
 		),
+
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Перемещения PDF"),
+		),
 	)
 
-	msgToUser       string
-	buttonRemainder = "Остатки"
-	buttonMovements = "Перемещения"
-	remainder       models.Remainder
+	msgToUser          string
+	buttonRemainder    = "Остатки"
+	buttonMovements    = "Перемещения"
+	buttonMovementsPDF = "Перемещения PDF"
+	remainder          models.Remainder
+
+	cellOption_Caption = gopdf.CellOption{Align: 16}
+	cellOption_Default = gopdf.CellOption{Align: 8}
 )
 
 func main() {
@@ -97,6 +106,15 @@ func main() {
 
 		switch update.Message.Text {
 
+		case "/start":
+
+			err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Привет %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, "", "")
+
+			if err != nil {
+				zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+			}
+
 		case "Перемещения":
 
 			err, remainderList := handlers.MovementsHandler()
@@ -119,7 +137,7 @@ func main() {
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					break
+					return
 				}
 
 				for i <= len(remainderList)-1 {
@@ -127,6 +145,7 @@ func main() {
 					st := remainderList[i].Store
 
 					remainder = remainderList[i]
+
 					body = append(body, fmt.Sprintf("%v", "___________________________________"))
 					body = append(body, fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
 					msgToUser = strings.Join(body, "\n")
@@ -137,7 +156,7 @@ func main() {
 
 					if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
 
-						err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextCommon, buttonMovements, st)
+						err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, buttonMovements, st)
 
 						body = nil
 						num = 0
@@ -145,12 +164,12 @@ func main() {
 						//body = make([]string, 0)
 						msgToUser = ""
 						lenBody = nil
-						//lenBody = make(map[int]int, 0)
+						lenBody = make(map[int]int, 0)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							break
+							return
 						}
 
 						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`----`склад: \"%v\"`----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, buttonMovements, "")
@@ -158,7 +177,7 @@ func main() {
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							break
+							return
 						}
 					}
 
@@ -170,7 +189,7 @@ func main() {
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					break
+					return
 				}
 
 			}
@@ -183,7 +202,7 @@ func main() {
 				zrlog.Fatal().Msg(err.Error())
 				log.Printf("FATAL: %v", err.Error())
 				msgToUser = err.Error()
-				break
+				return
 			}
 
 			err = sentToTelegramm(bot, update.Message.Chat.ID, remainderInformation.Information, nil, cons.StyleTextCommon, buttonRemainder, "")
@@ -191,7 +210,262 @@ func main() {
 			if err != nil {
 				zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-				break
+				return
+			}
+
+		case "Перемещения PDF":
+
+			err, remainderList := handlers.MovementsHandler()
+
+			/////////////////////////////////////////////////////////////////////////////
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1", Code: "1", Store: "Темный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 2", Code: "2", Store: "Темный"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 111", Code: "1111", Store: "Дальний"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1112", Code: "1112", Store: "Дальний"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1113", Code: "1113", Store: "Дальний"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 888", Code: "888", Store: "Ближний"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 999", Code: "8898", Store: "Ближний"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 986", Code: "88996", Store: "Ближний"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Удаленный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи вав454545", Code: "8898", Store: "Удаленный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ва5454646", Code: "88995", Store: "Удаленный"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sfsdfа4464654", Code: "888", Store: "Башкирский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Башкирский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Башкирский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Выборгский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfddffdfdf546464664444464654", Code: "888", Store: "Астрaханский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Галицкий"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Тверской"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Ульяновский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf446ва4654", Code: "888", Store: "Ульяновский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffddfdffddf4464654", Code: "888", Store: "Ульяновский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfdf4464654", Code: "888", Store: "Ульяновский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Узбекский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsd4464654", Code: "888", Store: "Узбекский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdsdвdаваdf4464654", Code: "888", Store: "Узбекский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfsdddваваdf4464654", Code: "888", Store: "Узбекский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfsdfdfddf4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfd4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffddfdffddfd4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfdfdfs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfd44df64654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsddddfdffs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfddf4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfdfdfs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfd446dfdf4654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfsdfdf4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfdfsdfdffdfddfd4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfdfdfddfd4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdfdfdffdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdfdfddffdfddfd4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfdfdfdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsddfddfs4464654", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs446465df4", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs44646dfdf54", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs4464df654f", Code: "888", Store: "Удан-удешный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfвввfdfddf4464654", Code: "888", Store: "Уральский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4dfdf464654", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf446465dfdf4", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464dfdf654", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf44dfddfd64654", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffddfdffddf4464654", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfddffdfddf446d4654", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdddf446d4654d", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffddfddf446d4654", Code: "888", Store: "Усть-Катанский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdваыаdf4464654", Code: "888", Store: "Уникальный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdваыаdfвава4464654", Code: "888", Store: "Уникальный"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsfsdffsваыаdf4464654", Code: "888", Store: "Уникальный"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Орнебургский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Дмитровский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Курский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Венгерский"})
+
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Московский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Московский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfddfffdfddf4464654", Code: "888", Store: "Московский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfddfddffddfddf4464654", Code: "888", Store: "Московский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfdfdfdfdfddf4464654", Code: "888", Store: "Московский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdfdfddffddff4464654", Code: "888", Store: "Московский"})
+			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdfdfddffddff4464654", Code: "888", Store: "Московский"})
+
+			///////////////////////////////////////////////////////////////////////////////
+
+			if err != nil {
+				zrlog.Fatal().Msg(err.Error())
+				log.Printf("FATAL: %v", err.Error())
+				msgToUser = err.Error()
+
+			} else {
+
+				sort.Sort(models.ArrayRemainder(remainderList))
+
+				pdf := gopdf.GoPdf{}
+				pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+
+				err = pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
+
+				if err != nil {
+					log.Print(err.Error())
+					return
+				}
+
+				err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
+
+				if err != nil {
+					log.Print(err.Error())
+					return
+				}
+
+				err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
+
+				if err != nil {
+					log.Print(err.Error())
+					return
+				}
+
+				err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
+
+				if err != nil {
+					log.Print(err.Error())
+					return
+				}
+
+				var capacityLine int = 39
+
+				num := 1
+				i := 0
+				y := 15.0
+				line := 0
+				page := 0
+
+				for i <= len(remainderList)-1 {
+
+					if line == capacityLine || page == 0 {
+
+						pdf.AddPage()
+						line = 1
+						page++
+
+						y = 15.0
+
+						pdf.SetXY(570, y)
+						pdf.SetTextColorCMYK(100, 100, 100, 100)
+						err = pdf.SetFont("a_AlternaNr", "", 10)
+						if err != nil {
+							log.Print(err.Error())
+							return
+						}
+						err = pdf.Text(fmt.Sprintf("стр %v", page))
+						if err != nil {
+							log.Print(err.Error())
+							return
+						}
+						line++
+
+						y = 20.0
+
+						pdf.SetXY(260, y)
+						y = 60
+						pdf.SetTextColorCMYK(0, 100, 100, 0)
+						err = pdf.SetFont("Merriweather-Bold", "", 14)
+						if err != nil {
+							log.Print(err.Error())
+							return
+						}
+						err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
+						if err != nil {
+							log.Print(err.Error())
+							return
+						}
+						line++
+
+					}
+
+					pdf.SetTextColorCMYK(100, 100, 100, 100)
+					err = pdf.SetFont("Inter-ExtraLight", "", 12)
+					if err != nil {
+						log.Print(err.Error())
+						return
+					}
+
+					st := remainderList[i].Store
+
+					remainder = remainderList[i]
+
+					pdf.SetXY(10, y)
+					y = y + 20
+					err = pdf.Text(fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
+					if err != nil {
+						log.Print(err.Error())
+						return
+					}
+					line++
+
+					i++
+
+					if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
+						num = 0
+
+						pdf.SetXY(260, y)
+						y = y + 40
+						pdf.SetTextColorCMYK(0, 100, 100, 0)
+						err = pdf.SetFont("Merriweather-Bold", "", 14)
+						if err != nil {
+							log.Print(err.Error())
+							return
+						}
+						err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
+						if err != nil {
+							log.Print(err.Error())
+							return
+						}
+						line++
+
+					}
+
+					num++
+				}
+
+				err = pdf.WritePdf("./external/files/Movements.pdf")
+
+				if err != nil {
+					log.Print(err.Error())
+					return
+				}
+
+				// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
+				// if err != nil {
+				// 	log.Print(err.Error())
+				// 	return
+				// }
+
+				err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/%s.pdf", "Movements"), "BQACAgIAAxkDAAILumMXPJ4YiZDJ-aDVVXt9hbl_LrnkAAKRHQAC8kK5SH8Wv9K1Yg0fKQQ")
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
+					return
+				}
+
 			}
 
 		default:
@@ -254,7 +528,16 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 	} else {
 
-		msg := tgbotapi.NewMessage(id, message, styleText)
+		start := 0
+		end := totalLengMsg
+
+		formatMessage := message[start:end]
+
+		if button == buttonMovements && header != "" {
+			formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
+		}
+
+		msg := tgbotapi.NewMessage(id, formatMessage, styleText)
 		msg.ReplyMarkup = keyboard
 
 		if _, err := bot.Send(msg); err != nil {
@@ -267,4 +550,25 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 	return nil
 
+}
+
+func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id string) error {
+
+	var msg tgbotapi.DocumentConfig
+
+	if file_id != "" {
+		msg = tgbotapi.NewDocumentShare(id, file_id)
+	} else {
+		msg = tgbotapi.NewDocumentUpload(id, pdf_path)
+	}
+
+	msg.ReplyMarkup = keyboard
+
+	if _, err := bot.Send(msg); err != nil {
+		zrlog.Panic().Msg(err.Error())
+		log.Printf("PANIC: %v", err.Error())
+		return err
+	}
+
+	return nil
 }

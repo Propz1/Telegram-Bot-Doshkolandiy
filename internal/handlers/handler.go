@@ -11,6 +11,7 @@ import (
 	"sync"
 	"telegrammBot/cons"
 	"telegrammBot/internal/models"
+	"time"
 )
 
 var (
@@ -62,15 +63,29 @@ func RemainderHandler() (error, models.Information) {
 
 	//remainderInformation = nil
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 
-	req, err := http.NewRequest("GET", cons.REMAINDER_REQUEST, nil)
+	////////////////////////////////////////////////
+	//. Тестирую отправку тела JSON
+
+	message := map[string]string{
+		"Команда": "RemainderRequest",
+		"Склад":   "Солнечный",
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	//////////////////////////////////////////////////////////////////////////////
+
+	req, err := http.NewRequest("POST", cons.REMAINDER_REQUEST, bytes.NewBuffer(bytesRepresentation))
 	req.SetBasicAuth(os.Getenv("USERNAME_WEBSERVICE_1C"), os.Getenv("PASSWORD_WEBSERVICE_1C"))
 	resp, err := client.Do(req)
 
 	if err != nil {
 		log.Fatalln(err)
-		return fmt.Errorf("Bad GET request for remainder request:%W", err), emptyInformation()
+		return fmt.Errorf("Bad GET/POST request for remainder request:%W", err), emptyInformation()
 	}
 
 	dataBody, err := ioutil.ReadAll(resp.Body)

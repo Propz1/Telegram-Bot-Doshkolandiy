@@ -10,4 +10,5 @@ const (
 	StyleTextMarkdown     = "MarkdownV2"
 	StyleTextCommon       = ""
 	StyleTextHTML         = "HTML"
+	PDF_PATH              = "./external/pdf/"
 )
