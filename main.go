@@ -219,94 +219,38 @@ func main() {
 
 			/////////////////////////////////////////////////////////////////////////////
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1", Code: "1", Store: "Темный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 2", Code: "2", Store: "Темный"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1", Code: "1", Store: "Темный"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 2", Code: "2", Store: "Темный"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 111", Code: "1111", Store: "Дальний"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1112", Code: "1112", Store: "Дальний"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1113", Code: "1113", Store: "Дальний"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 111", Code: "1111", Store: "Дальний"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1112", Code: "1112", Store: "Дальний"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1113", Code: "1113", Store: "Дальний"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 888", Code: "888", Store: "Ближний"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 999", Code: "8898", Store: "Ближний"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 986", Code: "88996", Store: "Ближний"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 888", Code: "888", Store: "Ближний"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 999", Code: "8898", Store: "Ближний"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 986", Code: "88996", Store: "Ближний"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Удаленный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи вав454545", Code: "8898", Store: "Удаленный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ва5454646", Code: "88995", Store: "Удаленный"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Удаленный"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи вав454545", Code: "8898", Store: "Удаленный"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ва5454646", Code: "88995", Store: "Удаленный"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sfsdfа4464654", Code: "888", Store: "Башкирский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Башкирский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Башкирский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sfsdfа4464654", Code: "888", Store: "Башкирский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Башкирский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Башкирский"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Выборгский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Выборгский"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfddffdfdf546464664444464654", Code: "888", Store: "Астрaханский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfddffdfdf546464664444464654", Code: "888", Store: "Астрaханский"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Галицкий"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Галицкий"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Тверской"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Тверской"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Ульяновский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf446ва4654", Code: "888", Store: "Ульяновский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffddfdffddf4464654", Code: "888", Store: "Ульяновский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfdf4464654", Code: "888", Store: "Ульяновский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Ульяновский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf446ва4654", Code: "888", Store: "Ульяновский"})
 
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Узбекский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsd4464654", Code: "888", Store: "Узбекский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdsdвdаваdf4464654", Code: "888", Store: "Узбекский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfsdddваваdf4464654", Code: "888", Store: "Узбекский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfsdfdfddf4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfd4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffddfdffddfd4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfdfdfs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfd44df64654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsddddfdffs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfddf4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfdfdfs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfddfd446dfdf4654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfsdfdf4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfdfsdfdffdfddfd4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdffdfdfdfddfd4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdfdfdffdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sdfdfdfddffdfddfd4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfdfdfdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsddfddfs4464654", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs446465df4", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs44646dfdf54", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ddfdffdfsdddfs4464df654f", Code: "888", Store: "Удан-удешный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfвввfdfddf4464654", Code: "888", Store: "Уральский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4dfdf464654", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf446465dfdf4", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464dfdf654", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf44dfddfd64654", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffddfdffddf4464654", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfddffdfddf446d4654", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdddf446d4654d", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffddfddf446d4654", Code: "888", Store: "Усть-Катанский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdваыаdf4464654", Code: "888", Store: "Уникальный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdваыаdfвава4464654", Code: "888", Store: "Уникальный"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsfsdffsваыаdf4464654", Code: "888", Store: "Уникальный"})
-
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Орнебургский"})
-
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Дмитровский"})
-
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Курский"})
-
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Венгерский"})
-
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Московский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Московский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfddfffdfddf4464654", Code: "888", Store: "Московский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfddfddffddfddf4464654", Code: "888", Store: "Московский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdfdfdfdfdfddf4464654", Code: "888", Store: "Московский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdfdfddffddff4464654", Code: "888", Store: "Московский"})
-			remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfdfdfddffddff4464654", Code: "888", Store: "Московский"})
-
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Узбекский"})
+			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsd4464654", Code: "888", Store: "Узбекский"})
 			///////////////////////////////////////////////////////////////////////////////
 
 			if err != nil {
@@ -349,7 +293,7 @@ func main() {
 					return
 				}
 
-				var capacityLine int = 39
+				var capacityLine int = 42
 
 				num := 1
 				i := 0
@@ -359,7 +303,7 @@ func main() {
 
 				for i <= len(remainderList)-1 {
 
-					if line == capacityLine || page == 0 {
+					if line >= capacityLine || page == 0 {
 
 						pdf.AddPage()
 						line = 1
@@ -396,7 +340,7 @@ func main() {
 							log.Print(err.Error())
 							return
 						}
-						line++
+						line = line + 2
 
 					}
 
@@ -438,7 +382,7 @@ func main() {
 							log.Print(err.Error())
 							return
 						}
-						line++
+						line = line + 2
 
 					}
 
@@ -458,7 +402,7 @@ func main() {
 				// 	return
 				// }
 
-				err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/%s.pdf", "Movements"), "BQACAgIAAxkDAAILumMXPJ4YiZDJ-aDVVXt9hbl_LrnkAAKRHQAC8kK5SH8Wv9K1Yg0fKQQ")
+				err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/%s.pdf", "Movements"), "")
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
