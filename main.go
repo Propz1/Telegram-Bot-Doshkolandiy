@@ -23,10 +23,11 @@ var (
 	keyboard = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("Остатки"),
-			tgbotapi.NewKeyboardButton("Перемещения"),
+			tgbotapi.NewKeyboardButton("Остатки PDF"),
 		),
 
 		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Перемещения"),
 			tgbotapi.NewKeyboardButton("Перемещения PDF"),
 		),
 	)
@@ -36,9 +37,13 @@ var (
 	buttonMovements    = "Перемещения"
 	buttonMovementsPDF = "Перемещения PDF"
 	remainder          models.Remainder
+	requestWarehouses  = "Выберите склад"
+	botsCommand        = [5]string{"GetWarehouses", "RemainderRequest", "Movements", "MovementsPDF", "/start"}
 
 	cellOption_Caption = gopdf.CellOption{Align: 16}
 	cellOption_Default = gopdf.CellOption{Align: 8}
+
+	maxWidthPDF = 560.0
 )
 
 func main() {
@@ -98,93 +103,116 @@ func main() {
 
 	for update := range updates {
 
-		if update.Message == nil { // ignore non-Message updates
+		if update.Message == nil && update.CallbackQuery == nil { // ignore non-Message updates and no CallbackQuery
 			continue
 		}
 
-		fmt.Printf("Получено сообщение от пользователя: %+v\n", update.Message.Text)
+		if update.Message != nil {
 
-		switch update.Message.Text {
+			//fmt.Printf("Получено сообщение от пользователя: %+v\n", update.Message.Text)
 
-		case "/start":
+			switch update.Message.Text {
 
-			err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Привет %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, "", "")
+			case "/start":
 
-			if err != nil {
-				zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-				log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-			}
-
-		case "Перемещения":
-
-			err, remainderList := handlers.MovementsHandler()
-
-			if err != nil {
-				zrlog.Fatal().Msg(err.Error())
-				log.Printf("FATAL: %v", err.Error())
-				msgToUser = err.Error()
-			} else {
-
-				sort.Sort(models.ArrayRemainder(remainderList))
-
-				num := 1
-				i := 0
-				body := make([]string, i)
-				lenBody := make(map[int]int, i)
-
-				err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`-----` склад: \"%v\" `-----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, buttonMovements, "") //The first store
+				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Привет %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botsCommand[4], "", nil, "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					return
 				}
 
-				for i <= len(remainderList)-1 {
+			case "Перемещения":
 
-					st := remainderList[i].Store
+				err, remainderList := handlers.MovementsHandler()
 
-					remainder = remainderList[i]
+				if err != nil {
+					zrlog.Fatal().Msg(err.Error())
+					log.Printf("FATAL: %v", err.Error())
+					msgToUser = err.Error()
+				} else {
 
-					body = append(body, fmt.Sprintf("%v", "___________________________________"))
-					body = append(body, fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
-					msgToUser = strings.Join(body, "\n")
+					sort.Sort(models.ArrayRemainder(remainderList))
 
-					lenBody[i] = len(msgToUser)
+					num := 1
+					i := 0
+					body := make([]string, i)
+					lenBody := make(map[int]int, i)
 
-					i++
+					err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`-----` склад: \"%v\" `-----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, botsCommand[2], buttonMovements, nil, "", false) //The first store
 
-					if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
-
-						err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, buttonMovements, st)
-
-						body = nil
-						num = 0
-
-						//body = make([]string, 0)
-						msgToUser = ""
-						lenBody = nil
-						lenBody = make(map[int]int, 0)
-
-						if err != nil {
-							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
-						}
-
-						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`----`склад: \"%v\"`----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, buttonMovements, "")
-
-						if err != nil {
-							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
-						}
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
 					}
 
-					num++
+					for i <= len(remainderList)-1 {
+
+						st := remainderList[i].Store
+
+						remainder = remainderList[i]
+
+						body = append(body, fmt.Sprintf("%v", "___________________________________"))
+						body = append(body, fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
+						msgToUser = strings.Join(body, "\n")
+
+						lenBody[i] = len(msgToUser)
+
+						i++
+
+						if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
+
+							err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[2], buttonMovements, nil, st, false)
+
+							body = nil
+							num = 0
+
+							//body = make([]string, 0)
+							msgToUser = ""
+							lenBody = nil
+							lenBody = make(map[int]int, 0)
+
+							if err != nil {
+								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+								log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+								return
+							}
+
+							err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`----`склад: \"%v\"`----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, botsCommand[2], buttonMovements, nil, "", false)
+
+							if err != nil {
+								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+								log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+								return
+							}
+						}
+
+						num++
+					}
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[2], buttonMovements, nil, remainderList[i-1].Store, false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
 				}
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, buttonMovements, remainderList[i-1].Store)
+			case "Остатки":
+
+				listWarehouses, err := handlers.WarehousesHandler()
+
+				if err != nil {
+					zrlog.Fatal().Msg(err.Error())
+					log.Printf("FATAL: %v", err.Error())
+					msgToUser = err.Error()
+					return
+				}
+
+				err = sentToTelegramm(bot, update.Message.Chat.ID, requestWarehouses, nil, cons.StyleTextCommon, botsCommand[0], buttonRemainder, listWarehouses.ListWarehouses, "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -192,268 +220,614 @@ func main() {
 					return
 				}
 
-			}
+			case "Остатки PDF":
 
-		case "Остатки":
-
-			err, remainderInformation := handlers.RemainderHandler()
-
-			if err != nil {
-				zrlog.Fatal().Msg(err.Error())
-				log.Printf("FATAL: %v", err.Error())
-				msgToUser = err.Error()
-				return
-			}
-
-			err = sentToTelegramm(bot, update.Message.Chat.ID, remainderInformation.Information, nil, cons.StyleTextCommon, buttonRemainder, "")
-
-			if err != nil {
-				zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-				log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-				return
-			}
-
-		case "Перемещения PDF":
-
-			err, remainderList := handlers.MovementsHandler()
-
-			/////////////////////////////////////////////////////////////////////////////
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1", Code: "1", Store: "Темный"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 2", Code: "2", Store: "Темный"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 111", Code: "1111", Store: "Дальний"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1112", Code: "1112", Store: "Дальний"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1113", Code: "1113", Store: "Дальний"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 888", Code: "888", Store: "Ближний"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 999", Code: "8898", Store: "Ближний"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 986", Code: "88996", Store: "Ближний"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Удаленный"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи вав454545", Code: "8898", Store: "Удаленный"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ва5454646", Code: "88995", Store: "Удаленный"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи sfsdfа4464654", Code: "888", Store: "Башкирский"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи ваыа4464654", Code: "888", Store: "Башкирский"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Башкирский"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Выборгский"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfddffdfdf546464664444464654", Code: "888", Store: "Астрaханский"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Галицкий"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Тверской"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Ульяновский"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf446ва4654", Code: "888", Store: "Ульяновский"})
-
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddf4464654", Code: "888", Store: "Узбекский"})
-			// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsd4464654", Code: "888", Store: "Узбекский"})
-			///////////////////////////////////////////////////////////////////////////////
-
-			if err != nil {
-				zrlog.Fatal().Msg(err.Error())
-				log.Printf("FATAL: %v", err.Error())
-				msgToUser = err.Error()
-
-			} else {
-
-				sort.Sort(models.ArrayRemainder(remainderList))
-
-				pdf := gopdf.GoPdf{}
-				pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-
-				err = pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
+				listWarehouses, err := handlers.WarehousesHandler()
 
 				if err != nil {
-					log.Print(err.Error())
+					zrlog.Fatal().Msg(err.Error())
+					log.Printf("FATAL: %v", err.Error())
+					msgToUser = err.Error()
 					return
 				}
 
-				err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
+				err = sentToTelegramm(bot, update.Message.Chat.ID, requestWarehouses, nil, cons.StyleTextCommon, botsCommand[0], buttonRemainder, listWarehouses.ListWarehouses, "", cons.PDF)
 
 				if err != nil {
-					log.Print(err.Error())
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					return
 				}
 
-				err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
+			case "Перемещения PDF":
+
+				err, remainderList := handlers.MovementsHandler()
+
+				/////////////////////////////////////////////////////////////////////////////
+				// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1", Code: "1", Store: "Темный"})
+				// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsd4464654", Code: "888", Store: "Узбекский"})
+				///////////////////////////////////////////////////////////////////////////////
 
 				if err != nil {
-					log.Print(err.Error())
-					return
-				}
+					zrlog.Fatal().Msg(err.Error())
+					log.Printf("FATAL: %v", err.Error())
+					msgToUser = err.Error()
 
-				err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
+				} else {
 
-				if err != nil {
-					log.Print(err.Error())
-					return
-				}
+					sort.Sort(models.ArrayRemainder(remainderList))
 
-				var capacityLine int = 42
+					pdf := gopdf.GoPdf{}
+					pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 
-				num := 1
-				i := 0
-				y := 15.0
-				line := 0
-				page := 0
+					err = pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
 
-				for i <= len(remainderList)-1 {
+					if err != nil {
+						log.Print(err.Error())
+						return
+					}
 
-					if line >= capacityLine || page == 0 {
+					err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
 
-						pdf.AddPage()
-						line = 1
-						page++
+					if err != nil {
+						log.Print(err.Error())
+						return
+					}
 
-						y = 15.0
+					err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
 
-						pdf.SetXY(570, y)
+					if err != nil {
+						log.Print(err.Error())
+						return
+					}
+
+					err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
+
+					if err != nil {
+						log.Print(err.Error())
+						return
+					}
+
+					var capacityLine int = 42
+
+					num := 1
+					i := 0
+					y := 15.0
+					line := 0
+					page := 0
+
+					for i <= len(remainderList)-1 {
+
+						if line >= capacityLine || page == 0 {
+
+							pdf.AddPage()
+							line = 1
+							page++
+
+							y = 15.0
+
+							pdf.SetXY(570, y)
+							pdf.SetTextColorCMYK(100, 100, 100, 100)
+							err = pdf.SetFont("a_AlternaNr", "", 10)
+							if err != nil {
+								log.Print(err.Error())
+								return
+							}
+							err = pdf.Text(fmt.Sprintf("стр %v", page))
+							if err != nil {
+								log.Print(err.Error())
+								return
+							}
+							line++
+
+							y = 20.0
+
+							pdf.SetXY(260, y)
+							y = 60
+							pdf.SetTextColorCMYK(0, 100, 100, 0)
+							err = pdf.SetFont("Merriweather-Bold", "", 14)
+							if err != nil {
+								log.Print(err.Error())
+								return
+							}
+							err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
+							if err != nil {
+								log.Print(err.Error())
+								return
+							}
+							line = line + 2
+
+						}
+
 						pdf.SetTextColorCMYK(100, 100, 100, 100)
-						err = pdf.SetFont("a_AlternaNr", "", 10)
+						err = pdf.SetFont("Inter-ExtraLight", "", 12)
 						if err != nil {
 							log.Print(err.Error())
 							return
 						}
-						err = pdf.Text(fmt.Sprintf("стр %v", page))
+
+						st := remainderList[i].Store
+
+						remainder = remainderList[i]
+
+						pdf.SetXY(10, y)
+						y = y + 20
+						err = pdf.Text(fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
 						if err != nil {
 							log.Print(err.Error())
 							return
 						}
 						line++
+						i++
 
-						y = 20.0
+						if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
+							num = 0
 
-						pdf.SetXY(260, y)
-						y = 60
-						pdf.SetTextColorCMYK(0, 100, 100, 0)
-						err = pdf.SetFont("Merriweather-Bold", "", 14)
-						if err != nil {
-							log.Print(err.Error())
-							return
+							pdf.SetXY(260, y)
+							y = y + 40
+							pdf.SetTextColorCMYK(0, 100, 100, 0)
+							err = pdf.SetFont("Merriweather-Bold", "", 14)
+							if err != nil {
+								log.Print(err.Error())
+								return
+							}
+							err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
+							if err != nil {
+								log.Print(err.Error())
+								return
+							}
+							line = line + 2
+
 						}
-						err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
-						if err != nil {
-							log.Print(err.Error())
-							return
-						}
-						line = line + 2
 
+						num++
 					}
 
-					pdf.SetTextColorCMYK(100, 100, 100, 100)
-					err = pdf.SetFont("Inter-ExtraLight", "", 12)
+					err = pdf.WritePdf("./external/files/Movements.pdf")
+
 					if err != nil {
 						log.Print(err.Error())
 						return
 					}
 
-					st := remainderList[i].Store
+					// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
+					// if err != nil {
+					// 	log.Print(err.Error())
+					// 	return
+					// }
 
-					remainder = remainderList[i]
+					err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/%s.pdf", "Movements"), "")
 
-					pdf.SetXY(10, y)
-					y = y + 20
-					err = pdf.Text(fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
 					if err != nil {
-						log.Print(err.Error())
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
 						return
 					}
-					line++
 
-					i++
+				}
 
-					if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
-						num = 0
+			default:
+				msgToUser = update.Message.Text
+			}
+		}
 
-						pdf.SetXY(260, y)
-						y = y + 40
-						pdf.SetTextColorCMYK(0, 100, 100, 0)
-						err = pdf.SetFont("Merriweather-Bold", "", 14)
+		if update.CallbackQuery != nil {
+
+			var warehouse string
+			var PDF bool
+
+			if ok := strings.Contains(update.CallbackQuery.Data, "RemainderRequest_"); ok {
+
+				if ok := strings.Contains(update.CallbackQuery.Data, "_PDF"); ok {
+					PDF = true
+					warehouse = update.CallbackQuery.Data[17 : len(update.CallbackQuery.Data)-4]
+				} else {
+					PDF = false
+					warehouse = update.CallbackQuery.Data[17:]
+				}
+
+				switch PDF {
+
+				case true:
+
+					var position models.RemainderQuantity
+
+					warehouseRemainder, err := handlers.RemainderHandler(warehouse)
+
+					remListWarehouse := warehouseRemainder.RemainderList
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
+						msgToUser = err.Error()
+					} else {
+
+						pdf := gopdf.GoPdf{}
+						pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+
+						err := pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
+
 						if err != nil {
 							log.Print(err.Error())
-							return
 						}
-						err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
+
+						err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
+
 						if err != nil {
 							log.Print(err.Error())
+						}
+
+						err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
+
+						if err != nil {
+							log.Print(err.Error())
+						}
+
+						err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
+
+						if err != nil {
+							log.Print(err.Error())
+						}
+
+						var capacityLine int = 40
+
+						num := 1
+						i := 0
+						y := 15.0
+						line := 0
+						page := 0
+
+						for i <= len(remListWarehouse)-1 {
+
+							if line >= capacityLine || page == 0 {
+
+								pdf.AddPage()
+								line = 1
+								page++
+
+								y = 15.0
+
+								pdf.SetXY(570, y)
+								pdf.SetTextColorCMYK(100, 100, 100, 100)
+								err := pdf.SetFont("a_AlternaNr", "", 10)
+								if err != nil {
+									log.Print(err.Error())
+								}
+								err = pdf.Text(fmt.Sprintf("стр %v", page))
+								if err != nil {
+									log.Print(err.Error())
+								}
+								line++
+
+								y = 20.0
+
+								pdf.SetXY(260, y)
+								y = 60
+								pdf.SetTextColorCMYK(0, 100, 100, 0)
+								err = pdf.SetFont("Merriweather-Bold", "", 14)
+								if err != nil {
+									log.Print(err.Error())
+								}
+								err = pdf.CellWithOption(nil, warehouse, cellOption_Caption)
+								if err != nil {
+									log.Print(err.Error())
+								}
+								line = line + 2
+							}
+
+							pdf.SetTextColorCMYK(100, 100, 100, 100)
+							err = pdf.SetFont("Inter-ExtraLight", "", 12)
+							if err != nil {
+								log.Print(err.Error())
+							}
+
+							position = remListWarehouse[i]
+
+							pdf.SetXY(10, y)
+							y = y + 20
+
+							text := fmt.Sprintf("(%v). %s (%s)  %v шт", num, position.Nomenclature, position.Code, position.Quantity)
+							widthText, err := pdf.MeasureTextWidth(text)
+							if err != nil {
+								log.Print(err.Error())
+							}
+
+							if widthText > maxWidthPDF {
+								var arrayText []string
+
+								text1 := fmt.Sprintf("(%v). %s", num, position.Nomenclature)
+								widthText1, err := pdf.MeasureTextWidth(text1)
+
+								if err != nil {
+									log.Print(err.Error())
+								}
+
+								if widthText1 > maxWidthPDF {
+									arrayText, err = pdf.SplitText(text, maxWidthPDF)
+									if err != nil {
+										log.Print(err.Error())
+									}
+								} else {
+									arrayText, err = pdf.SplitText(text, widthText1)
+									if err != nil {
+										log.Print(err.Error())
+									}
+								}
+
+								err = pdf.Text(arrayText[0])
+								if err != nil {
+									log.Print(err.Error())
+								}
+								line++
+
+								pdf.SetXY(10, y)
+								y = y + 20
+								err = pdf.Text(arrayText[1])
+								if err != nil {
+									log.Print(err.Error())
+								}
+								line++
+
+								// for l, t := range arrayText {
+								// 	pdf.SetXY(10, y)
+								// 	err = pdf.Text(t)
+
+								//
+								// 	if err != nil {
+								// 		log.Print(err.Error())
+								// 	}
+								// 	line++
+								// }
+
+							} else {
+								err = pdf.Text(text)
+
+								if err != nil {
+									log.Print(err.Error())
+								}
+								line++
+							}
+							i++
+							num++
+						}
+
+						err = pdf.WritePdf(fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse))
+
+						if err != nil {
+							log.Print(err.Error())
+						}
+
+						// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
+						// if err != nil {
+						// 	log.Print(err.Error())
+						// 	return
+						// }
+
+						err = sentToTelegrammPDF(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse), "")
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
 							return
 						}
-						line = line + 2
 
 					}
 
-					num++
-				}
+				case false:
 
-				err = pdf.WritePdf("./external/files/Movements.pdf")
+					warehouseRemainder, err := handlers.RemainderHandler(warehouse)
 
-				if err != nil {
-					log.Print(err.Error())
-					return
-				}
+					remListWarehouse := warehouseRemainder.RemainderList
 
-				// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
-				// if err != nil {
-				// 	log.Print(err.Error())
-				// 	return
-				// }
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
+						msgToUser = err.Error()
+					} else {
 
-				err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/%s.pdf", "Movements"), "")
+						num := 1
+						i := 0
+						body := make([]string, i)
+						lenBody := make(map[int]int, i)
 
-				if err != nil {
-					zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
-					return
+						for i <= len(remListWarehouse)-1 {
+
+							infoQuantity := remListWarehouse[i]
+
+							body = append(body, fmt.Sprintf("%v", "___________________________________"))
+							body = append(body, fmt.Sprintf("(%v). %s (%s) <b>%v шт</b>", num, infoQuantity.Nomenclature, infoQuantity.Code, infoQuantity.Quantity))
+							msgToUser = strings.Join(body, "\n")
+
+							lenBody[i] = len(msgToUser)
+
+							i++
+							num++
+						}
+
+						err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[1], "", nil, fmt.Sprintf("Остатки склада: \"%v\"", warehouse), false)
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
+						}
+
+					}
 				}
 
 			}
-
-		default:
-			msgToUser = update.Message.Text
 		}
-
 	}
 
 }
 
-func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, button string, header string) error {
+func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, command string, button string, buttons []models.Warehouse, header string, PDF bool) error {
 
-	totalLengMsg := len(message)
+	switch command {
 
-	if totalLengMsg > cons.MaxLengMsg {
+	case "/start":
 
-		max := totalLengMsg / cons.MaxLengMsg
+		msg := tgbotapi.NewMessage(id, message, styleText)
+		msg.ReplyMarkup = keyboard
 
-		if (totalLengMsg % cons.MaxLengMsg) > 0 {
-			max++
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
 		}
 
-		count := 1
-		j := 0
-		start := 0
+	case "GetWarehouses":
 
-		for count <= max {
+		var rowsButton [][]tgbotapi.InlineKeyboardButton
 
-			for i := j; i <= (totalLengMsg-1) && lenBody[i] <= cons.MaxLengMsg*count; i++ {
-				j = i
+		for _, wh := range buttons {
+			inlineKeyboardButton := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			if PDF {
+				inlineKeyboardButton = append(inlineKeyboardButton, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s (pdf)", wh.NameWarehouse), fmt.Sprintf("RemainderRequest_%s_PDF", wh.NameWarehouse)))
+			} else {
+				inlineKeyboardButton = append(inlineKeyboardButton, tgbotapi.NewInlineKeyboardButtonData(wh.NameWarehouse, fmt.Sprintf("RemainderRequest_%s", wh.NameWarehouse)))
+			}
+			rowsButton = append(rowsButton, inlineKeyboardButton)
+		}
+
+		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+
+		fmt.Printf("inlineKeyboardMarkup is %v\n\n", inlineKeyboardMarkup)
+
+		msg := tgbotapi.NewMessage(id, message, styleText)
+		msg.ReplyMarkup = inlineKeyboardMarkup
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	case "RemainderRequest":
+
+		totalLengMsg := len(message)
+
+		if totalLengMsg > cons.MaxLengMsg {
+
+			max := totalLengMsg / cons.MaxLengMsg
+
+			if (totalLengMsg % cons.MaxLengMsg) > 0 {
+				max++
 			}
 
-			end := lenBody[j]
+			count := 1
+			j := 0
+			start := 0
 
-			if count == max {
-				end = totalLengMsg
+			for count <= max {
+
+				for i := j; i <= (totalLengMsg-1) && lenBody[i] <= cons.MaxLengMsg*count; i++ {
+					j = i
+				}
+
+				end := lenBody[j]
+
+				if count == max {
+					end = totalLengMsg
+				}
+
+				formatMessage := message[start:end]
+
+				formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
+
+				msg := tgbotapi.NewMessage(id, formatMessage, styleText)
+				msg.ReplyMarkup = keyboard
+
+				if _, err := bot.Send(msg); err != nil {
+					zrlog.Panic().Msg(err.Error())
+					log.Printf("PANIC: %v", err.Error())
+					return err
+				}
+
+				start = lenBody[j]
+
+				count++
 			}
+
+		} else {
+
+			start := 0
+			end := totalLengMsg
+
+			formatMessage := message[start:end]
+
+			formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
+
+			msg := tgbotapi.NewMessage(id, formatMessage, styleText)
+			msg.ReplyMarkup = keyboard
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+
+		}
+
+	case "Movements":
+
+		totalLengMsg := len(message)
+
+		if totalLengMsg > cons.MaxLengMsg {
+
+			max := totalLengMsg / cons.MaxLengMsg
+
+			if (totalLengMsg % cons.MaxLengMsg) > 0 {
+				max++
+			}
+
+			count := 1
+			j := 0
+			start := 0
+
+			for count <= max {
+
+				for i := j; i <= (totalLengMsg-1) && lenBody[i] <= cons.MaxLengMsg*count; i++ {
+					j = i
+				}
+
+				end := lenBody[j]
+
+				if count == max {
+					end = totalLengMsg
+				}
+
+				formatMessage := message[start:end]
+
+				if button == buttonMovements && header != "" {
+
+					formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
+
+				}
+
+				msg := tgbotapi.NewMessage(id, formatMessage, styleText)
+				msg.ReplyMarkup = keyboard
+
+				if _, err := bot.Send(msg); err != nil {
+					zrlog.Panic().Msg(err.Error())
+					log.Printf("PANIC: %v", err.Error())
+					return err
+				}
+
+				start = lenBody[j]
+
+				count++
+			}
+
+		} else {
+
+			start := 0
+			end := totalLengMsg
 
 			formatMessage := message[start:end]
 
 			if button == buttonMovements && header != "" {
-
 				formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
-
 			}
 
 			msg := tgbotapi.NewMessage(id, formatMessage, styleText)
@@ -465,29 +839,6 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 				return err
 			}
 
-			start = lenBody[j]
-
-			count++
-		}
-
-	} else {
-
-		start := 0
-		end := totalLengMsg
-
-		formatMessage := message[start:end]
-
-		if button == buttonMovements && header != "" {
-			formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
-		}
-
-		msg := tgbotapi.NewMessage(id, formatMessage, styleText)
-		msg.ReplyMarkup = keyboard
-
-		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
-			return err
 		}
 
 	}

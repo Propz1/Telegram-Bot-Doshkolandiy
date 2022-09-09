@@ -11,13 +11,13 @@ import (
 	"sync"
 	"telegrammBot/cons"
 	"telegrammBot/internal/models"
-	"time"
 )
 
 var (
-	remainderList        models.ArrayRemainder
-	mx                   sync.Mutex
-	remainderInformation models.Information
+	remainderList      models.ArrayRemainder
+	mx                 sync.Mutex
+	listWarehouses     models.Warehouses
+	warehouseRemainder models.WarehouseRemainder
 )
 
 func MovementsHandler() (error, models.ArrayRemainder) {
@@ -59,41 +59,43 @@ func MovementsHandler() (error, models.ArrayRemainder) {
 	return nil, remainderList
 }
 
-func RemainderHandler() (error, models.Information) {
+func RemainderHandler(warehouse string) (models.WarehouseRemainder, error) {
 
 	//remainderInformation = nil
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	//client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{}
 
-	////////////////////////////////////////////////
-	//. Тестирую отправку тела JSON
-
-	message := map[string]string{
-		"Команда": "RemainderRequest",
-		"Склад":   "Солнечный",
-	}
+	message := make(map[string]string)
+	message["Command"] = "RemainderRequest"
+	message["Склад"] = warehouse
 
 	bytesRepresentation, err := json.Marshal(message)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	//////////////////////////////////////////////////////////////////////////////
 
 	req, err := http.NewRequest("POST", cons.REMAINDER_REQUEST, bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+		return models.WarehouseRemainder{}, fmt.Errorf("Bad POST request for remainder request:%W", err)
+	}
 	req.SetBasicAuth(os.Getenv("USERNAME_WEBSERVICE_1C"), os.Getenv("PASSWORD_WEBSERVICE_1C"))
 	resp, err := client.Do(req)
 
 	if err != nil {
 		log.Fatalln(err)
-		return fmt.Errorf("Bad GET/POST request for remainder request:%W", err), emptyInformation()
+		return models.WarehouseRemainder{}, fmt.Errorf("Bad GET/POST request for remainder request:%W", err)
 	}
 
 	dataBody, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
+	//fmt.Printf("dataBody is %v\n", string(dataBody))
+
 	if err != nil {
 		log.Fatalln(err)
-		return fmt.Errorf("Bad response for remainder request:%W", err), emptyInformation()
+		return models.WarehouseRemainder{}, fmt.Errorf("Bad response for remainder request:%W", err)
 	}
 
 	if len(dataBody) != 0 {
@@ -101,18 +103,67 @@ func RemainderHandler() (error, models.Information) {
 		dataBody = bytes.TrimPrefix(dataBody, []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
 
 		mx.Lock()
-		err = json.Unmarshal(dataBody, &remainderInformation)
+		err = json.Unmarshal(dataBody, &warehouseRemainder)
 		mx.Unlock()
 
 		if err != nil {
-			return err, emptyInformation()
+			return models.WarehouseRemainder{}, err
 		}
+
 	}
 
-	return nil, remainderInformation
+	return warehouseRemainder, nil
 }
 
-func emptyInformation() models.Information {
+func WarehousesHandler() (models.Warehouses, error) {
 
-	return models.Information{}
+	//client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{}
+
+	message := make(map[string]string, 1)
+	message["Command"] = "GetWarehouses"
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	req, err := http.NewRequest("POST", cons.REMAINDER_REQUEST, bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		log.Fatalln(err)
+		return models.Warehouses{}, fmt.Errorf("Bad GET/POST request for remainder request:%W", err)
+	}
+	req.SetBasicAuth(os.Getenv("USERNAME_WEBSERVICE_1C"), os.Getenv("PASSWORD_WEBSERVICE_1C"))
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Fatalln(err)
+		return models.Warehouses{}, fmt.Errorf("Bad GET/POST request for remainder request:%W", err)
+	}
+
+	dataBody, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	fmt.Printf("dataBody is %v\n", string(dataBody))
+
+	if err != nil {
+		log.Fatalln(err)
+		return models.Warehouses{}, fmt.Errorf("Bad response for remainder request:%W", err)
+	}
+
+	if len(dataBody) != 0 {
+
+		dataBody = bytes.TrimPrefix(dataBody, []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
+
+		mx.Lock()
+		err = json.Unmarshal(dataBody, &listWarehouses)
+		mx.Unlock()
+
+		if err != nil {
+			return models.Warehouses{}, err
+		}
+
+	}
+
+	return listWarehouses, nil
 }

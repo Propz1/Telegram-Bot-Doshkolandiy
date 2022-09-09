@@ -1,14 +1,31 @@
 package models
 
-type Information struct {
-	Result bool `json:"Результат"`
-	Information string `json:"Информация"`
+type Warehouse struct {
+	NameWarehouse string `json:"НаименованиеСклада"`
+}
+
+type Warehouses struct {
+	Result         bool        `json:"Результат"`
+	Information    string      `json:"Информация"`
+	ListWarehouses []Warehouse `json:"ТаблицаДанных"`
 }
 
 type Remainder struct {
 	Nomenclature string `json:"НаименованиеНоменклатуры"`
 	Code         string `json:"КодНоменклатуры"`
 	Store        string `json:"Склад"`
+}
+
+type WarehouseRemainder struct {
+	Result        bool                `json:"Результат"`
+	Information   string              `json:"Информация"`
+	RemainderList []RemainderQuantity `json:"ТаблицаДанных"`
+}
+
+type RemainderQuantity struct {
+	Nomenclature string `json:"НаименованиеНоменклатуры"`
+	Code         string `json:"КодНоменклатуры"`
+	Quantity     int    `json:"Количество"`
 }
 
 type ArrayRemainder []Remainder
