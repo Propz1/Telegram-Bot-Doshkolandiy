@@ -23,9 +23,9 @@ type WarehouseRemainder struct {
 }
 
 type RemainderQuantity struct {
-	Nomenclature string `json:"НаименованиеНоменклатуры"`
-	Code         string `json:"КодНоменклатуры"`
-	Quantity     int    `json:"Количество"`
+	Nomenclature string  `json:"НаименованиеНоменклатуры"`
+	Code         string  `json:"КодНоменклатуры"`
+	Quantity     float64 `json:"Количество"`
 }
 
 type ArrayRemainder []Remainder

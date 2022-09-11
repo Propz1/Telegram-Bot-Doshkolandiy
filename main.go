@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"telegrammBot/cons"
 	"telegrammBot/internal/handlers"
@@ -22,14 +23,14 @@ import (
 var (
 	keyboard = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Остатки"),
+			tgbotapi.NewKeyboardButton("Перемещения"),
 			tgbotapi.NewKeyboardButton("Остатки PDF"),
 		),
 
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Перемещения"),
-			tgbotapi.NewKeyboardButton("Перемещения PDF"),
-		),
+		// tgbotapi.NewKeyboardButtonRow(
+		// 	tgbotapi.NewKeyboardButton("Остатки"),
+		// 	tgbotapi.NewKeyboardButton("Перемещения PDF"),
+		// ),
 	)
 
 	msgToUser          string
@@ -43,7 +44,7 @@ var (
 	cellOption_Caption = gopdf.CellOption{Align: 16}
 	cellOption_Default = gopdf.CellOption{Align: 8}
 
-	maxWidthPDF = 560.0
+	maxWidthPDF = 507.0
 )
 
 func main() {
@@ -108,8 +109,6 @@ func main() {
 		}
 
 		if update.Message != nil {
-
-			//fmt.Printf("Получено сообщение от пользователя: %+v\n", update.Message.Text)
 
 			switch update.Message.Text {
 
@@ -242,11 +241,6 @@ func main() {
 			case "Перемещения PDF":
 
 				err, remainderList := handlers.MovementsHandler()
-
-				/////////////////////////////////////////////////////////////////////////////
-				// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи 1", Code: "1", Store: "Темный"})
-				// remainderList = append(remainderList, models.Remainder{Nomenclature: "Устройство связи dfdffdfddfsd4464654", Code: "888", Store: "Узбекский"})
-				///////////////////////////////////////////////////////////////////////////////
 
 				if err != nil {
 					zrlog.Fatal().Msg(err.Error())
@@ -426,6 +420,8 @@ func main() {
 					warehouse = update.CallbackQuery.Data[17:]
 				}
 
+				fmt.Printf("warehouse:%v\n\n", warehouse)
+
 				switch PDF {
 
 				case true:
@@ -469,13 +465,14 @@ func main() {
 							log.Print(err.Error())
 						}
 
-						var capacityLine int = 40
+						var capacityLine int = 41
 
 						num := 1
 						i := 0
-						y := 15.0
+						step := 15.0
 						line := 0
 						page := 0
+						var vertLine_y float64
 
 						for i <= len(remListWarehouse)-1 {
 
@@ -483,11 +480,16 @@ func main() {
 
 								pdf.AddPage()
 								line = 1
-								page++
+								page = pdf.GetNumberOfPages()
 
-								y = 15.0
+								step = 15.0
 
-								pdf.SetXY(570, y)
+								vertLine_y = 18
+
+								pdf.SetLineWidth(0.2)
+								pdf.Line(10, step+3, 581, step+3) //horizontal
+
+								pdf.SetXY(560, step)
 								pdf.SetTextColorCMYK(100, 100, 100, 100)
 								err := pdf.SetFont("a_AlternaNr", "", 10)
 								if err != nil {
@@ -499,10 +501,10 @@ func main() {
 								}
 								line++
 
-								y = 20.0
+								step = 20.0
 
-								pdf.SetXY(260, y)
-								y = 60
+								pdf.SetXY(260, step)
+								step = 60
 								pdf.SetTextColorCMYK(0, 100, 100, 0)
 								err = pdf.SetFont("Merriweather-Bold", "", 14)
 								if err != nil {
@@ -512,7 +514,17 @@ func main() {
 								if err != nil {
 									log.Print(err.Error())
 								}
-								line = line + 2
+
+								pdf.Line(10, 40, 581, 40) //horizontal
+
+								pdf.Line(10, vertLine_y, 10, step-20)      //vertical 1
+								pdf.Line(34, vertLine_y+22, 34, step-20)   //vertical 2
+								pdf.Line(542, vertLine_y+22, 542, step-20) //vertical 3
+								pdf.Line(581, vertLine_y, 581, step-20)    //vertical 4
+
+								vertLine_y = step - 20
+
+								line++
 							}
 
 							pdf.SetTextColorCMYK(100, 100, 100, 100)
@@ -523,69 +535,99 @@ func main() {
 
 							position = remListWarehouse[i]
 
-							pdf.SetXY(10, y)
-							y = y + 20
+							if len(strconv.Itoa(num)) == 1 {
+								pdf.SetX(19)
+							} else if len(strconv.Itoa(num)) == 2 {
+								pdf.SetX(16)
+							} else {
+								pdf.SetX(12)
+							}
+							pdf.SetY(step)
+							step = step + 20
 
-							text := fmt.Sprintf("(%v). %s (%s)  %v шт", num, position.Nomenclature, position.Code, position.Quantity)
+							err = pdf.Text(fmt.Sprintf("%v", num))
+							if err != nil {
+								log.Print(err.Error())
+							}
+
+							pdf.SetX(37)
+							text := strings.TrimSpace(position.Nomenclature)
 							widthText, err := pdf.MeasureTextWidth(text)
 							if err != nil {
 								log.Print(err.Error())
 							}
 
 							if widthText > maxWidthPDF {
+
 								var arrayText []string
 
-								text1 := fmt.Sprintf("(%v). %s", num, position.Nomenclature)
-								widthText1, err := pdf.MeasureTextWidth(text1)
-
+								arrayText, err = pdf.SplitText(text, maxWidthPDF)
 								if err != nil {
 									log.Print(err.Error())
 								}
 
-								if widthText1 > maxWidthPDF {
-									arrayText, err = pdf.SplitText(text, maxWidthPDF)
+								for i, t := range arrayText {
+
+									pdf.SetX(36)
+									if i == 0 {
+										pdf.Line(10, vertLine_y, 10, step-2)   //vertical 1
+										pdf.Line(34, vertLine_y, 34, step-2)   //vertical 2
+										pdf.Line(542, vertLine_y, 542, step-2) //vertical 3
+										pdf.Line(581, vertLine_y, 581, step-2) //vertical 4
+
+										err = pdf.Text(t)
+										step = step + 5
+									}
+
 									if err != nil {
 										log.Print(err.Error())
 									}
-								} else {
-									arrayText, err = pdf.SplitText(text, widthText1)
-									if err != nil {
-										log.Print(err.Error())
+
+									if i == 1 {
+										pdf.SetY(step - 10)
+
+										err = pdf.Text(t)
+										if err != nil {
+											log.Print(err.Error())
+										}
+
+										pdf.SetX(543)
+										err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
+										if err != nil {
+											log.Print(err.Error())
+										}
+
+										pdf.Line(10, step-7, 581, step-7) //horizontal
+										step = step + 5
 									}
+
+									line++
 								}
-
-								err = pdf.Text(arrayText[0])
-								if err != nil {
-									log.Print(err.Error())
-								}
-								line++
-
-								pdf.SetXY(10, y)
-								y = y + 20
-								err = pdf.Text(arrayText[1])
-								if err != nil {
-									log.Print(err.Error())
-								}
-								line++
-
-								// for l, t := range arrayText {
-								// 	pdf.SetXY(10, y)
-								// 	err = pdf.Text(t)
-
-								//
-								// 	if err != nil {
-								// 		log.Print(err.Error())
-								// 	}
-								// 	line++
-								// }
 
 							} else {
-								err = pdf.Text(text)
 
+								y := pdf.GetY()
+
+								err = pdf.Text(text)
 								if err != nil {
 									log.Print(err.Error())
 								}
+
+								pdf.SetX(543)
+								err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
+								if err != nil {
+									log.Print(err.Error())
+								}
+
+								pdf.Line(10, y+3, 581, y+3) //horizontal
+
+								pdf.Line(10, vertLine_y, 10, y+3)   //vertical 1
+								pdf.Line(34, vertLine_y, 34, y+3)   //vertical 2
+								pdf.Line(542, vertLine_y, 542, y+3) //vertical 3
+								pdf.Line(581, vertLine_y, 581, y+3) //vertical 4
+
 								line++
+
 							}
 							i++
 							num++
