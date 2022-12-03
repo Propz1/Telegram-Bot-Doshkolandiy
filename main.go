@@ -1,18 +1,24 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"telegrammBot/cons"
-	"telegrammBot/internal/handlers"
+	"telegrammBot/internal/botcommand"
+	"telegrammBot/internal/botstate"
+	"telegrammBot/internal/cache"
+	"telegrammBot/internal/enumapplic"
 	"telegrammBot/internal/models"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	pgxpool "github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	zrlog "github.com/rs/zerolog/log"
 	"github.com/signintech/gopdf"
@@ -21,10 +27,10 @@ import (
 )
 
 var (
-	keyboard = tgbotapi.NewReplyKeyboard(
+	keyboardMainMenue = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Перемещения"),
-			tgbotapi.NewKeyboardButton("Остатки PDF"),
+			tgbotapi.NewKeyboardButton("Заполнить заявку"),
+			tgbotapi.NewKeyboardButton("Отправить работу"),
 		),
 
 		// tgbotapi.NewKeyboardButtonRow(
@@ -33,18 +39,65 @@ var (
 		// ),
 	)
 
+	keyboardApplicationStart = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Продолжить"),
+			tgbotapi.NewKeyboardButton("Отмена"),
+		),
+	)
+
+	keyboardContinueDataPolling1 = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Отменить заявку"),
+		),
+	)
+
+	keyboardContinueDataPolling2 = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Далее"),
+			tgbotapi.NewKeyboardButton("Отменить заявку"),
+		),
+	)
+
+	keyboardConfirm = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Подтвердить"),
+			tgbotapi.NewKeyboardButton("Исправить"),
+		),
+
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Отменить заявку"),
+		),
+	)
+
+	keyboardAdmin = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Оценить работу"),
+			tgbotapi.NewKeyboardButton("Публикация в VK"),
+		),
+
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Настройки"),
+		),
+	)
+
+	contests           = [4]string{"CONTEST1", "CONTEST2", "CONTEST3", "CONTEST4"}
+	documentsType      = [2]string{"DOCUMENT_TYPE1", "DOCUMENT_TYPE2"}
+	userPolling        = cache.NewCacheDataPolling()
 	msgToUser          string
 	buttonRemainder    = "Остатки"
 	buttonMovements    = "Перемещения"
 	buttonMovementsPDF = "Перемещения PDF"
 	remainder          models.Remainder
 	requestWarehouses  = "Выберите склад"
-	botsCommand        = [5]string{"GetWarehouses", "RemainderRequest", "Movements", "MovementsPDF", "/start"}
+	botsCommand        = [10]string{"CompletedApplication", "SendPublication", "Movements", "MovementsPDF", "/start", "EnterPassword", "Settings", "AppendUser", "ShowUsers", "DeleteUser"}
 
 	cellOption_Caption = gopdf.CellOption{Align: 16}
 	cellOption_Default = gopdf.CellOption{Align: 8}
 
 	maxWidthPDF = 507.0
+
+	cacheBotSt cache.CacheBotSt
 )
 
 func main() {
@@ -102,6 +155,8 @@ func main() {
 
 	go http.ListenAndServeTLS("0.0.0.0:8443", cons.CERT_PAHT, cons.KEY_PATH, nil)
 
+	cacheBotSt = cache.NewCacheBotSt()
+
 	for update := range updates {
 
 		if update.Message == nil && update.CallbackQuery == nil { // ignore non-Message updates and no CallbackQuery
@@ -110,35 +165,42 @@ func main() {
 
 		if update.Message != nil {
 
-			switch update.Message.Text {
+			messageByteText := bytes.TrimPrefix([]byte(update.Message.Text), []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
+			messageText := string(messageByteText[:])
+
+			//fmt.Printf("%v\n", messageText)
+
+			switch messageText {
 
 			case "/start":
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Привет %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botsCommand[4], "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здравствуйте, %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.START, "", nil, "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
-			case "Перемещения":
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
 
-				err, remainderList := handlers.MovementsHandler()
+			case botcommand.COMPLETE_APPLICATION.String():
+
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_PROJECT)
+
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION, "", nil, "", false)
+
+				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
 
 				if err != nil {
-					zrlog.Fatal().Msg(err.Error())
-					log.Printf("FATAL: %v", err.Error())
-					msgToUser = err.Error()
-				} else {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
-					sort.Sort(models.ArrayRemainder(remainderList))
+			case botcommand.SELECT_PROJECT.String():
 
-					num := 1
-					i := 0
-					body := make([]string, i)
-					lenBody := make(map[int]int, i)
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PROJECT {
 
-					err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`-----` склад: \"%v\" `-----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, botsCommand[2], buttonMovements, nil, "", false) //The first store
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -146,547 +208,109 @@ func main() {
 						return
 					}
 
-					for i <= len(remainderList)-1 {
-
-						st := remainderList[i].Store
-
-						remainder = remainderList[i]
-
-						body = append(body, fmt.Sprintf("%v", "___________________________________"))
-						body = append(body, fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
-						msgToUser = strings.Join(body, "\n")
-
-						lenBody[i] = len(msgToUser)
-
-						i++
-
-						if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
-
-							err := sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[2], buttonMovements, nil, st, false)
-
-							body = nil
-							num = 0
-
-							//body = make([]string, 0)
-							msgToUser = ""
-							lenBody = nil
-							lenBody = make(map[int]int, 0)
-
-							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
-							}
-
-							err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("*`----`склад: \"%v\"`----`*\n", remainderList[i].Store), lenBody, cons.StyleTextMarkdown, botsCommand[2], buttonMovements, nil, "", false)
-
-							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
-							}
-						}
-
-						num++
-					}
-
-					err = sentToTelegramm(bot, update.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[2], buttonMovements, nil, remainderList[i-1].Store, false)
-
-					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
-					}
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
 
 				}
 
-			case "Остатки":
+			case botcommand.CANCEL.String():
 
-				listWarehouses, err := handlers.WarehousesHandler()
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
 
-				if err != nil {
-					zrlog.Fatal().Msg(err.Error())
-					log.Printf("FATAL: %v", err.Error())
-					msgToUser = err.Error()
-					return
-				}
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", nil, "", false)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, requestWarehouses, nil, cons.StyleTextCommon, botsCommand[0], buttonRemainder, listWarehouses.ListWarehouses, "", false)
+				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					return
 				}
 
-			case "Остатки PDF":
+			case botcommand.CANCEL_APPLICATION.String():
 
-				listWarehouses, err := handlers.WarehousesHandler()
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
 
-				if err != nil {
-					zrlog.Fatal().Msg(err.Error())
-					log.Printf("FATAL: %v", err.Error())
-					msgToUser = err.Error()
-					return
-				}
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", nil, "", false)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, requestWarehouses, nil, cons.StyleTextCommon, botsCommand[0], buttonRemainder, listWarehouses.ListWarehouses, "", cons.PDF)
+				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					return
 				}
 
-			case "Перемещения PDF":
+			case botcommand.START_APPLICATION.String():
 
-				err, remainderList := handlers.MovementsHandler()
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
+
+				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", nil, "", false)
 
 				if err != nil {
-					zrlog.Fatal().Msg(err.Error())
-					log.Printf("FATAL: %v", err.Error())
-					msgToUser = err.Error()
-
-				} else {
-
-					sort.Sort(models.ArrayRemainder(remainderList))
-
-					pdf := gopdf.GoPdf{}
-					pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-
-					err = pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
-
-					if err != nil {
-						log.Print(err.Error())
-						return
-					}
-
-					err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
-
-					if err != nil {
-						log.Print(err.Error())
-						return
-					}
-
-					err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
-
-					if err != nil {
-						log.Print(err.Error())
-						return
-					}
-
-					err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
-
-					if err != nil {
-						log.Print(err.Error())
-						return
-					}
-
-					var capacityLine int = 42
-
-					num := 1
-					i := 0
-					y := 15.0
-					line := 0
-					page := 0
-
-					for i <= len(remainderList)-1 {
-
-						if line >= capacityLine || page == 0 {
-
-							pdf.AddPage()
-							line = 1
-							page++
-
-							y = 15.0
-
-							pdf.SetXY(570, y)
-							pdf.SetTextColorCMYK(100, 100, 100, 100)
-							err = pdf.SetFont("a_AlternaNr", "", 10)
-							if err != nil {
-								log.Print(err.Error())
-								return
-							}
-							err = pdf.Text(fmt.Sprintf("стр %v", page))
-							if err != nil {
-								log.Print(err.Error())
-								return
-							}
-							line++
-
-							y = 20.0
-
-							pdf.SetXY(260, y)
-							y = 60
-							pdf.SetTextColorCMYK(0, 100, 100, 0)
-							err = pdf.SetFont("Merriweather-Bold", "", 14)
-							if err != nil {
-								log.Print(err.Error())
-								return
-							}
-							err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
-							if err != nil {
-								log.Print(err.Error())
-								return
-							}
-							line = line + 2
-
-						}
-
-						pdf.SetTextColorCMYK(100, 100, 100, 100)
-						err = pdf.SetFont("Inter-ExtraLight", "", 12)
-						if err != nil {
-							log.Print(err.Error())
-							return
-						}
-
-						st := remainderList[i].Store
-
-						remainder = remainderList[i]
-
-						pdf.SetXY(10, y)
-						y = y + 20
-						err = pdf.Text(fmt.Sprintf("(%v). %s", num, remainder.Nomenclature))
-						if err != nil {
-							log.Print(err.Error())
-							return
-						}
-						line++
-						i++
-
-						if i <= len(remainderList)-1 && st != remainderList[i].Store { //The store is turned change and expression "i <= len(remainderList)-1" still true.
-							num = 0
-
-							pdf.SetXY(260, y)
-							y = y + 40
-							pdf.SetTextColorCMYK(0, 100, 100, 0)
-							err = pdf.SetFont("Merriweather-Bold", "", 14)
-							if err != nil {
-								log.Print(err.Error())
-								return
-							}
-							err = pdf.CellWithOption(nil, remainderList[i].Store, cellOption_Caption)
-							if err != nil {
-								log.Print(err.Error())
-								return
-							}
-							line = line + 2
-
-						}
-
-						num++
-					}
-
-					err = pdf.WritePdf("./external/files/Movements.pdf")
-
-					if err != nil {
-						log.Print(err.Error())
-						return
-					}
-
-					// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
-					// if err != nil {
-					// 	log.Print(err.Error())
-					// 	return
-					// }
-
-					err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/%s.pdf", "Movements"), "")
-
-					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
-						return
-					}
-
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
+
+			case "Настройки":
+
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите действие:", nil, cons.StyleTextCommon, botcommand.SETTINGS, "", nil, "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
+
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.SETTINGS)
 
 			default:
-				msgToUser = update.Message.Text
-			}
-		}
 
-		if update.CallbackQuery != nil {
+				stateBot := cacheBotSt.Get(update.Message.Chat.ID)
 
-			var warehouse string
-			var PDF bool
+				switch stateBot {
 
-			if ok := strings.Contains(update.CallbackQuery.Data, "RemainderRequest_"); ok {
+				case botstate.ASK_FNP:
 
-				if ok := strings.Contains(update.CallbackQuery.Data, "_PDF"); ok {
-					PDF = true
-					warehouse = update.CallbackQuery.Data[17 : len(update.CallbackQuery.Data)-4]
-				} else {
-					PDF = false
-					warehouse = update.CallbackQuery.Data[17:]
-				}
+					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_AGE)
 
-				fmt.Printf("warehouse:%v\n\n", warehouse)
-
-				switch PDF {
-
-				case true:
-
-					var position models.RemainderQuantity
-
-					warehouseRemainder, err := handlers.RemainderHandler(warehouse)
-
-					remListWarehouse := warehouseRemainder.RemainderList
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
 
 					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
-						msgToUser = err.Error()
-					} else {
-
-						pdf := gopdf.GoPdf{}
-						pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-
-						err := pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
-
-						if err != nil {
-							log.Print(err.Error())
-						}
-
-						err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
-
-						if err != nil {
-							log.Print(err.Error())
-						}
-
-						err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
-
-						if err != nil {
-							log.Print(err.Error())
-						}
-
-						err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
-
-						if err != nil {
-							log.Print(err.Error())
-						}
-
-						var capacityLine int = 41
-
-						num := 1
-						i := 0
-						step := 15.0
-						line := 0
-						page := 0
-						var vertLine_y float64
-
-						for i <= len(remListWarehouse)-1 {
-
-							if line >= capacityLine || page == 0 {
-
-								pdf.AddPage()
-								line = 1
-								page = pdf.GetNumberOfPages()
-
-								step = 15.0
-
-								vertLine_y = 18
-
-								pdf.SetLineWidth(0.2)
-								pdf.Line(10, step+3, 581, step+3) //horizontal
-
-								pdf.SetXY(560, step)
-								pdf.SetTextColorCMYK(100, 100, 100, 100)
-								err := pdf.SetFont("a_AlternaNr", "", 10)
-								if err != nil {
-									log.Print(err.Error())
-								}
-								err = pdf.Text(fmt.Sprintf("стр %v", page))
-								if err != nil {
-									log.Print(err.Error())
-								}
-								line++
-
-								step = 20.0
-
-								pdf.SetXY(260, step)
-								step = 60
-								pdf.SetTextColorCMYK(0, 100, 100, 0)
-								err = pdf.SetFont("Merriweather-Bold", "", 14)
-								if err != nil {
-									log.Print(err.Error())
-								}
-								err = pdf.CellWithOption(nil, warehouse, cellOption_Caption)
-								if err != nil {
-									log.Print(err.Error())
-								}
-
-								pdf.Line(10, 40, 581, 40) //horizontal
-
-								pdf.Line(10, vertLine_y, 10, step-20)      //vertical 1
-								pdf.Line(34, vertLine_y+22, 34, step-20)   //vertical 2
-								pdf.Line(542, vertLine_y+22, 542, step-20) //vertical 3
-								pdf.Line(581, vertLine_y, 581, step-20)    //vertical 4
-
-								vertLine_y = step - 20
-
-								line++
-							}
-
-							pdf.SetTextColorCMYK(100, 100, 100, 100)
-							err = pdf.SetFont("Inter-ExtraLight", "", 12)
-							if err != nil {
-								log.Print(err.Error())
-							}
-
-							position = remListWarehouse[i]
-
-							if len(strconv.Itoa(num)) == 1 {
-								pdf.SetX(19)
-							} else if len(strconv.Itoa(num)) == 2 {
-								pdf.SetX(16)
-							} else {
-								pdf.SetX(12)
-							}
-							pdf.SetY(step)
-							step = step + 20
-
-							err = pdf.Text(fmt.Sprintf("%v", num))
-							if err != nil {
-								log.Print(err.Error())
-							}
-
-							pdf.SetX(37)
-							text := strings.TrimSpace(position.Nomenclature)
-							widthText, err := pdf.MeasureTextWidth(text)
-							if err != nil {
-								log.Print(err.Error())
-							}
-
-							if widthText > maxWidthPDF {
-
-								var arrayText []string
-
-								arrayText, err = pdf.SplitText(text, maxWidthPDF)
-								if err != nil {
-									log.Print(err.Error())
-								}
-
-								for i, t := range arrayText {
-
-									pdf.SetX(36)
-									if i == 0 {
-										pdf.Line(10, vertLine_y, 10, step-2)   //vertical 1
-										pdf.Line(34, vertLine_y, 34, step-2)   //vertical 2
-										pdf.Line(542, vertLine_y, 542, step-2) //vertical 3
-										pdf.Line(581, vertLine_y, 581, step-2) //vertical 4
-
-										err = pdf.Text(t)
-										step = step + 5
-									}
-
-									if err != nil {
-										log.Print(err.Error())
-									}
-
-									if i == 1 {
-										pdf.SetY(step - 10)
-
-										err = pdf.Text(t)
-										if err != nil {
-											log.Print(err.Error())
-										}
-
-										pdf.SetX(543)
-										err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
-										if err != nil {
-											log.Print(err.Error())
-										}
-
-										pdf.Line(10, step-7, 581, step-7) //horizontal
-										step = step + 5
-									}
-
-									line++
-								}
-
-							} else {
-
-								y := pdf.GetY()
-
-								err = pdf.Text(text)
-								if err != nil {
-									log.Print(err.Error())
-								}
-
-								pdf.SetX(543)
-								err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
-								if err != nil {
-									log.Print(err.Error())
-								}
-
-								pdf.Line(10, y+3, 581, y+3) //horizontal
-
-								pdf.Line(10, vertLine_y, 10, y+3)   //vertical 1
-								pdf.Line(34, vertLine_y, 34, y+3)   //vertical 2
-								pdf.Line(542, vertLine_y, 542, y+3) //vertical 3
-								pdf.Line(581, vertLine_y, 581, y+3) //vertical 4
-
-								line++
-
-							}
-							i++
-							num++
-						}
-
-						err = pdf.WritePdf(fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse))
-
-						if err != nil {
-							log.Print(err.Error())
-						}
-
-						// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
-						// if err != nil {
-						// 	log.Print(err.Error())
-						// 	return
-						// }
-
-						err = sentToTelegrammPDF(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse), "")
-
-						if err != nil {
-							zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %+v\n", err.Error()))
-							return
-						}
-
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
 					}
 
-				case false:
+				case botstate.ASK_FNP_CORRECTION:
 
-					warehouseRemainder, err := handlers.RemainderHandler(warehouse)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
 
-					remListWarehouse := warehouseRemainder.RemainderList
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
 
 					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
-						msgToUser = err.Error()
-					} else {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
 
-						num := 1
-						i := 0
-						body := make([]string, i)
-						lenBody := make(map[int]int, i)
+				case botstate.ASK_AGE:
 
-						for i <= len(remListWarehouse)-1 {
+					age, err := strconv.Atoi(messageText)
 
-							infoQuantity := remListWarehouse[i]
+					if err != nil {
+						// zrlog.Fatal().Msg(fmt.Sprintf("Error convert age: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error convert age: %+v\n", err.Error()))
 
-							body = append(body, fmt.Sprintf("%v", "___________________________________"))
-							body = append(body, fmt.Sprintf("(%v). %s (%s) <b>%v шт</b>", num, infoQuantity.Nomenclature, infoQuantity.Code, infoQuantity.Quantity))
-							msgToUser = strings.Join(body, "\n")
+						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
 
-							lenBody[i] = len(msgToUser)
-
-							i++
-							num++
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
 						}
+					} else if age > 120 || age == 0 || age < 0 {
 
-						err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[1], "", nil, fmt.Sprintf("Остатки склада: \"%v\"", warehouse), false)
+						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Пожалуйста, укажите \"реальный возраст\" (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -694,114 +318,1100 @@ func main() {
 							return
 						}
 
+					} else {
+
+						userPolling.Set(update.Message.Chat.ID, enumapplic.AGE, messageText)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_NAME_INSTITUTION)
+
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
+						}
+					}
+
+				case botstate.ASK_AGE_CORRECTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.AGE, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_NAME_INSTITUTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NAME_INSTITUTION, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_LOCALITY)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_NAME_INSTITUTION_CORRECTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NAME_INSTITUTION, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_LOCALITY:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.LOCALITY, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_NAMING_UNIT)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_LOCALITY_CORRECTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.LOCALITY, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_NAMING_UNIT:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NAMING_UNIT, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_PUBLICATION_TITLE)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_NAMING_UNIT_CORRECTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NAMING_UNIT, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_PUBLICATION_TITLE:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_TITLE, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP_LEADER)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (нажать \"Далее\" если нет руководителя):", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_FNP_LEADER, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_PUBLICATION_TITLE_CORRECTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_TITLE, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_FNP_LEADER:
+
+					if messageText != botcommand.DOWN.String() {
+
+						userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, messageText)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_EMAIL)
+
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
+						}
+
+					} else {
+
+						userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, "")
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_EMAIL)
+
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
+						}
+					}
+
+				case botstate.ASK_FNP_LEADER_CORRECTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_EMAIL:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_EMAIL_CORRECTION:
+
+					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				case botstate.ASK_CHECK_DATA:
+
+					if messageText == botcommand.SELECT_CORRECTION.String() {
+
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.SELECT_CORRECTION)
+
+						err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите пункт который нужно исправить:", nil, cons.StyleTextCommon, botcommand.SELECT_CORRECTION, "", nil, "", false)
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
+						}
+
+					} else if messageText == "Подтвердить" {
+
+						if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_CHECK_DATA {
+
+							err := sentToTelegramm(bot, update.Message.Chat.ID, "Регистрирую...", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", nil, "", false)
+
+							if err != nil {
+								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+								log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+								return
+							}
+
+							ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+							defer cancel()
+
+							dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+							if err != nil {
+								zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
+								log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
+								os.Exit(1)
+								return
+							}
+							defer dbpool.Close()
+
+							err = AppendRequisition(update.Message.Chat.ID, dbpool, ctx)
+
+							if err != nil {
+								zrlog.Fatal().Msg(fmt.Sprintf("Error append requisition to db: %+v\n", err.Error()))
+								log.Printf("FATAL: %v", fmt.Sprintf("Error append requisition to db: %+v\n", err.Error()))
+								os.Exit(1)
+								return
+							}
+
+							ok, err := ConverRequisitionToPDF(update.Message.Chat.ID)
+
+							if err != nil {
+								zrlog.Fatal().Msg(fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
+								log.Printf("FATAL: %v", fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
+								fmt.Printf(err.Error())
+							}
+
+							if !ok {
+								// Отправляем просто в тексте
+								fmt.Printf("Не ОК")
+
+							} else {
+
+								err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/Заявка_№%v.pdf", userPolling.Get(update.Message.Chat.ID).RequisitionNumber), "")
+
+								if err != nil {
+									zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %v\n", err))
+									log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %v\n", err))
+									return
+								}
+
+							}
+
+						}
+
+					} else if messageText == "Отменить заявку" {
+						//Удаляем из userPolling[userID]
+
+					} else {
+						//Сообщаем пользователю, что бы нажал одну из кнопок меню.
+					}
+
+				case botstate.UNDEFINED:
+					msgToUser = update.Message.Text
+				}
+
+			}
+		}
+
+		if update.CallbackQuery != nil {
+
+			callbackQueryData := bytes.TrimPrefix([]byte(update.CallbackQuery.Data), []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
+			callbackQueryText := string(callbackQueryData[:])
+
+			// var warehouse string
+			// var PDF bool
+
+			switch callbackQueryText {
+
+			case contests[0]:
+
+			case contests[1]:
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST2)
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки для участия в данном проекте.....бла бла бла. %v, для заполнения заявки нажмите \"Продолжить\"", update.CallbackQuery.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.SELECT_PROJECT, "", nil, "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
+
+			case contests[2]:
+
+			case contests[3]:
+
+			case documentsType[0]:
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, cons.DOCUMENT_TYPE1)
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				} else {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+				}
+
+			case documentsType[1]:
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, cons.DOCUMENT_TYPE2)
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				} else {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+				}
+
+			case cons.PLACE_DELIVERY_OF_DOCUMENTS1:
+
+				cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
+
+				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS1)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			// case cons.PLACE_DELIVERY_OF_DOCUMENTS2:
+
+			// 	cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
+
+			// 	if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+
+			// 		userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
+			// 		cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+			// 		err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+			// 		if err != nil {
+			// 			zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+			// 			log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+			// 			return
+			// 		}
+
+			// 	}
+
+			case cons.PLACE_DELIVERY_OF_DOCUMENTS3:
+
+				cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
+
+				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS3)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.CANSEL_CORRECTION.String(): //CallBackQwery "CANSEL_CORRECTION"
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.FNP.String(): //CallBackQwery "FNP"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					}
+
+				}
+
+			case enumapplic.AGE.String(): //CallBackQwery "AGE"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_AGE_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.NAME_INSTITUTION.String(): //CallBackQwery "NAME_INSTITUTION"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_NAME_INSTITUTION_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.LOCALITY.String(): //CallBackQwery "LOCALITY"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_LOCALITY_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.NAMING_UNIT.String(): //CallBackQwery "NAMING_UNIT"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_NAMING_UNIT_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.PUBLICATION_TITLE.String(): //CallBackQwery "PUBLICATION_TITLE"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PUBLICATION_TITLE_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+				}
+
+			case enumapplic.FNP_LEADER.String(): //CallBackQwery "FNP_LEADER"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_LEADER_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя:", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.EMAIL.String(): //CallBackQwery "EMAIL"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_EMAIL_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.DOCUMENT_TYPE.String(): //CallBackQwery "DOCUMENT_TYPE"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String(): //CallBackQwery "PLACE_DELIVERY_OF_DOCUMENTS"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
 					}
 				}
 
 			}
+
+			// if ok := strings.Contains(callbackQueryText, "RemainderRequest_"); ok {
+
+			// 	if ok := strings.Contains(callbackQueryText, "_PDF"); ok {
+			// 		PDF = true
+			// 		warehouse = callbackQueryText[17 : len(callbackQueryText)-4]
+			// 	} else {
+			// 		PDF = false
+			// 		warehouse = callbackQueryText[17:]
+			// 	}
+
+			// 	fmt.Printf("warehouse:%v\n\n", warehouse)
+
+			// 	switch PDF {
+
+			// 	case true:
+
+			// 		var position models.RemainderQuantity
+
+			// 		warehouseRemainder, err := handlers.RemainderHandler(warehouse)
+
+			// 		remListWarehouse := warehouseRemainder.RemainderList
+
+			// 		sort.Sort(models.RemainderList(remListWarehouse))
+
+			// 		if err != nil {
+			// 			zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
+			// 			log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
+			// 			msgToUser = err.Error()
+			// 		} else {
+
+			// 			pdf := gopdf.GoPdf{}
+			// 			pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+
+			// 			err := pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Merriweather-Bold.ttf")
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			err = pdf.AddTTFFont("arialblack", "./external/fonts/ttf/arialblack.ttf")
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			err = pdf.AddTTFFont("times", "./external/fonts/ttf/times.ttf")
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			var capacityLine int = 41
+
+			// 			num := 1
+			// 			i := 0
+			// 			step := 15.0
+			// 			line := 0
+			// 			page := 0
+			// 			var vertLine_y float64
+
+			// 			for i <= len(remListWarehouse)-1 {
+
+			// 				if line >= capacityLine || page == 0 {
+
+			// 					pdf.AddPage()
+			// 					line = 1
+			// 					page = pdf.GetNumberOfPages()
+
+			// 					step = 15.0
+
+			// 					vertLine_y = 18
+
+			// 					pdf.SetLineWidth(0.2)
+			// 					pdf.Line(10, step+3, 581, step+3) //horizontal
+
+			// 					pdf.SetXY(560, step)
+			// 					pdf.SetTextColorCMYK(100, 100, 100, 100)
+			// 					err := pdf.SetFont("a_AlternaNr", "", 10)
+			// 					if err != nil {
+			// 						log.Print(err.Error())
+			// 					}
+			// 					err = pdf.Text(fmt.Sprintf("стр %v", page))
+			// 					if err != nil {
+			// 						log.Print(err.Error())
+			// 					}
+			// 					line++
+
+			// 					step = 20.0
+
+			// 					pdf.SetXY(260, step)
+			// 					step = 60
+			// 					pdf.SetTextColorCMYK(0, 100, 100, 0)
+			// 					err = pdf.SetFont("Merriweather-Bold", "", 14)
+			// 					if err != nil {
+			// 						log.Print(err.Error())
+			// 					}
+			// 					err = pdf.CellWithOption(nil, warehouse, cellOption_Caption)
+			// 					if err != nil {
+			// 						log.Print(err.Error())
+			// 					}
+
+			// 					pdf.Line(10, 40, 581, 40) //horizontal
+
+			// 					pdf.Line(10, vertLine_y, 10, step-20)      //vertical 1
+			// 					pdf.Line(34, vertLine_y+22, 34, step-20)   //vertical 2
+			// 					pdf.Line(542, vertLine_y+22, 542, step-20) //vertical 3
+			// 					pdf.Line(581, vertLine_y, 581, step-20)    //vertical 4
+
+			// 					vertLine_y = step - 20
+
+			// 					line++
+			// 				}
+
+			// 				pdf.SetTextColorCMYK(100, 100, 100, 100)
+			// 				// err = pdf.SetFont("arialblack", "", 12)
+			// 				// if err != nil {
+			// 				// 	log.Print(err.Error())
+			// 				// }
+			// 				err = pdf.SetFont("times", "", 12)
+			// 				if err != nil {
+			// 					log.Print(err.Error())
+			// 				}
+
+			// 				position = remListWarehouse[i]
+
+			// 				if len(strconv.Itoa(num)) == 1 {
+			// 					pdf.SetX(19)
+			// 				} else if len(strconv.Itoa(num)) == 2 {
+			// 					pdf.SetX(16)
+			// 				} else {
+			// 					pdf.SetX(12)
+			// 				}
+			// 				pdf.SetY(step)
+			// 				step = step + 20
+
+			// 				err = pdf.SetFont("Inter-ExtraLight", "", 12)
+			// 				if err != nil {
+			// 					log.Print(err.Error())
+			// 				}
+			// 				err = pdf.Text(fmt.Sprintf("%v", num))
+			// 				if err != nil {
+			// 					log.Print(err.Error())
+			// 				}
+
+			// 				// err = pdf.SetFont("arialblack", "", 12)
+			// 				// if err != nil {
+			// 				// 	log.Print(err.Error())
+			// 				// }
+			// 				err = pdf.SetFont("times", "", 12)
+			// 				if err != nil {
+			// 					log.Print(err.Error())
+			// 				}
+
+			// 				pdf.SetX(37)
+			// 				text := strings.TrimSpace(position.Nomenclature)
+			// 				widthText, err := pdf.MeasureTextWidth(text)
+			// 				if err != nil {
+			// 					log.Print(err.Error())
+			// 				}
+
+			// 				if widthText > maxWidthPDF {
+
+			// 					var arrayText []string
+
+			// 					arrayText, err = pdf.SplitText(text, maxWidthPDF)
+			// 					if err != nil {
+			// 						log.Print(err.Error())
+			// 					}
+
+			// 					for i, t := range arrayText {
+
+			// 						pdf.SetX(36)
+			// 						if i == 0 {
+			// 							pdf.Line(10, vertLine_y, 10, step-2)   //vertical 1
+			// 							pdf.Line(34, vertLine_y, 34, step-2)   //vertical 2
+			// 							pdf.Line(542, vertLine_y, 542, step-2) //vertical 3
+			// 							pdf.Line(581, vertLine_y, 581, step-2) //vertical 4
+
+			// 							err = pdf.Text(t)
+			// 							step = step + 5
+			// 						}
+
+			// 						if err != nil {
+			// 							log.Print(err.Error())
+			// 						}
+
+			// 						if i == 1 {
+			// 							pdf.SetY(step - 10)
+
+			// 							err = pdf.Text(t)
+			// 							if err != nil {
+			// 								log.Print(err.Error())
+			// 							}
+
+			// 							pdf.SetX(543)
+			// 							err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
+			// 							if err != nil {
+			// 								log.Print(err.Error())
+			// 							}
+
+			// 							pdf.Line(10, step-7, 581, step-7) //horizontal
+			// 							step = step + 5
+			// 						}
+
+			// 						line++
+			// 					}
+
+			// 				} else {
+
+			// 					y := pdf.GetY()
+
+			// 					err = pdf.Text(text)
+			// 					if err != nil {
+			// 						log.Print(err.Error())
+			// 					}
+
+			// 					pdf.SetX(543)
+			// 					err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
+			// 					if err != nil {
+			// 						log.Print(err.Error())
+			// 					}
+
+			// 					pdf.Line(10, y+3, 581, y+3) //horizontal
+
+			// 					pdf.Line(10, vertLine_y, 10, y+3)   //vertical 1
+			// 					pdf.Line(34, vertLine_y, 34, y+3)   //vertical 2
+			// 					pdf.Line(542, vertLine_y, 542, y+3) //vertical 3
+			// 					pdf.Line(581, vertLine_y, 581, y+3) //vertical 4
+
+			// 					line++
+
+			// 				}
+			// 				i++
+			// 				num++
+			// 			}
+
+			// 			err = pdf.WritePdf(fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse))
+
+			// 			if err != nil {
+			// 				log.Print(err.Error())
+			// 			}
+
+			// 			// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
+			// 			// if err != nil {
+			// 			// 	log.Print(err.Error())
+			// 			// 	return
+			// 			// }
+
+			// 			err = sentToTelegrammPDF(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse), "")
+
+			// 			if err != nil {
+			// 				zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %v\n", err))
+			// 				log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %v\n", err))
+			// 				return
+			// 			}
+
+			// 		}
+
+			// 	case false:
+
+			// 		warehouseRemainder, err := handlers.RemainderHandler(warehouse)
+
+			// 		remListWarehouse := warehouseRemainder.RemainderList
+
+			// 		if err != nil {
+			// 			zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %v\n", err))
+			// 			log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %v\n", err))
+			// 			msgToUser = err.Error()
+			// 		} else {
+
+			// 			num := 1
+			// 			i := 0
+			// 			body := make([]string, i)
+			// 			lenBody := make(map[int]int, i)
+
+			// 			for i <= len(remListWarehouse)-1 {
+
+			// 				infoQuantity := remListWarehouse[i]
+
+			// 				body = append(body, fmt.Sprintf("%v", "___________________________________"))
+			// 				body = append(body, fmt.Sprintf("(%v). %s (%s) <b>%v шт</b>", num, infoQuantity.Nomenclature, infoQuantity.Code, infoQuantity.Quantity))
+			// 				msgToUser = strings.Join(body, "\n")
+
+			// 				lenBody[i] = len(msgToUser)
+
+			// 				i++
+			// 				num++
+			// 			}
+
+			// 			err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[1], "", nil, fmt.Sprintf("Остатки склада: \"%v\"", warehouse), false)
+
+			// 			if err != nil {
+			// 				zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %v\n", err))
+			// 				log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %v\n", err))
+			// 				return
+			// 			}
+
+			// 		}
+			// 	}
+
+			// } else if callbackQueryText == botsCommand[7] {
+
+			// 	lenBody := make(map[int]int, 0)
+			// 	msgToUser = ""
+
+			// 	msgToUser = "Введите через пробел id пользователя, имя пользователя и телефон пользователя (опционально)"
+
+			// 	err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[7], "", nil, "", false)
+
+			// 	if err != nil {
+			// 		zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %v\n", err))
+			// 		log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %v\n", err))
+			// 		return
+			// 	}
+
+			// } else if callbackQueryText == botsCommand[8] {
+
+			// 	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+
+			// 	if err != nil {
+			// 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+			// 		zrlog.Fatal().Msg(fmt.Sprintf("Unable to connect to database:: %v\n", err))
+			// 		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Unable to connect to database: %v\n", err))
+			// 		os.Exit(1)
+			// 	}
+			// 	defer dbpool.Close()
+
+			// 	rows, err := dbpool.Query(context.Background(), "SELECT userid, username, phone FROM users")
+
+			// 	if err != nil {
+			// 		zrlog.Fatal().Msg(fmt.Sprintf("Query to db is failed: %v\n", err))
+			// 		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Query to db is failed: %v\n", err))
+			// 		os.Exit(1)
+			// 	}
+
+			// 	num := 1
+			// 	i := 0
+			// 	body := make([]string, i)
+			// 	lenBody := make(map[int]int, i)
+			// 	msgToUser = ""
+
+			// 	// iterate through the rows
+			// 	for rows.Next() {
+
+			// 		values, err := rows.Values()
+			// 		if err != nil {
+			// 			log.Fatal("error while iterating dataset")
+			// 		}
+
+			// 		// convert DB types to Go types
+			// 		userid := values[0].(int32)
+			// 		username := values[1].(string)
+			// 		phone := values[2].(string)
+
+			// 		body = append(body, fmt.Sprintf("%v", "------------------------------------------------------"))
+			// 		body = append(body, fmt.Sprintf("(%v). id %v, name %s, phone %s", num, userid, username, phone))
+			// 		msgToUser = strings.Join(body, "\n")
+
+			// 		lenBody[i] = len(msgToUser)
+
+			// 		i++
+			// 		num++
+
+			// 		//fmt.Printf("id %v, username %s, phone %s", userid, username, phone)
+			// 		//fmt.Printf("msgToUser %s", msgToUser)
+
+			// 	}
+
+			// 	err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[8], "", nil, "", false)
+
+			// 	if err != nil {
+			// 		zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+			// 		log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+			// 		return
+			// 	}
+
+			// } else if callbackQueryText == botsCommand[9] {
+
+			// }
 		}
 	}
 
 }
 
-func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, command string, button string, buttons []models.Warehouse, header string, PDF bool) error {
+func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, command botcommand.BotCommand, button string, buttons []models.Warehouse, header string, PDF bool) error {
 
 	switch command {
 
-	case "/start":
+	case botcommand.SELECT_CORRECTION:
 
-		msg := tgbotapi.NewMessage(id, message, styleText)
-		msg.ReplyMarkup = keyboard
+		if !thisIsAdmin(id) {
 
-		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
-			return err
-		}
+			var rowsButton [][]tgbotapi.InlineKeyboardButton
 
-	case "GetWarehouses":
+			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton4 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton5 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton6 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton7 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton8 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton9 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton10 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton11 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-		var rowsButton [][]tgbotapi.InlineKeyboardButton
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()), enumapplic.FNP.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-		for _, wh := range buttons {
-			inlineKeyboardButton := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-			if PDF {
-				inlineKeyboardButton = append(inlineKeyboardButton, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s (pdf)", wh.NameWarehouse), fmt.Sprintf("RemainderRequest_%s_PDF", wh.NameWarehouse)))
-			} else {
-				inlineKeyboardButton = append(inlineKeyboardButton, tgbotapi.NewInlineKeyboardButtonData(wh.NameWarehouse, fmt.Sprintf("RemainderRequest_%s", wh.NameWarehouse)))
-			}
-			rowsButton = append(rowsButton, inlineKeyboardButton)
-		}
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()), enumapplic.AGE.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton2)
 
-		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()), enumapplic.NAME_INSTITUTION.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton3)
 
-		fmt.Printf("inlineKeyboardMarkup is %v\n\n", inlineKeyboardMarkup)
+			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()), enumapplic.LOCALITY.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton4)
 
-		msg := tgbotapi.NewMessage(id, message, styleText)
-		msg.ReplyMarkup = inlineKeyboardMarkup
+			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()), enumapplic.NAMING_UNIT.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton5)
 
-		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
-			return err
-		}
+			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()), enumapplic.PUBLICATION_TITLE.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton6)
 
-	case "RemainderRequest":
+			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()), enumapplic.FNP_LEADER.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton7)
 
-		totalLengMsg := len(message)
+			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()), enumapplic.EMAIL.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton8)
 
-		if totalLengMsg > cons.MaxLengMsg {
+			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()), enumapplic.DOCUMENT_TYPE.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton9)
 
-			max := totalLengMsg / cons.MaxLengMsg
+			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton10)
 
-			if (totalLengMsg % cons.MaxLengMsg) > 0 {
-				max++
-			}
+			// inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s", enumapplic.CANSEL_CORRECTION.String()), enumapplic.CANSEL_CORRECTION.String()))
+			// rowsButton = append(rowsButton, inlineKeyboardButton11)
 
-			count := 1
-			j := 0
-			start := 0
+			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
-			for count <= max {
+			msg := tgbotapi.NewMessage(id, message, styleText)
+			msg.ReplyMarkup = inlineKeyboardMarkup
 
-				for i := j; i <= (totalLengMsg-1) && lenBody[i] <= cons.MaxLengMsg*count; i++ {
-					j = i
-				}
-
-				end := lenBody[j]
-
-				if count == max {
-					end = totalLengMsg
-				}
-
-				formatMessage := message[start:end]
-
-				formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
-
-				msg := tgbotapi.NewMessage(id, formatMessage, styleText)
-				msg.ReplyMarkup = keyboard
-
-				if _, err := bot.Send(msg); err != nil {
-					zrlog.Panic().Msg(err.Error())
-					log.Printf("PANIC: %v", err.Error())
-					return err
-				}
-
-				start = lenBody[j]
-
-				count++
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
 			}
 
-		} else {
+			message = "или"
+			msg = tgbotapi.NewMessage(id, message, styleText)
+			msg.ReplyMarkup = keyboardContinueDataPolling1
 
-			start := 0
-			end := totalLengMsg
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
 
-			formatMessage := message[start:end]
+			message = "нажмите"
+			msg = tgbotapi.NewMessage(id, message, styleText)
 
-			formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
-
-			msg := tgbotapi.NewMessage(id, formatMessage, styleText)
-			msg.ReplyMarkup = keyboard
+			rowsButton = nil
+			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s", enumapplic.CANSEL_CORRECTION.String()), enumapplic.CANSEL_CORRECTION.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton11)
+			inlineKeyboardMarkup = tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
@@ -811,76 +1421,318 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		}
 
-	case "Movements":
+	case botcommand.START:
 
-		totalLengMsg := len(message)
+		msg := tgbotapi.NewMessage(id, message, styleText)
 
-		if totalLengMsg > cons.MaxLengMsg {
-
-			max := totalLengMsg / cons.MaxLengMsg
-
-			if (totalLengMsg % cons.MaxLengMsg) > 0 {
-				max++
-			}
-
-			count := 1
-			j := 0
-			start := 0
-
-			for count <= max {
-
-				for i := j; i <= (totalLengMsg-1) && lenBody[i] <= cons.MaxLengMsg*count; i++ {
-					j = i
-				}
-
-				end := lenBody[j]
-
-				if count == max {
-					end = totalLengMsg
-				}
-
-				formatMessage := message[start:end]
-
-				if button == buttonMovements && header != "" {
-
-					formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
-
-				}
-
-				msg := tgbotapi.NewMessage(id, formatMessage, styleText)
-				msg.ReplyMarkup = keyboard
-
-				if _, err := bot.Send(msg); err != nil {
-					zrlog.Panic().Msg(err.Error())
-					log.Printf("PANIC: %v", err.Error())
-					return err
-				}
-
-				start = lenBody[j]
-
-				count++
-			}
-
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
 		} else {
+			msg.ReplyMarkup = keyboardMainMenue
+		}
 
-			start := 0
-			end := totalLengMsg
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
 
-			formatMessage := message[start:end]
+	case botcommand.COMPLETE_APPLICATION:
 
-			if button == buttonMovements && header != "" {
-				formatMessage = fmt.Sprintf("<i><b>%v</b></i>\n%v", header, formatMessage)
-			}
+		if !thisIsAdmin(id) {
 
-			msg := tgbotapi.NewMessage(id, formatMessage, styleText)
-			msg.ReplyMarkup = keyboard
+			var rowsButton [][]tgbotapi.InlineKeyboardButton
+
+			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton4 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.CONTEST1), "CONTEST1"))
+			rowsButton = append(rowsButton, inlineKeyboardButton1)
+
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.CONTEST2), "CONTEST2"))
+			rowsButton = append(rowsButton, inlineKeyboardButton2)
+
+			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(string(cons.CONTEST3), "CONTEST3"))
+			rowsButton = append(rowsButton, inlineKeyboardButton3)
+
+			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(string(cons.CONTEST4), "CONTEST4"))
+			rowsButton = append(rowsButton, inlineKeyboardButton4)
+
+			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+
+			msg := tgbotapi.NewMessage(id, message, styleText)
+			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
 				log.Printf("PANIC: %v", err.Error())
 				return err
 			}
+		}
 
+	case botcommand.SELECT_PROJECT:
+
+		msg := tgbotapi.NewMessage(id, message, styleText) //Описание (инструкция) подачи заявки для участия в выбранном проекте
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardApplicationStart
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	case botcommand.CANCEL:
+
+		msg := tgbotapi.NewMessage(id, message, styleText) //Выход в главное меню
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardMainMenue
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	case botcommand.CONTINUE_DATA_POLLING:
+
+		msg := tgbotapi.NewMessage(id, message, styleText)
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardContinueDataPolling1
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	case botcommand.RECORD_TO_DB:
+
+		msg := tgbotapi.NewMessage(id, message, styleText)
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardContinueDataPolling1
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	case botcommand.SELECT_FNP_LEADER:
+
+		msg := tgbotapi.NewMessage(id, message, styleText)
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardContinueDataPolling2
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	case botcommand.SELECT_DOCUMENT_TYPE:
+
+		if !thisIsAdmin(id) {
+
+			var rowsButton [][]tgbotapi.InlineKeyboardButton
+
+			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.DOCUMENT_TYPE1, "DOCUMENT_TYPE1"))
+			rowsButton = append(rowsButton, inlineKeyboardButton1)
+
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.DOCUMENT_TYPE2, "DOCUMENT_TYPE2"))
+			rowsButton = append(rowsButton, inlineKeyboardButton2)
+
+			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+
+			msg := tgbotapi.NewMessage(id, message, styleText)
+			msg.ReplyMarkup = inlineKeyboardMarkup
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+		}
+
+	case botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS:
+
+		if !thisIsAdmin(id) {
+
+			var rowsButton [][]tgbotapi.InlineKeyboardButton
+
+			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			//inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS1, cons.PLACE_DELIVERY_OF_DOCUMENTS1))
+			rowsButton = append(rowsButton, inlineKeyboardButton1)
+
+			// inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS2, cons.PLACE_DELIVERY_OF_DOCUMENTS2))
+			// rowsButton = append(rowsButton, inlineKeyboardButton2)
+
+			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS3, cons.PLACE_DELIVERY_OF_DOCUMENTS3))
+			rowsButton = append(rowsButton, inlineKeyboardButton3)
+
+			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+
+			msg := tgbotapi.NewMessage(id, message, styleText)
+			msg.ReplyMarkup = inlineKeyboardMarkup
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+		}
+
+	case botcommand.CHECK_DATA:
+
+		msg := tgbotapi.NewMessage(id, message, styleText)
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardConfirm
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+		usdata := userPolling.Get(id)
+
+		body := make([]string, 12)
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.Contest))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.FNP))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
+		body = append(body, fmt.Sprintf("      %v", usdata.Age))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.NameInstitution))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.Locality))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.NamingUnit))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.PublicationTitle))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		if usdata.LeaderFNP == "" {
+			body = append(body, fmt.Sprintf("(%v). <s><i><b>%s:</b></i></s>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+			body = append(body, fmt.Sprintf("      %s", "-"))
+		} else {
+			body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+			body = append(body, fmt.Sprintf("      %s", usdata.LeaderFNP))
+		}
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.Email))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.DocumentType))
+		message = strings.Join(body, "\n")
+
+		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.PlaceDeliveryDocuments))
+		message = strings.Join(body, "\n")
+
+		msg = tgbotapi.NewMessage(id, message, cons.StyleTextHTML)
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardConfirm
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	case botcommand.SETTINGS:
+
+		if thisIsAdmin(id) {
+
+			var rowsButton [][]tgbotapi.InlineKeyboardButton
+
+			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData("Добавить пользователя", "AppendUser"))
+			rowsButton = append(rowsButton, inlineKeyboardButton1)
+
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData("Показать всех пользователей бота", "ShowUsers"))
+			rowsButton = append(rowsButton, inlineKeyboardButton2)
+
+			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData("Удалить пользователя по ID", "DeleteUser"))
+			rowsButton = append(rowsButton, inlineKeyboardButton3)
+
+			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+
+			msg := tgbotapi.NewMessage(id, message, styleText)
+			msg.ReplyMarkup = inlineKeyboardMarkup
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
 		}
 
 	}
@@ -899,7 +1751,11 @@ func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id
 		msg = tgbotapi.NewDocumentUpload(id, pdf_path)
 	}
 
-	msg.ReplyMarkup = keyboard
+	if thisIsAdmin(id) {
+		msg.ReplyMarkup = keyboardAdmin
+	} else {
+		msg.ReplyMarkup = keyboardMainMenue
+	}
 
 	if _, err := bot.Send(msg); err != nil {
 		zrlog.Panic().Msg(err.Error())
@@ -908,4 +1764,525 @@ func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id
 	}
 
 	return nil
+}
+
+func thisIsAdmin(id int64) bool {
+
+	if i, err := strconv.ParseInt(os.Getenv("ADMIN_ID"), 10, 64); err == nil {
+		log.Printf("strconv.ParseInt: ADMIN_ID=%d, type: %T\n", i, i)
+
+		return id == i
+	}
+
+	return false
+}
+
+func parseUserData(messageText string) (error, []string) {
+
+	usersDatas := strings.Split(messageText, "")
+
+	// var userID int64
+	// var username string
+	// var phone string
+
+	for k, v := range usersDatas {
+
+		if k == 0 {
+			_, err := strconv.Atoi(v)
+			if err != nil {
+				return fmt.Errorf("Bad user ID:%W", err), nil
+			}
+		}
+	}
+
+	return nil, usersDatas
+}
+
+func checkUserID(messageText string) bool {
+
+	usersDatas := strings.Split(messageText, " ")
+
+	_, err := strconv.Atoi(usersDatas[0])
+	if err != nil {
+		return false
+	}
+
+	return true
+
+}
+
+func AppendUser(usersDate []string) (error, bool) {
+
+	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		zrlog.Fatal().Msg(fmt.Sprintf("Unable to connect to database:: %v\n", err))
+		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Unable to connect to database: %v\n", err))
+		os.Exit(1)
+
+		return err, false
+	}
+	defer dbpool.Close()
+
+	_, err = dbpool.Query(context.Background(), "INSERT INTO users (userid, username, phone) VALUES ($1,$2,$3)", usersDate[0], usersDate[1], usersDate[2])
+
+	if err != nil {
+		zrlog.Fatal().Msg(fmt.Sprintf("Query to db is failed: %v\n", err))
+		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Query to db is failed: %v\n", err))
+		os.Exit(1)
+
+		return err, false
+	}
+
+	return nil, true
+
+}
+
+func AppendRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) error {
+
+	userData := userPolling.Get(userID)
+
+	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// defer cancel()
+
+	// conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Unable to establish connection to database: %v\n", err)
+	// 	zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %v\n", err))
+	// 	log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Unable to establish connection to database: %v\n", err))
+	// 	os.Exit(1)
+
+	// 	return err
+	// }
+
+	// _, err = conn.Exec(ctx, "insert into requisitions (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning requisition_number", userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments)
+
+	// if err != nil {
+	// 	zrlog.Fatal().Msg(fmt.Sprintf("Query to db is failed: %v\n", err))
+	// 	log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Query to db is failed: %v\n", err))
+	// 	os.Exit(1)
+
+	// 	return err
+	// }
+
+	// return nil
+
+	//dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+
+	// if err != nil {
+	// 	return fmt.Errorf("Unable to establish connection to database: %w", err)
+	// }
+	// defer dbpool.Close()
+
+	row, err := dbpool.Query(ctx, "insert into requisitions (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning requisition_number", userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments)
+
+	if err != nil {
+		return fmt.Errorf("Query to db is failed: %W", err)
+	}
+
+	if row.Next() {
+
+		var requisition_number int
+
+		err := row.Scan(&requisition_number)
+
+		if err != nil {
+			return fmt.Errorf("Scan datas of row is failed %w", err)
+		}
+
+		userPolling.Set(userID, enumapplic.REQUISITION_NUMBER, fmt.Sprintf("%v", requisition_number))
+	}
+
+	return row.Err()
+}
+
+func ConverRequisitionToPDF(userID int64) (bool, error) {
+
+	usersRequisition := userPolling.Get(userID)
+
+	pdf := gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+
+	err := pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Merriweather-Bold.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	err = pdf.AddTTFFont("arialblack", "./external/fonts/ttf/arialblack.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	err = pdf.AddTTFFont("times", "./external/fonts/ttf/times.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	// step := 15.0
+	// line := 0
+	// page := 0
+	//var vertLine_y float64
+
+	pdf.SetTextColorCMYK(100, 100, 100, 100)
+
+	pdf.AddPage()
+
+	rect := &gopdf.Rect{W: 595, H: 842} //Page size A4 format
+	pdf.Image("./external/imgs/RequisitionsBoilerplate.jpg", 0, 0, rect)
+
+	// line = 1
+	// page = pdf.GetNumberOfPages()
+
+	// step = 15.0
+
+	//vertLine_y = 18
+
+	//pdf.SetLineWidth(0.2)
+	//pdf.Line(10, step+3, 581, step+3) //horizontal
+
+	// pdf.SetXY(560, step)
+	// pdf.SetTextColorCMYK(100, 100, 100, 100)
+	// err = pdf.SetFont("a_AlternaNr", "", 10)
+	// if err != nil {
+	// 	log.Print(err.Error())
+	// }
+	// err = pdf.Text(fmt.Sprintf("стр %v", page))
+	// if err != nil {
+	// 	log.Print(err.Error())
+	// }
+
+	//step = 20.0
+
+	pdf.SetXY(135, 220)
+	pdf.SetTextColorCMYK(100, 70, 0, 67)
+	err = pdf.SetFont("Merriweather-Bold", "", 14)
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	t := time.Now()
+	formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
+
+	err = pdf.CellWithOption(nil, fmt.Sprintf("Заявка №%v от %v зарегистирована!", usersRequisition.RequisitionNumber, formattedTime), cellOption_Caption)
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	y := 270.0
+	step := 30.0
+
+	pdf.SetXY(25, y)
+	err = pdf.Text(fmt.Sprintf("Участник: %s", usersRequisition.FNP))
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	y = y + step
+	pdf.SetXY(25, y)
+	if usersRequisition.LeaderFNP != "" {
+		err = pdf.Text(fmt.Sprintf("Руководитель: %s", usersRequisition.LeaderFNP))
+		if err != nil {
+			log.Print(err.Error())
+		}
+		y = y + step
+	}
+
+	pdf.SetXY(25, y)
+
+	err = pdf.Text(fmt.Sprintf("Конкурс: \"%s\"", usersRequisition.Contest))
+	if err != nil {
+		log.Print(err.Error())
+	}
+	y = y + step
+
+	pdf.SetXY(25, y)
+	text := fmt.Sprintf("%s: \"%s\"", enumapplic.NAMING_UNIT, usersRequisition.NamingUnit)
+	widthText, err := pdf.MeasureTextWidth(text)
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(text, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		for _, t := range arrayText {
+			pdf.SetXY(25, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+		err = pdf.Text(text)
+		if err != nil {
+			log.Print(err.Error())
+		}
+		y = y + step
+	}
+
+	pdf.SetXY(25, y)
+	text = fmt.Sprintf("%s: \"%s\"", enumapplic.PUBLICATION_TITLE, usersRequisition.PublicationTitle)
+	widthText, err = pdf.MeasureTextWidth(text)
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(text, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		for _, t := range arrayText {
+			pdf.SetXY(25, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+		err = pdf.Text(text)
+		if err != nil {
+			log.Print(err.Error())
+		}
+		y = y + step
+	}
+
+	pdf.SetXY(25, y)
+	text = fmt.Sprintf("%s: %s", enumapplic.DOCUMENT_TYPE, usersRequisition.DocumentType)
+	widthText, err = pdf.MeasureTextWidth(text)
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(text, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		for _, t := range arrayText {
+			pdf.SetXY(25, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+		err = pdf.Text(text)
+		if err != nil {
+			log.Print(err.Error())
+		}
+		y = y + step
+	}
+
+	pdf.SetXY(25, y)
+	text = fmt.Sprintf("%s: %s", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, usersRequisition.PlaceDeliveryDocuments)
+	widthText, err = pdf.MeasureTextWidth(text)
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(text, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		for _, t := range arrayText {
+			pdf.SetXY(25, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+		err = pdf.Text(text)
+		if err != nil {
+			log.Print(err.Error())
+		}
+		y = y + step
+	}
+
+	// pdf.Line(10, 40, 581, 40) //horizontal
+
+	// pdf.Line(10, vertLine_y, 10, step-20)      //vertical 1
+	// pdf.Line(34, vertLine_y+22, 34, step-20)   //vertical 2
+	// pdf.Line(542, vertLine_y+22, 542, step-20) //vertical 3
+	// pdf.Line(581, vertLine_y, 581, step-20)    //vertical 4
+
+	//vertLine_y = step - 20
+
+	//pdf.SetTextColorCMYK(100, 100, 100, 100)
+	// 	// err = pdf.SetFont("arialblack", "", 12)
+	// 	// if err != nil {
+	// 	// 	log.Print(err.Error())
+	// 	// }
+	// 	err = pdf.SetFont("times", "", 12)
+	// 	if err != nil {
+	// 		log.Print(err.Error())
+	// 	}
+
+	// 	position = remListWarehouse[i]
+
+	// 	if len(strconv.Itoa(num)) == 1 {
+	// 		pdf.SetX(19)
+	// 	} else if len(strconv.Itoa(num)) == 2 {
+	// 		pdf.SetX(16)
+	// 	} else {
+	// 		pdf.SetX(12)
+	// 	}
+	// 	pdf.SetY(step)
+	// 	step = step + 20
+
+	// 	err = pdf.SetFont("Inter-ExtraLight", "", 12)
+	// 	if err != nil {
+	// 		log.Print(err.Error())
+	// 	}
+	// 	err = pdf.Text(fmt.Sprintf("%v", num))
+	// 	if err != nil {
+	// 		log.Print(err.Error())
+	// 	}
+
+	// 	// err = pdf.SetFont("arialblack", "", 12)
+	// 	// if err != nil {
+	// 	// 	log.Print(err.Error())
+	// 	// }
+	// 	err = pdf.SetFont("times", "", 12)
+	// 	if err != nil {
+	// 		log.Print(err.Error())
+	// 	}
+
+	// 	pdf.SetX(37)
+	// 	text := strings.TrimSpace(position.Nomenclature)
+	// 	widthText, err := pdf.MeasureTextWidth(text)
+	// 	if err != nil {
+	// 		log.Print(err.Error())
+	// 	}
+
+	// 	if widthText > maxWidthPDF {
+
+	// 		var arrayText []string
+
+	// 		arrayText, err = pdf.SplitText(text, maxWidthPDF)
+	// 		if err != nil {
+	// 			log.Print(err.Error())
+	// 		}
+
+	// 		for i, t := range arrayText {
+
+	// 			pdf.SetX(36)
+	// 			if i == 0 {
+	// 				pdf.Line(10, vertLine_y, 10, step-2)   //vertical 1
+	// 				pdf.Line(34, vertLine_y, 34, step-2)   //vertical 2
+	// 				pdf.Line(542, vertLine_y, 542, step-2) //vertical 3
+	// 				pdf.Line(581, vertLine_y, 581, step-2) //vertical 4
+
+	// 				err = pdf.Text(t)
+	// 				step = step + 5
+	// 			}
+
+	// 			if err != nil {
+	// 				log.Print(err.Error())
+	// 			}
+
+	// 			if i == 1 {
+	// 				pdf.SetY(step - 10)
+
+	// 				err = pdf.Text(t)
+	// 				if err != nil {
+	// 					log.Print(err.Error())
+	// 				}
+
+	// 				pdf.SetX(543)
+	// 				err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
+	// 				if err != nil {
+	// 					log.Print(err.Error())
+	// 				}
+
+	// 				pdf.Line(10, step-7, 581, step-7) //horizontal
+	// 				step = step + 5
+	// 			}
+
+	// 			line++
+	// 		}
+
+	// 	} else {
+
+	// 		y := pdf.GetY()
+
+	// 		err = pdf.Text(text)
+	// 		if err != nil {
+	// 			log.Print(err.Error())
+	// 		}
+
+	// 		pdf.SetX(543)
+	// 		err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
+	// 		if err != nil {
+	// 			log.Print(err.Error())
+	// 		}
+
+	// 		pdf.Line(10, y+3, 581, y+3) //horizontal
+
+	// 		pdf.Line(10, vertLine_y, 10, y+3)   //vertical 1
+	// 		pdf.Line(34, vertLine_y, 34, y+3)   //vertical 2
+	// 		pdf.Line(542, vertLine_y, 542, y+3) //vertical 3
+	// 		pdf.Line(581, vertLine_y, 581, y+3) //vertical 4
+
+	// 		line++
+
+	// 	}
+	// 	i++
+	// 	num++
+	// }
+
+	err = pdf.WritePdf(fmt.Sprintf("./external/files/Заявка_№%v.pdf", usersRequisition.RequisitionNumber))
+
+	if err != nil {
+		log.Print(err.Error())
+
+		return false, err
+	}
+
+	return true, nil
 }

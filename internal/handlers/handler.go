@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	"telegrammBot/cons"
 	"telegrammBot/internal/models"
 )
 
@@ -26,7 +25,7 @@ func MovementsHandler() (error, models.ArrayRemainder) {
 
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", cons.MOVEMENTS_REQUEST, nil)
+	req, err := http.NewRequest("GET", os.Getenv("MOVEMENTS_REQUEST"), nil)
 	req.SetBasicAuth(os.Getenv("USERNAME_WEBSERVICE_1C"), os.Getenv("PASSWORD_WEBSERVICE_1C"))
 	resp, err := client.Do(req)
 
@@ -75,7 +74,7 @@ func RemainderHandler(warehouse string) (models.WarehouseRemainder, error) {
 		log.Fatalln(err)
 	}
 
-	req, err := http.NewRequest("POST", cons.REMAINDER_REQUEST, bytes.NewBuffer(bytesRepresentation))
+	req, err := http.NewRequest("POST", os.Getenv("REMAINDER_REQUEST"), bytes.NewBuffer(bytesRepresentation))
 	if err != nil {
 		log.Fatalln(err)
 		return models.WarehouseRemainder{}, fmt.Errorf("Bad POST request for remainder request:%W", err)
@@ -128,7 +127,7 @@ func WarehousesHandler() (models.Warehouses, error) {
 		log.Fatalln(err)
 	}
 
-	req, err := http.NewRequest("POST", cons.REMAINDER_REQUEST, bytes.NewBuffer(bytesRepresentation))
+	req, err := http.NewRequest("POST", os.Getenv("REMAINDER_REQUEST"), bytes.NewBuffer(bytesRepresentation))
 	if err != nil {
 		log.Fatalln(err)
 		return models.Warehouses{}, fmt.Errorf("Bad GET/POST request for remainder request:%W", err)
