@@ -82,7 +82,6 @@ var (
 	)
 
 	contests           = [4]string{"CONTEST1", "CONTEST2", "CONTEST3", "CONTEST4"}
-	documentsType      = [2]string{"DOCUMENT_TYPE1", "DOCUMENT_TYPE2"}
 	userPolling        = cache.NewCacheDataPolling()
 	msgToUser          string
 	buttonRemainder    = "Остатки"
@@ -555,6 +554,8 @@ func main() {
 							}
 							defer dbpool.Close()
 
+							dbpool.Config().MaxConns = 7
+
 							err = AppendRequisition(update.Message.Chat.ID, dbpool, ctx)
 
 							if err != nil {
@@ -564,7 +565,7 @@ func main() {
 								return
 							}
 
-							ok, err := ConverRequisitionToPDF(update.Message.Chat.ID)
+							ok, err := ConvertRequisitionToPDF(update.Message.Chat.ID)
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
@@ -586,12 +587,30 @@ func main() {
 									return
 								}
 
+								err := sentToTelegramm(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована!", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", nil, "", false)
+
+								if err != nil {
+									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+									log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+									return
+								}
+
+								//delete file reqisition's and struct
+
+								// Removing file from the directory
+								e := os.Remove(fmt.Sprintf("./external/files/Заявка_№%v.pdf", userPolling.Get(update.Message.Chat.ID).RequisitionNumber))
+								if e != nil {
+									log.Printf("ERROR: %v", fmt.Sprintf("Error delete file reqisition's: %+v\n", e.Error()))
+								}
+
+								userPolling.Delete(update.Message.Chat.ID)
+
 							}
 
 						}
 
 					} else if messageText == "Отменить заявку" {
-						//Удаляем из userPolling[userID]
+						userPolling.Delete(update.Message.Chat.ID)
 
 					} else {
 						//Сообщаем пользователю, что бы нажал одну из кнопок меню.
@@ -631,9 +650,10 @@ func main() {
 
 			case contests[3]:
 
-			case documentsType[0]:
+			case cons.CERTIFICATE.String():
 
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, cons.DOCUMENT_TYPE1)
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, string(cons.CERTIFICATE))
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.TableDB, cons.CERTIFICATE.String())
 
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
 
@@ -660,9 +680,10 @@ func main() {
 					}
 				}
 
-			case documentsType[1]:
+			case cons.DIPLOMA.String():
 
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, cons.DOCUMENT_TYPE2)
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, string(cons.DIPLOMA))
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.TableDB, cons.DIPLOMA.String())
 
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
 
@@ -1561,10 +1582,10 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.DOCUMENT_TYPE1, "DOCUMENT_TYPE1"))
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.CERTIFICATE), cons.CERTIFICATE.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.DOCUMENT_TYPE2, "DOCUMENT_TYPE2"))
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.DIPLOMA), cons.DIPLOMA.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton2)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1876,7 +1897,7 @@ func AppendRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) 
 	// }
 	// defer dbpool.Close()
 
-	row, err := dbpool.Query(ctx, "insert into requisitions (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning requisition_number", userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments)
+	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, time, expiration) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()))
 
 	if err != nil {
 		return fmt.Errorf("Query to db is failed: %W", err)
@@ -1898,7 +1919,7 @@ func AppendRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) 
 	return row.Err()
 }
 
-func ConverRequisitionToPDF(userID int64) (bool, error) {
+func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 	usersRequisition := userPolling.Get(userID)
 
@@ -1982,7 +2003,7 @@ func ConverRequisitionToPDF(userID int64) (bool, error) {
 
 	//step = 20.0
 
-	pdf.SetXY(135, 220)
+	pdf.SetXY(150, 220)
 	pdf.SetTextColorCMYK(100, 70, 0, 67)
 	err = pdf.SetFont("Merriweather-Bold", "", 14)
 	if err != nil {
@@ -1992,7 +2013,7 @@ func ConverRequisitionToPDF(userID int64) (bool, error) {
 	t := time.Now()
 	formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-	err = pdf.CellWithOption(nil, fmt.Sprintf("Заявка №%v от %v зарегистирована!", usersRequisition.RequisitionNumber, formattedTime), cellOption_Caption)
+	err = pdf.CellWithOption(nil, fmt.Sprintf("Заявка №%v от %v ", usersRequisition.RequisitionNumber, formattedTime), cellOption_Caption)
 	if err != nil {
 		log.Print(err.Error())
 	}

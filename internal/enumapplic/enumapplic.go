@@ -20,6 +20,7 @@ const (
 	CHECKING                                      //Проверка
 	CANSEL_CORRECTION                             //Отменить исправление
 	REQUISITION_NUMBER                            //Номер заявки
+	TableDB                                       //Имя таблицы базы данных
 )
 
 func (e ApplicEnum) String() string {
@@ -47,7 +48,7 @@ func (e ApplicEnum) String() string {
 	case DOCUMENT_TYPE:
 		return "Тип документа"
 	case PLACE_DELIVERY_OF_DOCUMENTS:
-		return "Место получения диплома/грамоты"
+		return "Место получения документа"
 	case CANSEL_CORRECTION:
 		return "Отменить исправление"
 	case REQUISITION_NUMBER:

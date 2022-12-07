@@ -56,7 +56,8 @@ type dataPolling struct {
 	Email                  string
 	DocumentType           string
 	PlaceDeliveryDocuments string
-	RequisitionNumber     int64
+	RequisitionNumber      int64
+	TableDB                string
 }
 
 //type userPollingCache map[int64]dataPolling
@@ -119,6 +120,8 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	case enumapplic.REQUISITION_NUMBER:
 		num, _ := strconv.Atoi(text)
 		st.RequisitionNumber = int64(num)
+	case enumapplic.TableDB:
+		st.TableDB = text
 	}
 	c.userPollingCache[userID] = st
 	c.mu.Unlock()
