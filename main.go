@@ -678,7 +678,7 @@ func main() {
 							} else {
 
 								numReq := userPolling.Get(update.Message.Chat.ID).RequisitionNumber
-								path_reqPDF := fmt.Sprintf("./external/files/Заявка_№%v.pdf", numReq)
+								path_reqPDF := fmt.Sprintf("./external/files/usersfiles/Заявка_№%v.pdf", numReq)
 
 								userPolling.Set(update.Message.Chat.ID, enumapplic.REQUISITION_PDF, path_reqPDF)
 
@@ -694,7 +694,7 @@ func main() {
 								t := time.Now()
 								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, true, fmt.Sprintf("Заявка №%v от %s (%s)", userPolling.Get(update.Message.Chat.ID).RequisitionNumber, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), "", "")
+								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, *userPolling, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), "", "")
 
 								if err != nil {
 
@@ -852,35 +852,22 @@ func main() {
 
 				}
 
-			// case cons.PLACE_DELIVERY_OF_DOCUMENTS2:
-
-			// 	cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
-
-			// 	if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
-
-			// 		userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
-			// 		cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
-
-			// 		err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
-
-			// 		if err != nil {
-			// 			zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-			// 			log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-			// 			return
-			// 		}
-
-			// 	}
-
-			case cons.PLACE_DELIVERY_OF_DOCUMENTS3:
+			case cons.PLACE_DELIVERY_OF_DOCUMENTS2:
 
 				cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
 
 				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS3)
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					//Меняем проверку данных на вопрос прикрепить фото работы
+
+					// cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					// err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1851,17 +1838,13 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			var rowsButton [][]tgbotapi.InlineKeyboardButton
 
 			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-			//inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-			inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS1, cons.PLACE_DELIVERY_OF_DOCUMENTS1))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-			// inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS2, cons.PLACE_DELIVERY_OF_DOCUMENTS2))
-			// rowsButton = append(rowsButton, inlineKeyboardButton2)
-
-			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS3, cons.PLACE_DELIVERY_OF_DOCUMENTS3))
-			rowsButton = append(rowsButton, inlineKeyboardButton3)
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS2, cons.PLACE_DELIVERY_OF_DOCUMENTS2))
+			rowsButton = append(rowsButton, inlineKeyboardButton2)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -2211,7 +2194,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 	//step = 20.0
 
-	pdf.SetXY(150, 220)
+	pdf.SetXY(200, 220)
 	pdf.SetTextColorCMYK(100, 70, 0, 67)
 	err = pdf.SetFont("Merriweather-Bold", "", 14)
 	if err != nil {
@@ -2505,7 +2488,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	// 	num++
 	// }
 
-	err = pdf.WritePdf(fmt.Sprintf("./external/files/Заявка_№%v.pdf", usersRequisition.RequisitionNumber))
+	err = pdf.WritePdf(fmt.Sprintf("./external/files/usersfiles/Заявка_№%v.pdf", usersRequisition.RequisitionNumber))
 
 	if err != nil {
 		log.Print(err.Error())
@@ -2516,12 +2499,12 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	return true, nil
 }
 
-func SentEmail(to string, userID int64, toAdmin bool, subject string, addFile string, message string) (bool, error) {
+func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin bool, subject string, addFile string, message string) (bool, error) {
+
+	usdat := userDat.Get(userID)
 
 	if toAdmin {
-
-		message = UserDataToString(userID)
-
+		message = UserDataToString(userID, userDat)
 	}
 
 	m := gomail.NewMessage()
@@ -2529,8 +2512,8 @@ func SentEmail(to string, userID int64, toAdmin bool, subject string, addFile st
 	m.SetHeader("From", os.Getenv("BOT_EMAIL"))
 	m.SetHeader("To", to)
 	m.SetHeader("Subject", subject)
-	m.Embed(userPolling.Get(userID).Photo)
-	m.Attach(userPolling.Get(userID).File)
+	m.Embed(usdat.Photo)
+	m.Attach(usdat.File)
 
 	// Set the email body. You can set plain text or html with text/html
 	m.SetBody("text/html", message)
@@ -2550,11 +2533,11 @@ func SentEmail(to string, userID int64, toAdmin bool, subject string, addFile st
 	return true, nil
 }
 
-func UserDataToString(userID int64) string {
+func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
+
+	usdata := userDat.Get(userID)
 
 	var text string
-
-	usdata := userPolling.Get(userID)
 
 	body := make([]string, 12)
 
@@ -2708,12 +2691,12 @@ func UserDataToStringForTelegramm(userID int64) string {
 
 	body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()))
-	body = append(body, fmt.Sprintf("      %s(%s)", "Прикреплена", usdata.Photo))
+	body = append(body, fmt.Sprintf("      %s", "Прикреплена"))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()))
-	body = append(body, fmt.Sprintf("      %s(%s)", "Прикреплена", usdata.File))
+	body = append(body, fmt.Sprintf("      %s", "Прикреплена"))
 	text = strings.Join(body, "\n")
 
 	return text
