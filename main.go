@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"telegrammBot/cons"
@@ -22,6 +24,7 @@ import (
 	"github.com/rs/zerolog"
 	zrlog "github.com/rs/zerolog/log"
 	"github.com/signintech/gopdf"
+	"gopkg.in/gomail.v2"
 
 	"github.com/joho/godotenv"
 )
@@ -164,6 +167,88 @@ func main() {
 
 		if update.Message != nil {
 
+			if update.Message.Photo != nil {
+
+				fmt.Printf("Получено фото!\n\n\n")
+
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PHOTO {
+
+					ph := *update.Message.Photo
+
+					max_quality := len(ph) - 1
+
+					go getFile(bot, update.Message.Chat.ID, ph[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
+
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FILE)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				} else if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE || cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE_CORRECTION {
+
+					ph := *update.Message.Photo
+
+					max_quality := len(ph) - 1
+
+					go getFile(bot, update.Message.Chat.ID, ph[max_quality].FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
+
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PHOTO_CORRECTION {
+
+					ph := *update.Message.Photo
+
+					max_quality := len(ph) - 1
+
+					go getFile(bot, update.Message.Chat.ID, ph[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
+
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			}
+
+			if update.Message.Document != nil {
+
+				ph := *update.Message.Document
+
+				go getFile(bot, update.Message.Chat.ID, ph.FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
+
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					return
+				}
+
+			}
+
 			messageByteText := bytes.TrimPrefix([]byte(update.Message.Text), []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
 			messageText := string(messageByteText[:])
 
@@ -199,15 +284,28 @@ func main() {
 
 				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PROJECT {
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					if userPolling.Get(update.Message.Chat.ID).Agree {
 
-					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
+						}
+
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
+
+					} else {
+
+						err = sentToTelegramm(bot, update.Message.Chat.ID, "Для продолжения необходимо дать согласние на обработку персональных данных. Или нажмите \"Отмена\"", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", nil, "", false)
+
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							return
+						}
 					}
-
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
 
 				}
 
@@ -579,7 +677,12 @@ func main() {
 
 							} else {
 
-								err = sentToTelegrammPDF(bot, update.Message.Chat.ID, fmt.Sprintf("./external/files/Заявка_№%v.pdf", userPolling.Get(update.Message.Chat.ID).RequisitionNumber), "")
+								numReq := userPolling.Get(update.Message.Chat.ID).RequisitionNumber
+								path_reqPDF := fmt.Sprintf("./external/files/Заявка_№%v.pdf", numReq)
+
+								userPolling.Set(update.Message.Chat.ID, enumapplic.REQUISITION_PDF, path_reqPDF)
+
+								err = sentToTelegrammPDF(bot, update.Message.Chat.ID, path_reqPDF, "", botcommand.UNDEFINED)
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %v\n", err))
@@ -587,23 +690,34 @@ func main() {
 									return
 								}
 
-								err := sentToTelegramm(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована!", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", nil, "", false)
+								// Отправляем на почту
+								t := time.Now()
+								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
+
+								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, true, fmt.Sprintf("Заявка №%v от %s (%s)", userPolling.Get(update.Message.Chat.ID).RequisitionNumber, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), "", "")
+
+								if err != nil {
+
+									zrlog.Fatal().Msg(fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
+									log.Printf("FATAL: %v", fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
+
+									fmt.Printf("%v", err)
+
+								}
+
+								if send {
+
+									go deleteUserPolling(update.Message.Chat.ID, *userPolling)
+
+								}
+
+								err = sentToTelegramm(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована!", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", nil, "", false)
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 									log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 									return
 								}
-
-								//delete file reqisition's and struct
-
-								// Removing file from the directory
-								e := os.Remove(fmt.Sprintf("./external/files/Заявка_№%v.pdf", userPolling.Get(update.Message.Chat.ID).RequisitionNumber))
-								if e != nil {
-									log.Printf("ERROR: %v", fmt.Sprintf("Error delete file reqisition's: %+v\n", e.Error()))
-								}
-
-								userPolling.Delete(update.Message.Chat.ID)
 
 							}
 
@@ -639,7 +753,10 @@ func main() {
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST2)
 
-				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки для участия в данном проекте.....бла бла бла. %v, для заполнения заявки нажмите \"Продолжить\"", update.CallbackQuery.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.SELECT_PROJECT, "", nil, "", false)
+				//Concise description of contest
+				description := GetConciseDescription(contests[1])
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", nil, "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -717,9 +834,15 @@ func main() {
 				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
 
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS1)
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					//Меняем проверку данных на вопрос прикрепить фото работы
+
+					//cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					//err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -937,6 +1060,50 @@ func main() {
 						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
+				}
+
+			case enumapplic.PHOTO.String(): //CallBackQwery "PHOTO"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case enumapplic.FILE.String(): //CallBackQwery "FILE"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FILE_CORRECTION)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+			case cons.AGREE.String():
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Agree, "")
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Согласие на обработку персональных данных получено", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", nil, "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					return
 				}
 
 			}
@@ -1370,6 +1537,8 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			inlineKeyboardButton9 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton10 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton11 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton12 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton13 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()), enumapplic.FNP.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
@@ -1401,6 +1570,12 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton10)
 
+			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()), enumapplic.PHOTO.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton11)
+
+			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()), enumapplic.FILE.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton12)
+
 			// inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s", enumapplic.CANSEL_CORRECTION.String()), enumapplic.CANSEL_CORRECTION.String()))
 			// rowsButton = append(rowsButton, inlineKeyboardButton11)
 
@@ -1429,8 +1604,8 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg = tgbotapi.NewMessage(id, message, styleText)
 
 			rowsButton = nil
-			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s", enumapplic.CANSEL_CORRECTION.String()), enumapplic.CANSEL_CORRECTION.String()))
-			rowsButton = append(rowsButton, inlineKeyboardButton11)
+			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s", enumapplic.CANSEL_CORRECTION.String()), enumapplic.CANSEL_CORRECTION.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton13)
 			inlineKeyboardMarkup = tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
@@ -1495,18 +1670,87 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 	case botcommand.SELECT_PROJECT:
 
-		msg := tgbotapi.NewMessage(id, message, styleText) //Описание (инструкция) подачи заявки для участия в выбранном проекте
+		if !thisIsAdmin(id) {
 
-		if thisIsAdmin(id) {
-			msg.ReplyMarkup = keyboardAdmin
-		} else {
+			msg := tgbotapi.NewMessage(id, message, styleText) //Описание (инструкция) подачи заявки для участия в выбранном проекте
+
 			msg.ReplyMarkup = keyboardApplicationStart
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+
+			msg = tgbotapi.NewMessage(id, "или здесь", styleText)
+
+			msg.ReplyMarkup = keyboardApplicationStart
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+
+			err := sentToTelegrammPDF(bot, id, "./external/files/Положение ТК Синичка невеличка и ее друзья.pdf", "", botcommand.SELECT_PROJECT)
+
+			if err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+
+			body := make([]string, 3)
+			body = append(body, "В любой момент вы можете отменить заявку, нажав \"Отмена\"")
+			body = append(body, "")
+			body = append(body, "Для продолжения заполнения заявки, необходимо дать согласие на обработку персональных данных и нажать \"Продолжить\".\n Ознакомиться с пользователським соглашением и политикой конфидециальности\n можно по ссылке https://vk.com/topic-138597952_49458742 ")
+			text := strings.Join(body, "\n")
+
+			var rowsButton [][]tgbotapi.InlineKeyboardButton
+
+			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.AGREE), cons.AGREE.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton1)
+
+			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+
+			msg = tgbotapi.NewMessage(id, text, cons.StyleTextCommon)
+			msg.ReplyMarkup = inlineKeyboardMarkup
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+
 		}
 
-		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
-			return err
+	case botcommand.WAITING_FOR_ACCEPTANCE:
+
+		if !thisIsAdmin(id) {
+
+			msg := tgbotapi.NewMessage(id, message, cons.StyleTextCommon)
+
+			if !userPolling.Get(id).Agree {
+				var rowsButton [][]tgbotapi.InlineKeyboardButton
+
+				inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+				inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.AGREE), cons.AGREE.String()))
+				rowsButton = append(rowsButton, inlineKeyboardButton1)
+				inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+
+				msg.ReplyMarkup = inlineKeyboardMarkup
+			} else {
+				msg.ReplyMarkup = keyboardApplicationStart
+			}
+
+			if _, err := bot.Send(msg); err != nil {
+				zrlog.Panic().Msg(err.Error())
+				log.Printf("PANIC: %v", err.Error())
+				return err
+			}
+
 		}
 
 	case botcommand.CANCEL:
@@ -1647,69 +1891,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			return err
 		}
 
-		usdata := userPolling.Get(id)
-
-		body := make([]string, 12)
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.Contest))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.FNP))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
-		body = append(body, fmt.Sprintf("      %v", usdata.Age))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.NameInstitution))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.Locality))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <b>%s:</b>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.NamingUnit))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.PublicationTitle))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		if usdata.LeaderFNP == "" {
-			body = append(body, fmt.Sprintf("(%v). <s><i><b>%s:</b></i></s>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
-			body = append(body, fmt.Sprintf("      %s", "-"))
-		} else {
-			body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
-			body = append(body, fmt.Sprintf("      %s", usdata.LeaderFNP))
-		}
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.Email))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.DocumentType))
-		message = strings.Join(body, "\n")
-
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
-		body = append(body, fmt.Sprintf("      %s", usdata.PlaceDeliveryDocuments))
-		message = strings.Join(body, "\n")
+		message = UserDataToStringForTelegramm(id)
 
 		msg = tgbotapi.NewMessage(id, message, cons.StyleTextHTML)
 
@@ -1762,26 +1944,52 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 }
 
-func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id string) error {
+func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id string, command botcommand.BotCommand) error {
 
 	var msg tgbotapi.DocumentConfig
 
-	if file_id != "" {
-		msg = tgbotapi.NewDocumentShare(id, file_id)
-	} else {
-		msg = tgbotapi.NewDocumentUpload(id, pdf_path)
-	}
+	switch command {
 
-	if thisIsAdmin(id) {
-		msg.ReplyMarkup = keyboardAdmin
-	} else {
-		msg.ReplyMarkup = keyboardMainMenue
-	}
+	case botcommand.SELECT_PROJECT:
 
-	if _, err := bot.Send(msg); err != nil {
-		zrlog.Panic().Msg(err.Error())
-		log.Printf("PANIC: %v", err.Error())
-		return err
+		if file_id != "" {
+			msg = tgbotapi.NewDocumentShare(id, file_id)
+		} else {
+			msg = tgbotapi.NewDocumentUpload(id, pdf_path)
+		}
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardApplicationStart
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
+	default:
+
+		if file_id != "" {
+			msg = tgbotapi.NewDocumentShare(id, file_id)
+		} else {
+			msg = tgbotapi.NewDocumentUpload(id, pdf_path)
+		}
+
+		if thisIsAdmin(id) {
+			msg.ReplyMarkup = keyboardAdmin
+		} else {
+			msg.ReplyMarkup = keyboardMainMenue
+		}
+
+		if _, err := bot.Send(msg); err != nil {
+			zrlog.Panic().Msg(err.Error())
+			log.Printf("PANIC: %v", err.Error())
+			return err
+		}
+
 	}
 
 	return nil
@@ -1897,7 +2105,7 @@ func AppendRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) 
 	// }
 	// defer dbpool.Close()
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, time, expiration) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()))
+	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, start_date, expiration, close_date) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()), 0)
 
 	if err != nil {
 		return fmt.Errorf("Query to db is failed: %W", err)
@@ -2306,4 +2514,338 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func SentEmail(to string, userID int64, toAdmin bool, subject string, addFile string, message string) (bool, error) {
+
+	if toAdmin {
+
+		message = UserDataToString(userID)
+
+	}
+
+	m := gomail.NewMessage()
+
+	m.SetHeader("From", os.Getenv("BOT_EMAIL"))
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.Embed(userPolling.Get(userID).Photo)
+	m.Attach(userPolling.Get(userID).File)
+
+	// Set the email body. You can set plain text or html with text/html
+	m.SetBody("text/html", message)
+
+	if addFile != "" {
+		m.Attach(addFile)
+	}
+
+	// Settings for SMTP server
+	d := gomail.NewDialer(os.Getenv("SMTP_SERVER"), 465, os.Getenv("BOT_LOGIN_EMAIL"), os.Getenv("BOT_PASSWORD_EMAIL"))
+
+	if err := d.DialAndSend(m); err != nil {
+		fmt.Println(err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func UserDataToString(userID int64) string {
+
+	var text string
+
+	usdata := userPolling.Get(userID)
+
+	body := make([]string, 12)
+
+	//<img src=\"./external/imgs/Titmouse.png\" width=\"300\" height=\"300\" alt=\"Синичка невеличка и ee друзья\" align=\"middle\">
+
+	body = append(body, "<!DOCTYPE html><html lang=\"ru\"><body><dl>")
+
+	body = append(body, "<style type=\"text/css\">BODY {margin: 0; /* Убираем отступы в браузере */}#toplayer {background: #F5FFFA; /* Цвет фона */height: 800px /* Высота слоя */}</style>")
+
+	//body = append(body, fmt.Sprintf("<p>%v</p>", "___________________________________"))
+	body = append(body, fmt.Sprintf("<div id=\"toplayer\"><dt><p><b>(%v). %s:</b></p></dt>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Contest))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("<p>%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.FNP))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %v</p></dd>", usdata.Age))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NameInstitution))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.Locality))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NamingUnit))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PublicationTitle))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	if usdata.LeaderFNP == "" {
+		body = append(body, fmt.Sprintf("<dt><p><b>(%v).</b> <s><i><b>%s:</b></i></s></p></dt>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", "-"))
+	} else {
+		body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.LeaderFNP))
+	}
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Email))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.DocumentType))
+	text = strings.Join(body, "\n")
+
+	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PlaceDeliveryDocuments))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", "Прикреплена"))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd></div>", "Прикреплена"))
+	text = strings.Join(body, "\n")
+
+	body = append(body, "</dl></body></html>")
+	text = strings.Join(body, "\n")
+
+	return text
+}
+
+func UserDataToStringForTelegramm(userID int64) string {
+
+	var text string
+
+	usdata := userPolling.Get(userID)
+
+	body := make([]string, 12)
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.Contest))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.FNP))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
+	body = append(body, fmt.Sprintf("      %v", usdata.Age))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.NameInstitution))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.Locality))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.NamingUnit))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.PublicationTitle))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	if usdata.LeaderFNP == "" {
+		body = append(body, fmt.Sprintf("(%v). <s><i><b>%s:</b></i></s>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+		body = append(body, fmt.Sprintf("      %s", "-"))
+	} else {
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+		body = append(body, fmt.Sprintf("      %s", usdata.LeaderFNP))
+	}
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.Email))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.DocumentType))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+	body = append(body, fmt.Sprintf("      %s", usdata.PlaceDeliveryDocuments))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()))
+	body = append(body, fmt.Sprintf("      %s(%s)", "Прикреплена", usdata.Photo))
+	text = strings.Join(body, "\n")
+
+	body = append(body, fmt.Sprintf("%v", "___________________________________"))
+	body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()))
+	body = append(body, fmt.Sprintf("      %s(%s)", "Прикреплена", usdata.File))
+	text = strings.Join(body, "\n")
+
+	return text
+}
+
+func GetConciseDescription(contest string) string {
+
+	var text string
+
+	body := make([]string, 14)
+
+	if contest == contests[1] {
+
+		body = append(body, "<b>В заявке потребуется указать следующие данные:\n</b>")
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.CONTEST.EnumIndex(), enumapplic.FNP.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+		body = append(body, fmt.Sprintf("(13). <b>%s</b>", "Фото работы"))
+		body = append(body, fmt.Sprintf("(14). <b>%s</b>", "Квитанцию об оплате организационного взноса"))
+		body = append(body, "\n")
+		body = append(body, "Подробнее с условиями конкурса можно ознакомиться на сайте https://vk.com/topic-138597952_49394008\n")
+		body = append(body, "\n")
+
+		text = strings.Join(body, "\n")
+	}
+
+	return text
+}
+
+func downloadFile(filepath string, url string) (err error) {
+
+	// Create the file
+
+	out, err := os.Create(filepath)
+
+	//out, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
+
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Writer the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.CacheDataPolling, botstateindex int64) {
+
+	fmt.Printf("Входные данные %v\n\n", userData)
+
+	url, err := bot.GetFileDirectURL(fileID)
+
+	if err != nil {
+		zrlog.Fatal().Msg(fmt.Sprintf("bot can't get url's this file: %+v\n", err.Error()))
+		log.Printf("FATAL: %v", fmt.Sprintf("bot can't get url's this file: %+v\n", err.Error()))
+	} else {
+
+		filename := path.Base(url)
+
+		file_path := fmt.Sprintf("%s/%v_%v_%s", cons.FILE_PATH, userID, botstateindex, filename)
+
+		if botstateindex == botstate.ASK_PHOTO.EnumIndex() {
+			userPolling.Set(userID, enumapplic.PHOTO, file_path)
+			fmt.Printf("Здесь\n\n")
+		}
+
+		if botstateindex == botstate.ASK_FILE.EnumIndex() {
+			userPolling.Set(userID, enumapplic.FILE, file_path)
+			fmt.Printf("Тут!!!!!!!!\n\n\n")
+		}
+
+		err = downloadFile(file_path, url)
+
+		if err != nil {
+			zrlog.Fatal().Msg(fmt.Sprintf("bot can't download this file: %+v\n", err.Error()))
+			log.Printf("FATAL: %v", fmt.Sprintf("bot can't download this file: %+v\n", err.Error()))
+
+		} else {
+			fmt.Printf("Скачан файл!\n\n\n")
+		}
+
+		fmt.Printf("Выходные данные %v\n\n", userData)
+	}
+
+}
+
+func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
+
+	userDP := userData.Get(userID)
+
+	fmt.Printf("Сейчас будем удалять опросник:\n\n\n%v\n\n\n\n", userDP)
+
+	//delete user's files and datas in hashmap
+
+	//removing file from the directory
+	e := os.Remove(userDP.RequisitionPDF)
+	if e != nil {
+		zrlog.Fatal().Msg(fmt.Sprintf("Error delete reqisition PDF file: %+v\n", e.Error()))
+		log.Printf("ERROR: %v", fmt.Sprintf("Error delete reqisition PDF file: %+v\n", e.Error()))
+	}
+
+	e = os.Remove(userDP.Photo)
+	if e != nil {
+		zrlog.Fatal().Msg(fmt.Sprintf("Error delete file user's foto: %+v\n", e.Error()))
+		log.Printf("ERROR: %v", fmt.Sprintf("Error delete file user's foto: %+v\n", e.Error()))
+	}
+
+	e = os.Remove(userDP.File)
+	if e != nil {
+		zrlog.Fatal().Msg(fmt.Sprintf("Error delete file user's (paid check): %+v\n", e.Error()))
+		log.Printf("ERROR: %v", fmt.Sprintf("Error delete file user's (paid check): %+v\n", e.Error()))
+	}
+
+	userData.Delete(userID)
 }

@@ -57,14 +57,18 @@ type dataPolling struct {
 	DocumentType           string
 	PlaceDeliveryDocuments string
 	RequisitionNumber      int64
+	RequisitionPDF         string
 	TableDB                string
+	Agree                  bool
+	Photo                  string
+	File                   string
 }
 
 //type userPollingCache map[int64]dataPolling
 
 type CacheDataPolling struct {
 	userPollingCache map[int64]dataPolling
-	mu               sync.RWMutex
+	//mu               sync.RWMutex
 }
 
 func NewCacheDataPolling() *CacheDataPolling {
@@ -78,18 +82,25 @@ func NewCacheDataPolling() *CacheDataPolling {
 // }
 
 func (c *CacheDataPolling) Get(userID int64) dataPolling {
-	c.mu.RLock()
+	//c.mu.RLock()
+	var mu sync.RWMutex
+	mu.RLock()
 	st, found := c.userPollingCache[userID]
 	if !found {
-		c.mu.RUnlock()
+		//c.mu.RUnlock()
+		mu.RUnlock()
 		return st
 	}
-	c.mu.RUnlock()
+	//c.mu.RUnlock()
+	mu.RUnlock()
 	return st
 }
 
 func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
-	c.mu.Lock()
+	//c.mu.Lock()
+	var mu sync.RWMutex
+	mu.RLock()
+
 	st := c.userPollingCache[userID]
 
 	switch enum {
@@ -117,14 +128,23 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 		st.DocumentType = text
 	case enumapplic.PLACE_DELIVERY_OF_DOCUMENTS:
 		st.PlaceDeliveryDocuments = text
+	case enumapplic.PHOTO:
+		st.Photo = text
+	case enumapplic.FILE:
+		st.File = text
 	case enumapplic.REQUISITION_NUMBER:
 		num, _ := strconv.Atoi(text)
 		st.RequisitionNumber = int64(num)
+	case enumapplic.REQUISITION_PDF:
+		st.RequisitionPDF = text
 	case enumapplic.TableDB:
 		st.TableDB = text
+	case enumapplic.Agree:
+		st.Agree = true
 	}
 	c.userPollingCache[userID] = st
-	c.mu.Unlock()
+	//c.mu.Unlock()
+	mu.RUnlock()
 }
 
 func (c *CacheDataPolling) Delete(userID int64) {

@@ -22,6 +22,7 @@ const (
 	START
 	SELECT_CORRECTION
 	RECORD_TO_DB
+	WAITING_FOR_ACCEPTANCE
 )
 
 func (c BotCommand) String() string {

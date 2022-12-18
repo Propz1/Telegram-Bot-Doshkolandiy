@@ -17,10 +17,14 @@ const (
 	EMAIL                                         //e-mail
 	DOCUMENT_TYPE                                 //Диплом куратора или грамота
 	PLACE_DELIVERY_OF_DOCUMENTS                   //Место получения диплома/грамоты
+	PHOTO                                         //Фото работы
+	FILE                                          //Квитанция об оплате
 	CHECKING                                      //Проверка
 	CANSEL_CORRECTION                             //Отменить исправление
 	REQUISITION_NUMBER                            //Номер заявки
+	REQUISITION_PDF                               //Путь к заявке в PDF
 	TableDB                                       //Имя таблицы базы данных
+	Agree                                         //Согласие пользователя на обработку персонльных данных
 )
 
 func (e ApplicEnum) String() string {
@@ -49,6 +53,10 @@ func (e ApplicEnum) String() string {
 		return "Тип документа"
 	case PLACE_DELIVERY_OF_DOCUMENTS:
 		return "Место получения документа"
+	case PHOTO:
+		return "Фотография работы"
+	case FILE:
+		return "Квитанция об оплате"
 	case CANSEL_CORRECTION:
 		return "Отменить исправление"
 	case REQUISITION_NUMBER:
