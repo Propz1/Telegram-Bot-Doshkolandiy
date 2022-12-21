@@ -16,7 +16,6 @@ import (
 	"telegrammBot/internal/botstate"
 	"telegrammBot/internal/cache"
 	"telegrammBot/internal/enumapplic"
-	"telegrammBot/internal/models"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -90,8 +89,6 @@ var (
 	buttonRemainder    = "Остатки"
 	buttonMovements    = "Перемещения"
 	buttonMovementsPDF = "Перемещения PDF"
-	remainder          models.Remainder
-	requestWarehouses  = "Выберите склад"
 	botsCommand        = [10]string{"CompletedApplication", "SendPublication", "Movements", "MovementsPDF", "/start", "EnterPassword", "Settings", "AppendUser", "ShowUsers", "DeleteUser"}
 
 	cellOption_Caption = gopdf.CellOption{Align: 16}
@@ -181,7 +178,7 @@ func main() {
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FILE)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -199,7 +196,7 @@ func main() {
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -219,7 +216,7 @@ func main() {
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -239,7 +236,7 @@ func main() {
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -252,13 +249,11 @@ func main() {
 			messageByteText := bytes.TrimPrefix([]byte(update.Message.Text), []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
 			messageText := string(messageByteText[:])
 
-			//fmt.Printf("%v\n", messageText)
-
 			switch messageText {
 
 			case "/start":
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здравствуйте, %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.START, "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здравствуйте, %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.START, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -271,7 +266,7 @@ func main() {
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_PROJECT)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION, "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION, "", "", false)
 
 				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
 
@@ -286,7 +281,7 @@ func main() {
 
 					if userPolling.Get(update.Message.Chat.ID).Agree {
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -298,7 +293,7 @@ func main() {
 
 					} else {
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, "Для продолжения необходимо дать согласние на обработку персональных данных. Или нажмите \"Отмена\"", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", nil, "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, "Для продолжения необходимо дать согласние на обработку персональных данных. Или нажмите \"Отмена\"", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -313,7 +308,7 @@ func main() {
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", "", false)
 
 				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
 
@@ -326,7 +321,7 @@ func main() {
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", "", false)
 
 				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
 
@@ -339,7 +334,7 @@ func main() {
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -348,7 +343,7 @@ func main() {
 
 			case "Настройки":
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите действие:", nil, cons.StyleTextCommon, botcommand.SETTINGS, "", nil, "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите действие:", nil, cons.StyleTextCommon, botcommand.SETTINGS, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -368,7 +363,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_AGE)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -382,7 +377,7 @@ func main() {
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -398,7 +393,7 @@ func main() {
 						// zrlog.Fatal().Msg(fmt.Sprintf("Error convert age: %+v\n", err.Error()))
 						log.Printf("FATAL: %v", fmt.Sprintf("Error convert age: %+v\n", err.Error()))
 
-						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -407,7 +402,7 @@ func main() {
 						}
 					} else if age > 120 || age == 0 || age < 0 {
 
-						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Пожалуйста, укажите \"реальный возраст\" (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Пожалуйста, укажите \"реальный возраст\" (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -420,7 +415,7 @@ func main() {
 						userPolling.Set(update.Message.Chat.ID, enumapplic.AGE, messageText)
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_NAME_INSTITUTION)
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -434,7 +429,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.AGE, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -447,7 +442,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.NAME_INSTITUTION, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_LOCALITY)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -460,7 +455,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.NAME_INSTITUTION, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -473,7 +468,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.LOCALITY, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_NAMING_UNIT)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -486,7 +481,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.LOCALITY, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -499,7 +494,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.NAMING_UNIT, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_PUBLICATION_TITLE)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -512,7 +507,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.NAMING_UNIT, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -525,7 +520,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_TITLE, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP_LEADER)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (нажать \"Далее\" если нет руководителя):", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_FNP_LEADER, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (нажать \"Далее\" если нет руководителя):", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_FNP_LEADER, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -538,7 +533,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_TITLE, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -553,7 +548,7 @@ func main() {
 						userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, messageText)
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_EMAIL)
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -566,7 +561,7 @@ func main() {
 						userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, "")
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_EMAIL)
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -580,7 +575,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -593,7 +588,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -606,7 +601,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -620,7 +615,7 @@ func main() {
 
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.SELECT_CORRECTION)
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите пункт который нужно исправить:", nil, cons.StyleTextCommon, botcommand.SELECT_CORRECTION, "", nil, "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите пункт который нужно исправить:", nil, cons.StyleTextCommon, botcommand.SELECT_CORRECTION, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -632,7 +627,7 @@ func main() {
 
 						if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_CHECK_DATA {
 
-							err := sentToTelegramm(bot, update.Message.Chat.ID, "Регистрирую...", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", nil, "", false)
+							err := sentToTelegramm(bot, update.Message.Chat.ID, "Регистрирую...", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -690,7 +685,7 @@ func main() {
 									return
 								}
 
-								// Отправляем на почту
+								//Email
 								t := time.Now()
 								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
@@ -711,7 +706,7 @@ func main() {
 
 								}
 
-								err = sentToTelegramm(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована!", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", nil, "", false)
+								err = sentToTelegramm(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована!", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -742,9 +737,6 @@ func main() {
 			callbackQueryData := bytes.TrimPrefix([]byte(update.CallbackQuery.Data), []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
 			callbackQueryText := string(callbackQueryData[:])
 
-			// var warehouse string
-			// var PDF bool
-
 			switch callbackQueryText {
 
 			case contests[0]:
@@ -756,7 +748,7 @@ func main() {
 				//Concise description of contest
 				description := GetConciseDescription(contests[1])
 
-				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", nil, "", false)
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -776,7 +768,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -788,7 +780,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -806,7 +798,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -818,7 +810,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -842,7 +834,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -867,7 +859,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -882,7 +874,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -898,7 +890,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -913,7 +905,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_AGE_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -929,7 +921,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_NAME_INSTITUTION_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -945,7 +937,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_LOCALITY_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -961,7 +953,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_NAMING_UNIT_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -977,7 +969,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PUBLICATION_TITLE_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -992,7 +984,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_LEADER_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя:", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя:", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1008,7 +1000,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_EMAIL_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1024,7 +1016,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1040,7 +1032,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1055,7 +1047,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1071,7 +1063,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FILE_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", nil, "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1085,7 +1077,7 @@ func main() {
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Agree, "")
 
-				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Согласие на обработку персональных данных получено", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", nil, "", false)
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Согласие на обработку персональных данных получено", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1094,416 +1086,12 @@ func main() {
 				}
 
 			}
-
-			// if ok := strings.Contains(callbackQueryText, "RemainderRequest_"); ok {
-
-			// 	if ok := strings.Contains(callbackQueryText, "_PDF"); ok {
-			// 		PDF = true
-			// 		warehouse = callbackQueryText[17 : len(callbackQueryText)-4]
-			// 	} else {
-			// 		PDF = false
-			// 		warehouse = callbackQueryText[17:]
-			// 	}
-
-			// 	fmt.Printf("warehouse:%v\n\n", warehouse)
-
-			// 	switch PDF {
-
-			// 	case true:
-
-			// 		var position models.RemainderQuantity
-
-			// 		warehouseRemainder, err := handlers.RemainderHandler(warehouse)
-
-			// 		remListWarehouse := warehouseRemainder.RemainderList
-
-			// 		sort.Sort(models.RemainderList(remListWarehouse))
-
-			// 		if err != nil {
-			// 			zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
-			// 			log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %+v\n", err.Error()))
-			// 			msgToUser = err.Error()
-			// 		} else {
-
-			// 			pdf := gopdf.GoPdf{}
-			// 			pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-
-			// 			err := pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Merriweather-Bold.ttf")
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			err = pdf.AddTTFFont("arialblack", "./external/fonts/ttf/arialblack.ttf")
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			err = pdf.AddTTFFont("times", "./external/fonts/ttf/times.ttf")
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			var capacityLine int = 41
-
-			// 			num := 1
-			// 			i := 0
-			// 			step := 15.0
-			// 			line := 0
-			// 			page := 0
-			// 			var vertLine_y float64
-
-			// 			for i <= len(remListWarehouse)-1 {
-
-			// 				if line >= capacityLine || page == 0 {
-
-			// 					pdf.AddPage()
-			// 					line = 1
-			// 					page = pdf.GetNumberOfPages()
-
-			// 					step = 15.0
-
-			// 					vertLine_y = 18
-
-			// 					pdf.SetLineWidth(0.2)
-			// 					pdf.Line(10, step+3, 581, step+3) //horizontal
-
-			// 					pdf.SetXY(560, step)
-			// 					pdf.SetTextColorCMYK(100, 100, 100, 100)
-			// 					err := pdf.SetFont("a_AlternaNr", "", 10)
-			// 					if err != nil {
-			// 						log.Print(err.Error())
-			// 					}
-			// 					err = pdf.Text(fmt.Sprintf("стр %v", page))
-			// 					if err != nil {
-			// 						log.Print(err.Error())
-			// 					}
-			// 					line++
-
-			// 					step = 20.0
-
-			// 					pdf.SetXY(260, step)
-			// 					step = 60
-			// 					pdf.SetTextColorCMYK(0, 100, 100, 0)
-			// 					err = pdf.SetFont("Merriweather-Bold", "", 14)
-			// 					if err != nil {
-			// 						log.Print(err.Error())
-			// 					}
-			// 					err = pdf.CellWithOption(nil, warehouse, cellOption_Caption)
-			// 					if err != nil {
-			// 						log.Print(err.Error())
-			// 					}
-
-			// 					pdf.Line(10, 40, 581, 40) //horizontal
-
-			// 					pdf.Line(10, vertLine_y, 10, step-20)      //vertical 1
-			// 					pdf.Line(34, vertLine_y+22, 34, step-20)   //vertical 2
-			// 					pdf.Line(542, vertLine_y+22, 542, step-20) //vertical 3
-			// 					pdf.Line(581, vertLine_y, 581, step-20)    //vertical 4
-
-			// 					vertLine_y = step - 20
-
-			// 					line++
-			// 				}
-
-			// 				pdf.SetTextColorCMYK(100, 100, 100, 100)
-			// 				// err = pdf.SetFont("arialblack", "", 12)
-			// 				// if err != nil {
-			// 				// 	log.Print(err.Error())
-			// 				// }
-			// 				err = pdf.SetFont("times", "", 12)
-			// 				if err != nil {
-			// 					log.Print(err.Error())
-			// 				}
-
-			// 				position = remListWarehouse[i]
-
-			// 				if len(strconv.Itoa(num)) == 1 {
-			// 					pdf.SetX(19)
-			// 				} else if len(strconv.Itoa(num)) == 2 {
-			// 					pdf.SetX(16)
-			// 				} else {
-			// 					pdf.SetX(12)
-			// 				}
-			// 				pdf.SetY(step)
-			// 				step = step + 20
-
-			// 				err = pdf.SetFont("Inter-ExtraLight", "", 12)
-			// 				if err != nil {
-			// 					log.Print(err.Error())
-			// 				}
-			// 				err = pdf.Text(fmt.Sprintf("%v", num))
-			// 				if err != nil {
-			// 					log.Print(err.Error())
-			// 				}
-
-			// 				// err = pdf.SetFont("arialblack", "", 12)
-			// 				// if err != nil {
-			// 				// 	log.Print(err.Error())
-			// 				// }
-			// 				err = pdf.SetFont("times", "", 12)
-			// 				if err != nil {
-			// 					log.Print(err.Error())
-			// 				}
-
-			// 				pdf.SetX(37)
-			// 				text := strings.TrimSpace(position.Nomenclature)
-			// 				widthText, err := pdf.MeasureTextWidth(text)
-			// 				if err != nil {
-			// 					log.Print(err.Error())
-			// 				}
-
-			// 				if widthText > maxWidthPDF {
-
-			// 					var arrayText []string
-
-			// 					arrayText, err = pdf.SplitText(text, maxWidthPDF)
-			// 					if err != nil {
-			// 						log.Print(err.Error())
-			// 					}
-
-			// 					for i, t := range arrayText {
-
-			// 						pdf.SetX(36)
-			// 						if i == 0 {
-			// 							pdf.Line(10, vertLine_y, 10, step-2)   //vertical 1
-			// 							pdf.Line(34, vertLine_y, 34, step-2)   //vertical 2
-			// 							pdf.Line(542, vertLine_y, 542, step-2) //vertical 3
-			// 							pdf.Line(581, vertLine_y, 581, step-2) //vertical 4
-
-			// 							err = pdf.Text(t)
-			// 							step = step + 5
-			// 						}
-
-			// 						if err != nil {
-			// 							log.Print(err.Error())
-			// 						}
-
-			// 						if i == 1 {
-			// 							pdf.SetY(step - 10)
-
-			// 							err = pdf.Text(t)
-			// 							if err != nil {
-			// 								log.Print(err.Error())
-			// 							}
-
-			// 							pdf.SetX(543)
-			// 							err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
-			// 							if err != nil {
-			// 								log.Print(err.Error())
-			// 							}
-
-			// 							pdf.Line(10, step-7, 581, step-7) //horizontal
-			// 							step = step + 5
-			// 						}
-
-			// 						line++
-			// 					}
-
-			// 				} else {
-
-			// 					y := pdf.GetY()
-
-			// 					err = pdf.Text(text)
-			// 					if err != nil {
-			// 						log.Print(err.Error())
-			// 					}
-
-			// 					pdf.SetX(543)
-			// 					err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
-			// 					if err != nil {
-			// 						log.Print(err.Error())
-			// 					}
-
-			// 					pdf.Line(10, y+3, 581, y+3) //horizontal
-
-			// 					pdf.Line(10, vertLine_y, 10, y+3)   //vertical 1
-			// 					pdf.Line(34, vertLine_y, 34, y+3)   //vertical 2
-			// 					pdf.Line(542, vertLine_y, 542, y+3) //vertical 3
-			// 					pdf.Line(581, vertLine_y, 581, y+3) //vertical 4
-
-			// 					line++
-
-			// 				}
-			// 				i++
-			// 				num++
-			// 			}
-
-			// 			err = pdf.WritePdf(fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse))
-
-			// 			if err != nil {
-			// 				log.Print(err.Error())
-			// 			}
-
-			// 			// err = pdf.Image("./imgs/test.jpg", 0.5, 0.5, nil) //print image
-			// 			// if err != nil {
-			// 			// 	log.Print(err.Error())
-			// 			// 	return
-			// 			// }
-
-			// 			err = sentToTelegrammPDF(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("./external/files/Quantity_%s.pdf", warehouse), "")
-
-			// 			if err != nil {
-			// 				zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %v\n", err))
-			// 				log.Printf("FATAL: %v", fmt.Sprintf("Error sending file pdf to user: %v\n", err))
-			// 				return
-			// 			}
-
-			// 		}
-
-			// 	case false:
-
-			// 		warehouseRemainder, err := handlers.RemainderHandler(warehouse)
-
-			// 		remListWarehouse := warehouseRemainder.RemainderList
-
-			// 		if err != nil {
-			// 			zrlog.Fatal().Msg(fmt.Sprintf("Error getting response from web-service 1C: %v\n", err))
-			// 			log.Printf("FATAL: %v", fmt.Sprintf("Error getting response from web-service 1C: %v\n", err))
-			// 			msgToUser = err.Error()
-			// 		} else {
-
-			// 			num := 1
-			// 			i := 0
-			// 			body := make([]string, i)
-			// 			lenBody := make(map[int]int, i)
-
-			// 			for i <= len(remListWarehouse)-1 {
-
-			// 				infoQuantity := remListWarehouse[i]
-
-			// 				body = append(body, fmt.Sprintf("%v", "___________________________________"))
-			// 				body = append(body, fmt.Sprintf("(%v). %s (%s) <b>%v шт</b>", num, infoQuantity.Nomenclature, infoQuantity.Code, infoQuantity.Quantity))
-			// 				msgToUser = strings.Join(body, "\n")
-
-			// 				lenBody[i] = len(msgToUser)
-
-			// 				i++
-			// 				num++
-			// 			}
-
-			// 			err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[1], "", nil, fmt.Sprintf("Остатки склада: \"%v\"", warehouse), false)
-
-			// 			if err != nil {
-			// 				zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %v\n", err))
-			// 				log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %v\n", err))
-			// 				return
-			// 			}
-
-			// 		}
-			// 	}
-
-			// } else if callbackQueryText == botsCommand[7] {
-
-			// 	lenBody := make(map[int]int, 0)
-			// 	msgToUser = ""
-
-			// 	msgToUser = "Введите через пробел id пользователя, имя пользователя и телефон пользователя (опционально)"
-
-			// 	err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[7], "", nil, "", false)
-
-			// 	if err != nil {
-			// 		zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %v\n", err))
-			// 		log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %v\n", err))
-			// 		return
-			// 	}
-
-			// } else if callbackQueryText == botsCommand[8] {
-
-			// 	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
-
-			// 	if err != nil {
-			// 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-			// 		zrlog.Fatal().Msg(fmt.Sprintf("Unable to connect to database:: %v\n", err))
-			// 		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Unable to connect to database: %v\n", err))
-			// 		os.Exit(1)
-			// 	}
-			// 	defer dbpool.Close()
-
-			// 	rows, err := dbpool.Query(context.Background(), "SELECT userid, username, phone FROM users")
-
-			// 	if err != nil {
-			// 		zrlog.Fatal().Msg(fmt.Sprintf("Query to db is failed: %v\n", err))
-			// 		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Query to db is failed: %v\n", err))
-			// 		os.Exit(1)
-			// 	}
-
-			// 	num := 1
-			// 	i := 0
-			// 	body := make([]string, i)
-			// 	lenBody := make(map[int]int, i)
-			// 	msgToUser = ""
-
-			// 	// iterate through the rows
-			// 	for rows.Next() {
-
-			// 		values, err := rows.Values()
-			// 		if err != nil {
-			// 			log.Fatal("error while iterating dataset")
-			// 		}
-
-			// 		// convert DB types to Go types
-			// 		userid := values[0].(int32)
-			// 		username := values[1].(string)
-			// 		phone := values[2].(string)
-
-			// 		body = append(body, fmt.Sprintf("%v", "------------------------------------------------------"))
-			// 		body = append(body, fmt.Sprintf("(%v). id %v, name %s, phone %s", num, userid, username, phone))
-			// 		msgToUser = strings.Join(body, "\n")
-
-			// 		lenBody[i] = len(msgToUser)
-
-			// 		i++
-			// 		num++
-
-			// 		//fmt.Printf("id %v, username %s, phone %s", userid, username, phone)
-			// 		//fmt.Printf("msgToUser %s", msgToUser)
-
-			// 	}
-
-			// 	err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, msgToUser, lenBody, cons.StyleTextHTML, botsCommand[8], "", nil, "", false)
-
-			// 	if err != nil {
-			// 		zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-			// 		log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-			// 		return
-			// 	}
-
-			// } else if callbackQueryText == botsCommand[9] {
-
-			// }
 		}
 	}
 
 }
 
-func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, command botcommand.BotCommand, button string, buttons []models.Warehouse, header string, PDF bool) error {
+func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, command botcommand.BotCommand, button string, header string, PDF bool) error {
 
 	switch command {
 
@@ -1742,7 +1330,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 	case botcommand.CANCEL:
 
-		msg := tgbotapi.NewMessage(id, message, styleText) //Выход в главное меню
+		msg := tgbotapi.NewMessage(id, message, styleText) //enter to main menue
 
 		if thisIsAdmin(id) {
 			msg.ReplyMarkup = keyboardAdmin
@@ -1892,35 +1480,6 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 	case botcommand.SETTINGS:
 
-		if thisIsAdmin(id) {
-
-			var rowsButton [][]tgbotapi.InlineKeyboardButton
-
-			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-			inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-
-			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData("Добавить пользователя", "AppendUser"))
-			rowsButton = append(rowsButton, inlineKeyboardButton1)
-
-			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData("Показать всех пользователей бота", "ShowUsers"))
-			rowsButton = append(rowsButton, inlineKeyboardButton2)
-
-			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData("Удалить пользователя по ID", "DeleteUser"))
-			rowsButton = append(rowsButton, inlineKeyboardButton3)
-
-			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
-
-			msg := tgbotapi.NewMessage(id, message, styleText)
-			msg.ReplyMarkup = inlineKeyboardMarkup
-
-			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
-				return err
-			}
-		}
-
 	}
 
 	return nil
@@ -2055,39 +1614,6 @@ func AppendRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) 
 
 	userData := userPolling.Get(userID)
 
-	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// defer cancel()
-
-	// conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
-
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Unable to establish connection to database: %v\n", err)
-	// 	zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %v\n", err))
-	// 	log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Unable to establish connection to database: %v\n", err))
-	// 	os.Exit(1)
-
-	// 	return err
-	// }
-
-	// _, err = conn.Exec(ctx, "insert into requisitions (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning requisition_number", userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments)
-
-	// if err != nil {
-	// 	zrlog.Fatal().Msg(fmt.Sprintf("Query to db is failed: %v\n", err))
-	// 	log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Query to db is failed: %v\n", err))
-	// 	os.Exit(1)
-
-	// 	return err
-	// }
-
-	// return nil
-
-	//dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
-
-	// if err != nil {
-	// 	return fmt.Errorf("Unable to establish connection to database: %w", err)
-	// }
-	// defer dbpool.Close()
-
 	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, start_date, expiration, close_date) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()), 0)
 
 	if err != nil {
@@ -2159,40 +1685,12 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 		log.Print(err.Error())
 	}
 
-	// step := 15.0
-	// line := 0
-	// page := 0
-	//var vertLine_y float64
-
 	pdf.SetTextColorCMYK(100, 100, 100, 100)
 
 	pdf.AddPage()
 
 	rect := &gopdf.Rect{W: 595, H: 842} //Page size A4 format
 	pdf.Image("./external/imgs/RequisitionsBoilerplate.jpg", 0, 0, rect)
-
-	// line = 1
-	// page = pdf.GetNumberOfPages()
-
-	// step = 15.0
-
-	//vertLine_y = 18
-
-	//pdf.SetLineWidth(0.2)
-	//pdf.Line(10, step+3, 581, step+3) //horizontal
-
-	// pdf.SetXY(560, step)
-	// pdf.SetTextColorCMYK(100, 100, 100, 100)
-	// err = pdf.SetFont("a_AlternaNr", "", 10)
-	// if err != nil {
-	// 	log.Print(err.Error())
-	// }
-	// err = pdf.Text(fmt.Sprintf("стр %v", page))
-	// if err != nil {
-	// 	log.Print(err.Error())
-	// }
-
-	//step = 20.0
 
 	pdf.SetXY(200, 220)
 	pdf.SetTextColorCMYK(100, 70, 0, 67)
@@ -2356,138 +1854,6 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 		y = y + step
 	}
 
-	// pdf.Line(10, 40, 581, 40) //horizontal
-
-	// pdf.Line(10, vertLine_y, 10, step-20)      //vertical 1
-	// pdf.Line(34, vertLine_y+22, 34, step-20)   //vertical 2
-	// pdf.Line(542, vertLine_y+22, 542, step-20) //vertical 3
-	// pdf.Line(581, vertLine_y, 581, step-20)    //vertical 4
-
-	//vertLine_y = step - 20
-
-	//pdf.SetTextColorCMYK(100, 100, 100, 100)
-	// 	// err = pdf.SetFont("arialblack", "", 12)
-	// 	// if err != nil {
-	// 	// 	log.Print(err.Error())
-	// 	// }
-	// 	err = pdf.SetFont("times", "", 12)
-	// 	if err != nil {
-	// 		log.Print(err.Error())
-	// 	}
-
-	// 	position = remListWarehouse[i]
-
-	// 	if len(strconv.Itoa(num)) == 1 {
-	// 		pdf.SetX(19)
-	// 	} else if len(strconv.Itoa(num)) == 2 {
-	// 		pdf.SetX(16)
-	// 	} else {
-	// 		pdf.SetX(12)
-	// 	}
-	// 	pdf.SetY(step)
-	// 	step = step + 20
-
-	// 	err = pdf.SetFont("Inter-ExtraLight", "", 12)
-	// 	if err != nil {
-	// 		log.Print(err.Error())
-	// 	}
-	// 	err = pdf.Text(fmt.Sprintf("%v", num))
-	// 	if err != nil {
-	// 		log.Print(err.Error())
-	// 	}
-
-	// 	// err = pdf.SetFont("arialblack", "", 12)
-	// 	// if err != nil {
-	// 	// 	log.Print(err.Error())
-	// 	// }
-	// 	err = pdf.SetFont("times", "", 12)
-	// 	if err != nil {
-	// 		log.Print(err.Error())
-	// 	}
-
-	// 	pdf.SetX(37)
-	// 	text := strings.TrimSpace(position.Nomenclature)
-	// 	widthText, err := pdf.MeasureTextWidth(text)
-	// 	if err != nil {
-	// 		log.Print(err.Error())
-	// 	}
-
-	// 	if widthText > maxWidthPDF {
-
-	// 		var arrayText []string
-
-	// 		arrayText, err = pdf.SplitText(text, maxWidthPDF)
-	// 		if err != nil {
-	// 			log.Print(err.Error())
-	// 		}
-
-	// 		for i, t := range arrayText {
-
-	// 			pdf.SetX(36)
-	// 			if i == 0 {
-	// 				pdf.Line(10, vertLine_y, 10, step-2)   //vertical 1
-	// 				pdf.Line(34, vertLine_y, 34, step-2)   //vertical 2
-	// 				pdf.Line(542, vertLine_y, 542, step-2) //vertical 3
-	// 				pdf.Line(581, vertLine_y, 581, step-2) //vertical 4
-
-	// 				err = pdf.Text(t)
-	// 				step = step + 5
-	// 			}
-
-	// 			if err != nil {
-	// 				log.Print(err.Error())
-	// 			}
-
-	// 			if i == 1 {
-	// 				pdf.SetY(step - 10)
-
-	// 				err = pdf.Text(t)
-	// 				if err != nil {
-	// 					log.Print(err.Error())
-	// 				}
-
-	// 				pdf.SetX(543)
-	// 				err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
-	// 				if err != nil {
-	// 					log.Print(err.Error())
-	// 				}
-
-	// 				pdf.Line(10, step-7, 581, step-7) //horizontal
-	// 				step = step + 5
-	// 			}
-
-	// 			line++
-	// 		}
-
-	// 	} else {
-
-	// 		y := pdf.GetY()
-
-	// 		err = pdf.Text(text)
-	// 		if err != nil {
-	// 			log.Print(err.Error())
-	// 		}
-
-	// 		pdf.SetX(543)
-	// 		err = pdf.Text(fmt.Sprintf("%v", position.Quantity))
-	// 		if err != nil {
-	// 			log.Print(err.Error())
-	// 		}
-
-	// 		pdf.Line(10, y+3, 581, y+3) //horizontal
-
-	// 		pdf.Line(10, vertLine_y, 10, y+3)   //vertical 1
-	// 		pdf.Line(34, vertLine_y, 34, y+3)   //vertical 2
-	// 		pdf.Line(542, vertLine_y, 542, y+3) //vertical 3
-	// 		pdf.Line(581, vertLine_y, 581, y+3) //vertical 4
-
-	// 		line++
-
-	// 	}
-	// 	i++
-	// 	num++
-	// }
-
 	err = pdf.WritePdf(fmt.Sprintf("./external/files/usersfiles/Заявка_№%v.pdf", usersRequisition.RequisitionNumber))
 
 	if err != nil {
@@ -2541,48 +1907,38 @@ func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
 
 	body := make([]string, 12)
 
-	//<img src=\"./external/imgs/Titmouse.png\" width=\"300\" height=\"300\" alt=\"Синичка невеличка и ee друзья\" align=\"middle\">
-
 	body = append(body, "<!DOCTYPE html><html lang=\"ru\"><body><dl>")
 
 	body = append(body, "<style type=\"text/css\">BODY {margin: 0; /* Убираем отступы в браузере */}#toplayer {background: #F5FFFA; /* Цвет фона */height: 800px /* Высота слоя */}</style>")
 
-	//body = append(body, fmt.Sprintf("<p>%v</p>", "___________________________________"))
 	body = append(body, fmt.Sprintf("<div id=\"toplayer\"><dt><p><b>(%v). %s:</b></p></dt>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Contest))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("<p>%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.FNP))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %v</p></dd>", usdata.Age))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NameInstitution))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.Locality))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NamingUnit))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PublicationTitle))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	if usdata.LeaderFNP == "" {
 		body = append(body, fmt.Sprintf("<dt><p><b>(%v).</b> <s><i><b>%s:</b></i></s></p></dt>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
 		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", "-"))
@@ -2592,17 +1948,14 @@ func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
 	}
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Email))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.DocumentType))
 	text = strings.Join(body, "\n")
 
-	//body = append(body, fmt.Sprintf("%v", "___________________________________"))
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PlaceDeliveryDocuments))
 	text = strings.Join(body, "\n")
@@ -2806,8 +2159,6 @@ func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.C
 func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
 
 	userDP := userData.Get(userID)
-
-	fmt.Printf("Сейчас будем удалять опросник:\n\n\n%v\n\n\n\n", userDP)
 
 	//delete user's files and datas in hashmap
 

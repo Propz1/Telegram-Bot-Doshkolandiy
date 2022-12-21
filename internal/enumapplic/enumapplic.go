@@ -6,25 +6,25 @@ const (
 	// since iota starts with 0, the first value
 	// defined here will be the default
 	UNDEFINED                   ApplicEnum = iota //EnumIndex = 0
-	CONTEST                                       //Конкурс                     //EnumIndex = 1
-	FNP                                           //ФИО                        //EnumIndex = 2
-	AGE                                           //Возраст                    ////EnumIndex = 3
-	NAME_INSTITUTION                              //Название учреждения (сокращенное)
-	LOCALITY                                      //Населенный пункт
-	NAMING_UNIT                                   //Номинация
-	PUBLICATION_TITLE                             //Название работы
-	FNP_LEADER                                    //ФИО руководителя
-	EMAIL                                         //e-mail
-	DOCUMENT_TYPE                                 //Диплом куратора или грамота
-	PLACE_DELIVERY_OF_DOCUMENTS                   //Место получения диплома/грамоты
-	PHOTO                                         //Фото работы
-	FILE                                          //Квитанция об оплате
-	CHECKING                                      //Проверка
-	CANSEL_CORRECTION                             //Отменить исправление
-	REQUISITION_NUMBER                            //Номер заявки
-	REQUISITION_PDF                               //Путь к заявке в PDF
-	TableDB                                       //Имя таблицы базы данных
-	Agree                                         //Согласие пользователя на обработку персонльных данных
+	CONTEST                                       //EnumIndex = 1
+	FNP                                           //EnumIndex = 2
+	AGE                                           
+	NAME_INSTITUTION                             
+	LOCALITY                                      
+	NAMING_UNIT                                   
+	PUBLICATION_TITLE                             
+	FNP_LEADER                                    
+	EMAIL                                         
+	DOCUMENT_TYPE                                
+	PLACE_DELIVERY_OF_DOCUMENTS                   
+	PHOTO                                         
+	FILE                                          
+	CHECKING                                      
+	CANSEL_CORRECTION                             
+	REQUISITION_NUMBER                           
+	REQUISITION_PDF                               
+	TableDB                                       
+	Agree                                         
 )
 
 func (e ApplicEnum) String() string {

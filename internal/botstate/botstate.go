@@ -11,15 +11,15 @@ const (
 	SETTINGS
 	SHOW_SETTINGS
 	SELECT_PROJECT
-	COMPLETE_APPLICATION // Заполнить заявку/пройти опрос
+	COMPLETE_APPLICATION 
 	ASK_PROJECT
-	ASK_FNP // ФИО
+	ASK_FNP 
 	ASK_AGE
-	ASK_NAME_INSTITUTION  //Название учреждения (сокращенное)
-	ASK_LOCALITY          //Населенный пункт
-	ASK_NAMING_UNIT       //Номинация
-	ASK_PUBLICATION_TITLE //Название работы
-	ASK_FNP_LEADER        //ФИО руководителя
+	ASK_NAME_INSTITUTION  
+	ASK_LOCALITY          
+	ASK_NAMING_UNIT       
+	ASK_PUBLICATION_TITLE 
+	ASK_FNP_LEADER        
 	ASK_EMAIL
 	ASK_DOCUMENT_TYPE
 	ASK_PLACE_DELIVERY_OF_DOCUMENTS

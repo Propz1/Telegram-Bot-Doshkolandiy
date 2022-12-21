@@ -85,21 +85,21 @@ func (c *CacheDataPolling) Get(userID int64) dataPolling {
 	//c.mu.RLock()
 	var mu sync.RWMutex
 	mu.RLock()
+	defer mu.RUnlock()
 	st, found := c.userPollingCache[userID]
 	if !found {
 		//c.mu.RUnlock()
-		mu.RUnlock()
 		return st
 	}
 	//c.mu.RUnlock()
-	mu.RUnlock()
+
 	return st
 }
 
 func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
-	//c.mu.Lock()
+
 	var mu sync.RWMutex
-	mu.RLock()
+	mu.Lock()
 
 	st := c.userPollingCache[userID]
 
@@ -142,16 +142,20 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	case enumapplic.Agree:
 		st.Agree = true
 	}
+
 	c.userPollingCache[userID] = st
-	//c.mu.Unlock()
-	mu.RUnlock()
+	mu.Unlock()
+
 }
 
 func (c *CacheDataPolling) Delete(userID int64) {
+	var mu sync.RWMutex
 	if c.userPollingCache != nil {
+		mu.Lock()
 		_, found := c.userPollingCache[userID]
 		if found {
 			delete(c.userPollingCache, userID)
 		}
+		mu.Unlock()
 	}
 }

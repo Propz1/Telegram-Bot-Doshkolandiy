@@ -1,0 +1,7 @@
+{
+    "go.formatTool": "gofmt",
+    "go.gotoSymbol.includeGoroot": true,
+    "go.gotoSymbol.includeImports": true,
+    "go.inferGopath": false,
+    "go.lintTool": "golint",
+}
