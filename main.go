@@ -2078,7 +2078,7 @@ func GetConciseDescription(contest string) string {
 		body = append(body, fmt.Sprintf("(13). <b>%s</b>", "Фото работы"))
 		body = append(body, fmt.Sprintf("(14). <b>%s</b>", "Квитанцию об оплате организационного взноса"))
 		body = append(body, "\n")
-		body = append(body, "Подробнее с условиями конкурса можно ознакомиться на сайте https://vk.com/topic-138597952_49394008\n")
+		body = append(body, fmt.Sprintf("Подробнее с условиями конкурса можно ознакомиться на сайте %s\n", os.Getenv("WEBSITE")))
 		body = append(body, "\n")
 
 		text = strings.Join(body, "\n")
