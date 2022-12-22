@@ -5,26 +5,26 @@ type ApplicEnum int64
 const (
 	// since iota starts with 0, the first value
 	// defined here will be the default
-	UNDEFINED                   ApplicEnum = iota //EnumIndex = 0
-	CONTEST                                       //EnumIndex = 1
-	FNP                                           //EnumIndex = 2
-	AGE                                           
-	NAME_INSTITUTION                             
-	LOCALITY                                      
-	NAMING_UNIT                                   
-	PUBLICATION_TITLE                             
-	FNP_LEADER                                    
-	EMAIL                                         
-	DOCUMENT_TYPE                                
-	PLACE_DELIVERY_OF_DOCUMENTS                   
-	PHOTO                                         
-	FILE                                          
-	CHECKING                                      
-	CANSEL_CORRECTION                             
-	REQUISITION_NUMBER                           
-	REQUISITION_PDF                               
-	TableDB                                       
-	Agree                                         
+	UNDEFINED ApplicEnum = iota //EnumIndex = 0
+	CONTEST                     //EnumIndex = 1
+	FNP                         //EnumIndex = 2
+	AGE
+	NAME_INSTITUTION
+	LOCALITY
+	NAMING_UNIT
+	PUBLICATION_TITLE
+	FNP_LEADER
+	EMAIL
+	DOCUMENT_TYPE
+	PLACE_DELIVERY_OF_DOCUMENTS
+	PHOTO
+	FILE
+	CHECKING
+	CANSEL_CORRECTION
+	REQUISITION_NUMBER
+	REQUISITION_PDF
+	TableDB
+	Agree
 )
 
 func (e ApplicEnum) String() string {
@@ -56,7 +56,7 @@ func (e ApplicEnum) String() string {
 	case PHOTO:
 		return "Фотография работы"
 	case FILE:
-		return "Квитанция об оплате"
+		return "Квитанция об оплате орг. взноса"
 	case CANSEL_CORRECTION:
 		return "Отменить исправление"
 	case REQUISITION_NUMBER:
