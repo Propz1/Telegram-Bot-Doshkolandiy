@@ -21,8 +21,14 @@ const (
 	SETTINGS
 	START
 	SELECT_CORRECTION
+	CONFIRM
 	RECORD_TO_DB
 	WAITING_FOR_ACCEPTANCE
+	CLOSE_REQUISITION_START
+	SELECT_DEGREE
+	GET_PUBLICATION_LINK
+	GET_PUBLICATION_DATE
+	CLOSE_REQUISITION_END
 )
 
 func (c BotCommand) String() string {
@@ -40,6 +46,13 @@ func (c BotCommand) String() string {
 		return "Далее"
 	case SELECT_CORRECTION:
 		return "Исправить"
+	case CLOSE_REQUISITION_START:
+		return "Закрыть заявку"
+	case SETTINGS:
+		return "Настройки"
+	case CONFIRM:
+		return "Подтвердить"
+
 	}
 
 	return "Undefined"

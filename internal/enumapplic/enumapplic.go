@@ -23,8 +23,12 @@ const (
 	CANSEL_CORRECTION
 	REQUISITION_NUMBER
 	REQUISITION_PDF
+	DOCUMENT_PDF
 	TableDB
-	Agree
+	AGREE
+	DEGREE
+	PUBLICATION_LINK
+	PUBLICATION_DATE
 )
 
 func (e ApplicEnum) String() string {
@@ -61,6 +65,14 @@ func (e ApplicEnum) String() string {
 		return "Отменить исправление"
 	case REQUISITION_NUMBER:
 		return "Номер заявки"
+	case TableDB:
+		return "Таблица базы данных"
+	case DEGREE:
+		return "Степень"
+	case PUBLICATION_DATE:
+		return "Дата публикации работы"
+	case PUBLICATION_LINK:
+		return "Ссылка на опубликованную работу"
 	}
 	return "Undefined"
 }

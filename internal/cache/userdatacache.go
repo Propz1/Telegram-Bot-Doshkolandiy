@@ -57,14 +57,28 @@ type dataPolling struct {
 	DocumentType           string
 	PlaceDeliveryDocuments string
 	RequisitionNumber      int64
-	RequisitionPDF         string
+	RequisitionPDFpath     string
 	TableDB                string
 	Agree                  bool
 	Photo                  string
 	File                   string
+	PublicationLink        string
+	Degree                 int
+	PublicationDate        string
 }
 
-//type userPollingCache map[int64]dataPolling
+type dataClosingRequisition struct {
+	RequisitionNumber int64
+	TableDB           string
+	Degree            string
+	PublicationLink   string
+	PublicationDate   string
+}
+
+type CacheDataClosingRequisition struct {
+	closingRequisitionCache map[int64]dataClosingRequisition
+	//mu               sync.RWMutex
+}
 
 type CacheDataPolling struct {
 	userPollingCache map[int64]dataPolling
@@ -77,9 +91,64 @@ func NewCacheDataPolling() *CacheDataPolling {
 	return &c
 }
 
-// func NewCacheDataPolling() CacheDataPolling {
-// 	return CacheDataPolling{userPollingCache: make(userPollingCache, 0), mu: sync.RWMutex{}}
-// }
+func NewCacheDataClosingRequisition() *CacheDataClosingRequisition {
+	var c CacheDataClosingRequisition
+	c.closingRequisitionCache = make(map[int64]dataClosingRequisition)
+	return &c
+}
+
+func (c *CacheDataClosingRequisition) Get(userID int64) dataClosingRequisition {
+	//c.mu.RLock()
+	var mu sync.RWMutex
+	mu.RLock()
+	defer mu.RUnlock()
+	st, found := c.closingRequisitionCache[userID]
+	if !found {
+		//c.mu.RUnlock()
+		return st
+	}
+	//c.mu.RUnlock()
+
+	return st
+}
+
+func (c *CacheDataClosingRequisition) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
+
+	var mu sync.RWMutex
+	mu.Lock()
+
+	st := c.closingRequisitionCache[userID]
+
+	switch enum {
+
+	case enumapplic.REQUISITION_NUMBER:
+		num, _ := strconv.Atoi(text)
+		st.RequisitionNumber = int64(num)
+	case enumapplic.TableDB:
+		st.TableDB = text
+	case enumapplic.DEGREE:
+		st.Degree = text
+	case enumapplic.PUBLICATION_LINK:
+		st.PublicationLink = text
+	case enumapplic.PUBLICATION_DATE:
+		st.PublicationDate = text
+	}
+
+	c.closingRequisitionCache[userID] = st
+	mu.Unlock()
+}
+
+func (c *CacheDataClosingRequisition) Delete(userID int64) {
+	var mu sync.RWMutex
+	if c.closingRequisitionCache != nil {
+		mu.Lock()
+		_, found := c.closingRequisitionCache[userID]
+		if found {
+			delete(c.closingRequisitionCache, userID)
+		}
+		mu.Unlock()
+	}
+}
 
 func (c *CacheDataPolling) Get(userID int64) dataPolling {
 	//c.mu.RLock()
@@ -136,11 +205,18 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 		num, _ := strconv.Atoi(text)
 		st.RequisitionNumber = int64(num)
 	case enumapplic.REQUISITION_PDF:
-		st.RequisitionPDF = text
+		st.RequisitionPDFpath = text
 	case enumapplic.TableDB:
 		st.TableDB = text
-	case enumapplic.Agree:
+	case enumapplic.AGREE:
 		st.Agree = true
+	case enumapplic.PUBLICATION_LINK:
+		st.PublicationLink = text
+	case enumapplic.PUBLICATION_DATE:
+		st.PublicationDate = text
+	case enumapplic.DEGREE:
+		num, _ := strconv.Atoi(text)
+		st.Degree = num
 	}
 
 	c.userPollingCache[userID] = st
