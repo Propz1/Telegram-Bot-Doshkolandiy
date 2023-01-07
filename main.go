@@ -2036,33 +2036,29 @@ func FillInPDFForm(userID int64) (error, string) {
 
 	age_string := strconv.Itoa(usersRequisition.Age)
 
-	var numStr string
-	var number int
+	var numPrev string
+	var numLast string
+	var numbers [2]int
 
 	if usersRequisition.Age >= 10 {
-		numStr = age_string[len(age_string)-2 : len(age_string)-1]
+		numPrev = age_string[len(age_string)-2 : len(age_string)-1]
 	} else {
-		numStr = age_string[len(age_string)-1:]
+		numPrev = "0"
 	}
 
-	number, err = strconv.Atoi(numStr)
+	numLast = age_string[len(age_string)-1:]
 
-	if err != nil {
-		zrlog.Info().Msg(fmt.Sprintf("strconv.Atoi is failed: %v\n", err))
-	} else {
+	numbers[0], _ = strconv.Atoi(numPrev)
+	numbers[1], _ = strconv.Atoi(numLast)
 
-		if usersRequisition.Age >= 10 {
+	if usersRequisition.Age >= 10 {
 
-			switch number {
-			case 1:
-				age_string = fmt.Sprintf("%s лет", age_string)
-			default:
-				age_string = fmt.Sprintf("%s год", age_string)
-			}
+		switch numbers[0] {
+		case 1:
+			age_string = fmt.Sprintf("%s лет", age_string)
+		default:
 
-		} else {
-
-			switch number {
+			switch numbers[1] {
 			case 1:
 				age_string = fmt.Sprintf("%s год", age_string)
 			case 2:
@@ -2074,6 +2070,22 @@ func FillInPDFForm(userID int64) (error, string) {
 			default:
 				age_string = fmt.Sprintf("%s лет", age_string)
 			}
+
+		}
+
+	} else {
+
+		switch numbers[1] {
+		case 1:
+			age_string = fmt.Sprintf("%s год", age_string)
+		case 2:
+			age_string = fmt.Sprintf("%s года", age_string)
+		case 3:
+			age_string = fmt.Sprintf("%s года", age_string)
+		case 4:
+			age_string = fmt.Sprintf("%s года", age_string)
+		default:
+			age_string = fmt.Sprintf("%s лет", age_string)
 		}
 	}
 
