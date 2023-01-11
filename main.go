@@ -32,7 +32,7 @@ var (
 	keyboardMainMenue = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("Заполнить заявку"),
-			tgbotapi.NewKeyboardButton("Отправить работу"),
+			tgbotapi.NewKeyboardButton("Получить диплом"),
 		),
 	)
 
@@ -755,7 +755,7 @@ func main() {
 								t := time.Now()
 								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, *userPolling, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), "", "")
+								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, *userPolling, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
 
 								if err != nil {
 
@@ -807,18 +807,16 @@ func main() {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error in GetRequisition(): %+v\n", err.Error()))
 							}
 
-							err, path := FillInPDFForm(userID)
+							err = FillInPDFForm(userID)
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Unable to fill in PDF's form: %+v\n", err.Error()))
 							}
 
-							userPolling.Set(userID, enumapplic.FILE, path)
-
 							t := time.Now()
 							formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-							send, err := SentEmail(userPolling.Get(userID).Email, userID, *userPolling, false, fmt.Sprintf("%s №%v от %s ", userPolling.Get(userID).DocumentType, userPolling.Get(userID).RequisitionNumber, formattedTime), userPolling.Get(userID).File, "")
+							send, err := SentEmail(userPolling.Get(userID).Email, userID, *userPolling, false, fmt.Sprintf("%s №%v от %s ", userPolling.Get(userID).DocumentType, userPolling.Get(userID).RequisitionNumber, formattedTime), userPolling.Get(userID).Files, "")
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
@@ -837,10 +835,6 @@ func main() {
 
 								if err != nil {
 									zrlog.Info().Msg(fmt.Sprintf("Error UpdateRequisition(): %+v\n", err))
-
-									//test++
-									fmt.Printf("Error UpdateRequisition(): %v\n\n\n", err)
-									//test--
 								}
 
 								cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
@@ -995,7 +989,7 @@ func main() {
 					}
 				}
 
-			case cons.DIPLOMA.String():
+			case cons.CERTIFICATE_AND_DIPLOMA.String():
 
 				if !thisIsAdmin(update.CallbackQuery.Message.Chat.ID) {
 
@@ -1620,7 +1614,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		if thisIsAdmin(id) {
 			msg.ReplyMarkup = keyboardAdminMainMenue
 		} else {
-			msg.ReplyMarkup = keyboardContinueDataPolling1
+			msg.ReplyMarkup = keyboardMainMenue
 		}
 
 		if _, err := bot.Send(msg); err != nil {
@@ -1655,7 +1649,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.CERTIFICATE), cons.CERTIFICATE.String()))
 		rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.DIPLOMA), cons.DIPLOMA.String()))
+		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.CERTIFICATE_AND_DIPLOMA), cons.CERTIFICATE_AND_DIPLOMA.String()))
 		rowsButton = append(rowsButton, inlineKeyboardButton2)
 
 		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1846,7 +1840,7 @@ func AddRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) err
 	return row.Err()
 }
 
-func GetRequisition(requisition_number int64, typeDoc string, degree string, publicationDate, publicationLink string, dbpool *pgxpool.Pool, ctx context.Context) (err error, userID int64) {
+func GetRequisition(requisition_number int64, tableDB string, degree string, publicationDate, publicationLink string, dbpool *pgxpool.Pool, ctx context.Context) (err error, userID int64) {
 
 	var fnp string
 	var age int
@@ -1861,7 +1855,7 @@ func GetRequisition(requisition_number int64, typeDoc string, degree string, pub
 	var diploma bool
 	var diploma_number int64
 
-	row, err := dbpool.Query(ctx, "SELECT user_id, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, diploma, COALESCE(diploma_number, 0) FROM certificates LEFT JOIN diplomas ON certificates.requisition_number=diplomas.requisition_number WHERE certificates.requisition_number = $1", requisition_number)
+	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", tableDB, tableDB, tableDB), requisition_number)
 
 	if err != nil {
 		return fmt.Errorf("Query to db is failed: %W", err), 0
@@ -1915,27 +1909,30 @@ func UpdateRequisition(requisition_number int64, typeDoc string, degree string, 
 	return row.Err()
 }
 
-func FillInPDFForm(userID int64) (error, string) {
+func FillInPDFForm(userID int64) error {
 
 	var x float64
 	var y float64 = 305
 	var step float64 = 15
-	var text string
+	var nameAndAge string
 	var widthText float64
 	var centerX float64 = 297.5
 	var boilerplatePDFPath string
+	var path string
 
 	usersRequisition := userPolling.Get(userID)
 
-	if usersRequisition.TableDB == cons.CERTIFICATE.String() && usersRequisition.LeaderFNP != "" {
+	if usersRequisition.LeaderFNP != "" {
 
-		boilerplatePDFPath = fmt.Sprintf("./external/imgs/%s_%s_curator.jpg", contests[usersRequisition.Contest], usersRequisition.TableDB)
+		path = "./external/imgs/%s_%s_curator.jpg"
 
 	} else {
 
-		boilerplatePDFPath = fmt.Sprintf("./external/imgs/%s_%s.jpg", contests[usersRequisition.Contest], usersRequisition.TableDB)
+		path = "./external/imgs/%s_%s.jpg"
 
 	}
+
+	boilerplatePDFPath = fmt.Sprintf(path, contests[usersRequisition.Contest], cons.CERTIFICATE.String())
 
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
@@ -1953,7 +1950,7 @@ func FillInPDFForm(userID int64) (error, string) {
 
 	//1. Degree
 
-	pdf.SetXY(240, 210)
+	pdf.SetXY(241, 211)
 	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
 	err = pdf.SetFont("TelegraphLine", "", 24)
 
@@ -1971,13 +1968,13 @@ func FillInPDFForm(userID int64) (error, string) {
 
 	switch {
 	case usersRequisition.RequisitionNumber > 10000:
-		x = 70
+		x = 73
 	case usersRequisition.RequisitionNumber > 1000:
-		x = 80
+		x = 83
 	case usersRequisition.RequisitionNumber > 100:
-		x = 90
+		x = 93
 	default:
-		x = 100
+		x = 103
 	}
 
 	pdf.SetXY(x, 245)
@@ -2054,9 +2051,9 @@ func FillInPDFForm(userID int64) (error, string) {
 		}
 	}
 
-	text = fmt.Sprintf("%s, %s", usersRequisition.FNP, age_string)
+	nameAndAge = fmt.Sprintf("%s, %s", usersRequisition.FNP, age_string)
 
-	widthText, err = pdf.MeasureTextWidth(text)
+	widthText, err = pdf.MeasureTextWidth(nameAndAge)
 
 	x = centerX - widthText/2
 
@@ -2064,7 +2061,7 @@ func FillInPDFForm(userID int64) (error, string) {
 
 		var arrayText []string
 
-		arrayText, err = pdf.SplitText(text, maxWidthPDF)
+		arrayText, err = pdf.SplitText(nameAndAge, maxWidthPDF)
 		if err != nil {
 			log.Print(err.Error())
 		}
@@ -2085,7 +2082,7 @@ func FillInPDFForm(userID int64) (error, string) {
 	} else {
 
 		pdf.SetXY(x, 270)
-		err = pdf.Text(text)
+		err = pdf.Text(nameAndAge)
 		if err != nil {
 			log.Print(err.Error())
 		}
@@ -2185,7 +2182,7 @@ func FillInPDFForm(userID int64) (error, string) {
 
 	//6. Publication title
 
-	pdf.SetXY(194, 645)
+	pdf.SetXY(194, 646)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
 
 	err = pdf.Text(usersRequisition.PublicationTitle)
@@ -2196,7 +2193,7 @@ func FillInPDFForm(userID int64) (error, string) {
 
 	//7. Leader's FNP
 
-	if usersRequisition.TableDB == cons.CERTIFICATE.String() && usersRequisition.LeaderFNP != "" {
+	if usersRequisition.LeaderFNP != "" {
 
 		pdf.SetXY(194, 668)
 
@@ -2209,7 +2206,7 @@ func FillInPDFForm(userID int64) (error, string) {
 
 	//8. Publication date
 
-	pdf.SetXY(355, 717)
+	pdf.SetXY(355, 718)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
 
 	err = pdf.Text(usersRequisition.PublicationDate)
@@ -2229,7 +2226,7 @@ func FillInPDFForm(userID int64) (error, string) {
 		log.Print(err.Error())
 	}
 
-	path := fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", usersRequisition.DocumentType, usersRequisition.RequisitionNumber)
+	path = fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.CERTIFICATE), usersRequisition.RequisitionNumber)
 
 	err = pdf.WritePdf(path)
 
@@ -2237,10 +2234,263 @@ func FillInPDFForm(userID int64) (error, string) {
 
 		log.Print(err.Error())
 
-		return err, ""
+		return err
 	}
 
-	return nil, path
+	userPolling.Set(userID, enumapplic.FILE, path)
+
+	err = pdf.Close()
+
+	if !usersRequisition.Diploma {
+		return nil
+	}
+
+	boilerplatePDFPath = fmt.Sprintf("./external/imgs/%s_%s.jpg", contests[usersRequisition.Contest], cons.DIPLOMA.String())
+
+	pdf = gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+
+	err = pdf.AddTTFFont("TelegraphLine", "./external/fonts/ttf/TelegraphLine.ttf")
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	pdf.AddPage()
+	rect = &gopdf.Rect{W: 595, H: 842} //Page size A4 format
+	pdf.Image(boilerplatePDFPath, 0, 0, rect)
+
+	//1. Diploma number
+
+	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
+	err = pdf.SetFont("TelegraphLine", "", 14)
+
+	switch {
+	case usersRequisition.RequisitionNumber > 10000:
+		x = 61
+	case usersRequisition.RequisitionNumber > 1000:
+		x = 71
+	case usersRequisition.RequisitionNumber > 100:
+		x = 81
+	default:
+		x = 91
+	}
+
+	pdf.SetXY(x, 262)
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	err = pdf.Text(fmt.Sprintf("%v", usersRequisition.DiplomaNumber))
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	//2. Leader's FNP
+	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
+	err = pdf.SetFont("TelegraphLine", "", 24)
+
+	widthText, err = pdf.MeasureTextWidth(usersRequisition.LeaderFNP)
+	y = 270
+	x = centerX - widthText/2
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		y = pdf.GetY() + 2*step
+
+		for _, t := range arrayText {
+
+			widthText, err = pdf.MeasureTextWidth(t)
+
+			x = centerX - widthText/2
+
+			pdf.SetXY(x, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+
+		pdf.SetXY(x, y)
+		err = pdf.Text(usersRequisition.LeaderFNP)
+		if err != nil {
+			log.Print(err.Error())
+		}
+	}
+
+	//3. Name institution
+
+	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
+	err = pdf.SetFont("TelegraphLine", "", 18)
+
+	widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(usersRequisition.NameInstitution, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		for _, t := range arrayText {
+
+			widthText, err = pdf.MeasureTextWidth(t)
+
+			x = centerX - widthText/2
+
+			pdf.SetXY(x, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+
+		x = centerX - widthText/2
+
+		pdf.SetXY(x, 305)
+		err = pdf.Text(usersRequisition.NameInstitution)
+		if err != nil {
+			log.Print(err.Error())
+		}
+	}
+
+	//4. Locality
+
+	widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
+
+	y = pdf.GetY() + 1.5*step
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(usersRequisition.Locality, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		for _, t := range arrayText {
+
+			widthText, err = pdf.MeasureTextWidth(t)
+
+			x = centerX - widthText/2
+
+			pdf.SetXY(x, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+
+		x = centerX - widthText/2
+
+		pdf.SetXY(x, y)
+		err = pdf.Text(usersRequisition.Locality)
+		if err != nil {
+			log.Print(err.Error())
+		}
+	}
+
+	//5. FNP
+	pdf.SetXY(142, 627)
+
+	err = pdf.SetFont("TelegraphLine", "", 18)
+
+	err = pdf.Text(nameAndAge)
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	//6. Naming unit
+
+	pdf.SetXY(153, 653)
+
+	err = pdf.Text(usersRequisition.NamingUnit)
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	//7. Publication title
+
+	pdf.SetXY(195, 674)
+
+	err = pdf.Text(usersRequisition.PublicationTitle)
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	//8. Requisition number
+
+	pdf.SetXY(139, 697)
+
+	err = pdf.Text(fmt.Sprintf("%v", usersRequisition.RequisitionNumber))
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	//9. Degree
+	pdf.SetXY(226, 717)
+
+	err = pdf.Text(fmt.Sprintf(", %v", usersRequisition.Degree))
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	//10. Publication date
+
+	pdf.SetXY(445, 736)
+
+	err = pdf.Text(usersRequisition.PublicationDate)
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	//11. Publication link
+
+	pdf.SetXY(56, 757)
+
+	err = pdf.Text(usersRequisition.PublicationLink)
+
+	if err != nil {
+		log.Print(err.Error())
+	}
+
+	path = fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.DIPLOMA), usersRequisition.RequisitionNumber)
+
+	err = pdf.WritePdf(path)
+
+	if err != nil {
+
+		log.Print(err.Error())
+
+		return err
+	}
+
+	userPolling.Set(userID, enumapplic.FILE, path)
+
+	err = pdf.Close()
+
+	return nil
 
 }
 
@@ -2473,7 +2723,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	return true, nil
 }
 
-func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin bool, subject string, addFile string, message string) (bool, error) {
+func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin bool, subject string, files []string, message string) (bool, error) {
 
 	usdat := userDat.Get(userID)
 
@@ -2489,15 +2739,16 @@ func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin 
 
 	if toAdmin {
 		m.Embed(usdat.Photo)
-		m.Attach(usdat.File)
+	}
+
+	if files != nil && len(files) > 0 {
+		for _, path := range files {
+			m.Attach(path)
+		}
 	}
 
 	// Set the email body. You can set plain text or html with text/html
 	m.SetBody("text/html", message)
-
-	if addFile != "" {
-		m.Attach(addFile)
-	}
 
 	// Settings for SMTP server
 	d := gomail.NewDialer(os.Getenv("SMTP_SERVER"), 465, os.Getenv("BOT_LOGIN_EMAIL"), os.Getenv("BOT_PASSWORD_EMAIL"))
@@ -2803,13 +3054,15 @@ func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
 	e = os.Remove(userDP.Photo)
 	if e != nil {
 		zrlog.Error().Msg(fmt.Sprintf("Error delete file user's foto: %+v\n", e.Error()))
-		log.Printf("ERROR: %v", fmt.Sprintf("Error delete file user's foto: %+v\n", e.Error()))
 	}
 
-	e = os.Remove(userDP.File)
-	if e != nil {
-		zrlog.Fatal().Msg(fmt.Sprintf("Error delete file user's (paid check): %+v\n", e.Error()))
-		log.Printf("ERROR: %v", fmt.Sprintf("Error delete file user's (paid check): %+v\n", e.Error()))
+	for _, path := range userDP.Files {
+
+		e = os.Remove(path)
+		if e != nil {
+			zrlog.Error().Msg(fmt.Sprintf("Error delete file user's (paid check): %+v\n", e.Error()))
+		}
+
 	}
 
 	userData.Delete(userID)

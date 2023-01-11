@@ -22,8 +22,9 @@ const (
 	DEGREE1                      InlineButton = "DEGREE1"
 	DEGREE2                      InlineButton = "DEGREE2"
 	DEGREE3                      InlineButton = "DEGREE3"
-	DIPLOMA                      InlineButton = "Грамота и диплом куратора"
 	CERTIFICATE                  InlineButton = "Грамота"
+	CERTIFICATE_AND_DIPLOMA      InlineButton = "Грамота и диплом куратора"
+	DIPLOMA                      InlineButton = "Диплом куратора"
 	PLACE_DELIVERY_OF_DOCUMENTS1              = "Электронная почта"
 	PLACE_DELIVERY_OF_DOCUMENTS2              = "Телеграмм"
 	TableDB                                   = "certificates"
@@ -52,6 +53,8 @@ func (s InlineButton) String() string {
 		return "diplomas"
 	case CERTIFICATE:
 		return "certificates"
+	case CERTIFICATE_AND_DIPLOMA:
+		return "certificate and diploma"
 	}
 
 	return ""

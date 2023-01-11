@@ -63,7 +63,7 @@ type dataPolling struct {
 	DiplomaNumber          int64
 	Agree                  bool
 	Photo                  string
-	File                   string
+	Files                  []string
 	PublicationLink        string
 	Degree                 int
 	PublicationDate        string
@@ -209,7 +209,7 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	case enumapplic.PHOTO:
 		st.Photo = text
 	case enumapplic.FILE:
-		st.File = text
+		st.Files = append(st.Files, text)
 	case enumapplic.REQUISITION_NUMBER:
 		num, _ := strconv.Atoi(text)
 		st.RequisitionNumber = int64(num)
