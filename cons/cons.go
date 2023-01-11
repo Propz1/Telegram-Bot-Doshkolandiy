@@ -19,28 +19,16 @@ const (
 	CONTEST_Mather               InlineButton = "Mather"
 	CONTEST_Find                 InlineButton = "Find"
 	AGREE                        InlineButton = "Согласен на обработку данных"
-	DEGREE1                       InlineButton = "DEGREE1"
-	DEGREE2                       InlineButton = "DEGREE2"
-	DEGREE3                       InlineButton = "DEGREE3"
-	DOCUMENT_TYPE1                            = "Грамота"
-	DOCUMENT_TYPE2                            = "Диплом куратора"
-	DOCUMENT_TYPE3                            = "Грамота + Диплом куратора"
+	DEGREE1                      InlineButton = "DEGREE1"
+	DEGREE2                      InlineButton = "DEGREE2"
+	DEGREE3                      InlineButton = "DEGREE3"
+	DIPLOMA                      InlineButton = "Грамота и диплом куратора"
+	CERTIFICATE                  InlineButton = "Грамота"
 	PLACE_DELIVERY_OF_DOCUMENTS1              = "Электронная почта"
 	PLACE_DELIVERY_OF_DOCUMENTS2              = "Телеграмм"
-	DIPLOMA                      TablesDB     = "Диплом куратора"
-	CERTIFICATE                  TablesDB     = "Грамота"
+	TableDB                                   = "certificates"
+	TimeshortForm                             = "2006-01-02"
 )
-
-func (s TablesDB) String() string {
-	switch s {
-	case DIPLOMA:
-		return "diplomas"
-	case CERTIFICATE:
-		return "certificates"
-	}
-
-	return ""
-}
 
 func (s InlineButton) String() string {
 	switch s {
@@ -60,6 +48,10 @@ func (s InlineButton) String() string {
 		return "2"
 	case DEGREE3:
 		return "3"
+	case DIPLOMA:
+		return "diplomas"
+	case CERTIFICATE:
+		return "certificates"
 	}
 
 	return ""

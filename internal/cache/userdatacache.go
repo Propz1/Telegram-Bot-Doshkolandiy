@@ -59,6 +59,8 @@ type dataPolling struct {
 	RequisitionNumber      int64
 	RequisitionPDFpath     string
 	TableDB                string
+	Diploma                bool
+	DiplomaNumber          int64
 	Agree                  bool
 	Photo                  string
 	File                   string
@@ -70,6 +72,8 @@ type dataPolling struct {
 type dataClosingRequisition struct {
 	RequisitionNumber int64
 	TableDB           string
+	Diploma           bool
+	DiplomaNumber     int64
 	Degree            string
 	PublicationLink   string
 	PublicationDate   string
@@ -126,6 +130,11 @@ func (c *CacheDataClosingRequisition) Set(userID int64, enum enumapplic.ApplicEn
 		st.RequisitionNumber = int64(num)
 	case enumapplic.TableDB:
 		st.TableDB = text
+	case enumapplic.DIPLOMA:
+		st.Diploma, _ = strconv.ParseBool(text)
+	case enumapplic.DIPLOMA_NUMBER:
+		num, _ := strconv.Atoi(text)
+		st.DiplomaNumber = int64(num)
 	case enumapplic.DEGREE:
 		st.Degree = text
 	case enumapplic.PUBLICATION_LINK:
@@ -208,6 +217,11 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 		st.RequisitionPDFpath = text
 	case enumapplic.TableDB:
 		st.TableDB = text
+	case enumapplic.DIPLOMA:
+		st.Diploma, _ = strconv.ParseBool(text)
+	case enumapplic.DIPLOMA_NUMBER:
+		num, _ := strconv.Atoi(text)
+		st.DiplomaNumber = int64(num)
 	case enumapplic.AGREE:
 		st.Agree = true
 	case enumapplic.PUBLICATION_LINK:

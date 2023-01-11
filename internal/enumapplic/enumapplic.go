@@ -25,6 +25,8 @@ const (
 	REQUISITION_PDF
 	DOCUMENT_PDF
 	TableDB
+	DIPLOMA
+	DIPLOMA_NUMBER
 	AGREE
 	DEGREE
 	PUBLICATION_LINK
@@ -65,6 +67,8 @@ func (e ApplicEnum) String() string {
 		return "Отменить исправление"
 	case REQUISITION_NUMBER:
 		return "Номер заявки"
+	case DIPLOMA_NUMBER:
+		return "Номер диплома куратора"
 	case TableDB:
 		return "Таблица базы данных"
 	case DEGREE:

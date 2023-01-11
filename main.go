@@ -159,8 +159,6 @@ func main() {
 	}
 	updates := bot.ListenForWebhook("/" + bot.Token)
 
-	//infoLog := log.New(logFile, fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")), log.Ldate|log.Ltime)
-
 	zrlog.Info().Msg(fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
 	log.Printf("INFO: %v", fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
 
@@ -288,8 +286,6 @@ func main() {
 
 				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION, "", "", false)
 
-				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
-
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -340,8 +336,6 @@ func main() {
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
 
 				err = sentToTelegramm(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", "", false)
-
-				//err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Здесь будет краткая инструкция по заполнению заявки.....  %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION.String(), "", nil, "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -407,27 +401,25 @@ func main() {
 					_, err := strconv.Atoi(messageText)
 
 					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error convert strconv.Atoi: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error convert strconv.Atoi: %+v\n", err.Error()))
+						zrlog.Info().Msg(fmt.Sprintf("Error convert strconv.Atoi: %+v\n", err.Error()))
 
 						err := sentToTelegramm(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
 					} else {
 
 						closingRequisition.Set(update.Message.Chat.ID, enumapplic.REQUISITION_NUMBER, messageText)
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE)
+						closingRequisition.Set(update.Message.Chat.ID, enumapplic.TableDB, cons.TableDB)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_DEGREE)
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите тип документа:", nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, "Выберите степень:", nil, cons.StyleTextCommon, botcommand.SELECT_DEGREE, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 					}
@@ -812,7 +804,7 @@ func main() {
 							err, userID := GetRequisition(dataForClosing.RequisitionNumber, dataForClosing.TableDB, dataForClosing.Degree, dataForClosing.PublicationDate, dataForClosing.PublicationLink, dbpool, ctx)
 
 							if err != nil {
-
+								zrlog.Fatal().Msg(fmt.Sprintf("Error in GetRequisition(): %+v\n", err.Error()))
 							}
 
 							err, path := FillInPDFForm(userID)
@@ -830,7 +822,6 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
 							}
 
 							if send {
@@ -839,14 +830,17 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 									return
 								}
 
-								err = UpdateRequisition(dataForClosing.RequisitionNumber, dataForClosing.TableDB, dataForClosing.Degree, dataForClosing.PublicationLink, dbpool, ctx)
+								err = UpdateRequisition(dataForClosing.RequisitionNumber, dataForClosing.TableDB, dataForClosing.Degree, dataForClosing.PublicationLink, dataForClosing.PublicationDate, dbpool, ctx)
 
 								if err != nil {
+									zrlog.Info().Msg(fmt.Sprintf("Error UpdateRequisition(): %+v\n", err))
 
+									//test++
+									fmt.Printf("Error UpdateRequisition(): %v\n\n\n", err)
+									//test--
 								}
 
 								cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
@@ -972,7 +966,8 @@ func main() {
 				if !thisIsAdmin(userID) {
 
 					userPolling.Set(userID, enumapplic.DOCUMENT_TYPE, string(cons.CERTIFICATE))
-					userPolling.Set(userID, enumapplic.TableDB, cons.CERTIFICATE.String())
+					userPolling.Set(userID, enumapplic.DIPLOMA, "false")
+					userPolling.Set(userID, enumapplic.TableDB, cons.TableDB)
 
 					if cacheBotSt.Get(userID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
 
@@ -1000,27 +995,13 @@ func main() {
 					}
 				}
 
-				if thisIsAdmin(userID) {
-
-					closingRequisition.Set(userID, enumapplic.TableDB, cons.CERTIFICATE.String())
-					cacheBotSt.Set(userID, botstate.ASK_DEGREE)
-
-					err = sentToTelegramm(bot, userID, "Выберите степень:", nil, cons.StyleTextCommon, botcommand.SELECT_DEGREE, "", "", false)
-
-					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
-					}
-
-				}
-
 			case cons.DIPLOMA.String():
 
 				if !thisIsAdmin(update.CallbackQuery.Message.Chat.ID) {
 
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, string(cons.DIPLOMA))
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.TableDB, cons.DIPLOMA.String())
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DIPLOMA, "true")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.TableDB, cons.TableDB)
 
 					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
 
@@ -1048,21 +1029,6 @@ func main() {
 					}
 				}
 
-				if thisIsAdmin(update.CallbackQuery.Message.Chat.ID) {
-
-					closingRequisition.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.TableDB, cons.DIPLOMA.String())
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_DEGREE)
-
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Выберите степень:", nil, cons.StyleTextCommon, botcommand.SELECT_DEGREE, "", "", false)
-
-					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
-					}
-
-				}
-
 			case cons.PLACE_DELIVERY_OF_DOCUMENTS1:
 
 				cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
@@ -1070,11 +1036,6 @@ func main() {
 				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
 
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS1)
-
-					//Меняем проверку данных на вопрос прикрепить фото работы
-
-					//cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
-					//err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
 
@@ -1095,11 +1056,6 @@ func main() {
 				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
 
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
-
-					//Меняем проверку данных на вопрос прикрепить фото работы
-
-					// cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
-					// err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", nil, "", false)
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
 
@@ -1395,9 +1351,6 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()), enumapplic.FILE.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton12)
 
-			// inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s", enumapplic.CANSEL_CORRECTION.String()), enumapplic.CANSEL_CORRECTION.String()))
-			// rowsButton = append(rowsButton, inlineKeyboardButton11)
-
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
 			msg := tgbotapi.NewMessage(id, message, styleText)
@@ -1513,7 +1466,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if !thisIsAdmin(id) {
 
-			msg := tgbotapi.NewMessage(id, message, styleText) //Описание (инструкция) подачи заявки для участия в выбранном проекте
+			msg := tgbotapi.NewMessage(id, message, styleText)
 
 			msg.ReplyMarkup = keyboardApplicationStart
 
@@ -1578,10 +1531,10 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE1.String(), string(cons.DEGREE1)))
 		rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE2.String(), string(cons.DEGREE1)))
+		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE2.String(), string(cons.DEGREE2)))
 		rowsButton = append(rowsButton, inlineKeyboardButton2)
 
-		inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE3.String(), string(cons.DEGREE1)))
+		inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE3.String(), string(cons.DEGREE3)))
 		rowsButton = append(rowsButton, inlineKeyboardButton3)
 
 		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1711,8 +1664,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = inlineKeyboardMarkup
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			zrlog.Fatal().Msg(err.Error())
 			return err
 		}
 
@@ -1843,89 +1795,52 @@ func thisIsAdmin(id int64) bool {
 	return false
 }
 
-func parseUserData(messageText string) (error, []string) {
-
-	usersDatas := strings.Split(messageText, "")
-
-	// var userID int64
-	// var username string
-	// var phone string
-
-	for k, v := range usersDatas {
-
-		if k == 0 {
-			_, err := strconv.Atoi(v)
-			if err != nil {
-				return fmt.Errorf("Bad user ID:%W", err), nil
-			}
-		}
-	}
-
-	return nil, usersDatas
-}
-
-func checkUserID(messageText string) bool {
-
-	usersDatas := strings.Split(messageText, " ")
-
-	_, err := strconv.Atoi(usersDatas[0])
-	if err != nil {
-		return false
-	}
-
-	return true
-
-}
-
-func AppendUser(usersDate []string) (error, bool) {
-
-	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		zrlog.Fatal().Msg(fmt.Sprintf("Unable to connect to database:: %v\n", err))
-		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Unable to connect to database: %v\n", err))
-		os.Exit(1)
-
-		return err, false
-	}
-	defer dbpool.Close()
-
-	_, err = dbpool.Query(context.Background(), "INSERT INTO users (userid, username, phone) VALUES ($1,$2,$3)", usersDate[0], usersDate[1], usersDate[2])
-
-	if err != nil {
-		zrlog.Fatal().Msg(fmt.Sprintf("Query to db is failed: %v\n", err))
-		log.Printf("%v,%v", os.Stderr, fmt.Sprintf("Query to db is failed: %v\n", err))
-		os.Exit(1)
-
-		return err, false
-	}
-
-	return nil, true
-
-}
-
 func AddRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) error {
+
+	var requisition_number int
 
 	userData := userPolling.Get(userID)
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, start_date, expiration, close_date) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()), 0)
+	fmt.Printf("userData.TableDB=%v\n\n", userData.TableDB)
+
+	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, diploma, start_date, expiration, close_date) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, userData.Diploma, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()), 0)
 
 	if err != nil {
-		return fmt.Errorf("Query to db is failed: %W", err)
+		return fmt.Errorf("query to db is failed: %W", err)
 	}
 
 	if row.Next() {
 
-		var requisition_number int
-
 		err := row.Scan(&requisition_number)
 
 		if err != nil {
-			return fmt.Errorf("Scan datas of row is failed %w", err)
+			return fmt.Errorf("scan datas of row is failed %w", err)
 		}
 
 		userPolling.Set(userID, enumapplic.REQUISITION_NUMBER, fmt.Sprintf("%v", requisition_number))
+	}
+
+	if userData.Diploma {
+
+		var diploma_number int
+
+		row, err := dbpool.Query(ctx, "insert into diplomas (requisition_number) values ($1) returning diploma_number", requisition_number)
+
+		if err != nil {
+			return fmt.Errorf("query to db is failed: %W", err)
+		}
+
+		if row.Next() {
+
+			err := row.Scan(&diploma_number)
+
+			if err != nil {
+				return fmt.Errorf("Scan datas of row is failed %w", err)
+			}
+
+			userPolling.Set(userID, enumapplic.DIPLOMA_NUMBER, fmt.Sprintf("%v", diploma_number))
+		}
+
 	}
 
 	return row.Err()
@@ -1943,8 +1858,10 @@ func GetRequisition(requisition_number int64, typeDoc string, degree string, pub
 	var email string
 	var contest string
 	var document_type string
+	var diploma bool
+	var diploma_number int64
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type FROM %s WHERE requisition_number = $1", typeDoc), requisition_number)
+	row, err := dbpool.Query(ctx, "SELECT user_id, user_fnp, user_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, diploma, COALESCE(diploma_number, 0) FROM certificates LEFT JOIN diplomas ON certificates.requisition_number=diplomas.requisition_number WHERE certificates.requisition_number = $1", requisition_number)
 
 	if err != nil {
 		return fmt.Errorf("Query to db is failed: %W", err), 0
@@ -1952,7 +1869,7 @@ func GetRequisition(requisition_number int64, typeDoc string, degree string, pub
 
 	if row.Next() {
 
-		err := row.Scan(&userID, &fnp, &age, &name_institution, &locality, &naming_unit, &publication_title, &leader_fnp, &email, &contest, &document_type)
+		err = row.Scan(&userID, &fnp, &age, &name_institution, &locality, &naming_unit, &publication_title, &leader_fnp, &email, &contest, &document_type, &diploma, &diploma_number)
 
 		if err != nil {
 			return fmt.Errorf("Scan datas of row is failed %w", err), 0
@@ -1972,16 +1889,22 @@ func GetRequisition(requisition_number int64, typeDoc string, degree string, pub
 		userPolling.Set(userID, enumapplic.PUBLICATION_LINK, publicationLink)
 		userPolling.Set(userID, enumapplic.PUBLICATION_DATE, publicationDate)
 		userPolling.Set(userID, enumapplic.DEGREE, degree)
-		userPolling.Set(userID, enumapplic.TableDB, typeDoc)
+		userPolling.Set(userID, enumapplic.TableDB, cons.CERTIFICATE.String())
+		userPolling.Set(userID, enumapplic.DIPLOMA, strconv.FormatBool(diploma))
+		if diploma {
+			userPolling.Set(userID, enumapplic.DIPLOMA_NUMBER, strconv.Itoa(int(diploma_number)))
+		}
 
 	}
 
 	return row.Err(), userID
 }
 
-func UpdateRequisition(requisition_number int64, typeDoc string, degree string, publicationLink string, dbpool *pgxpool.Pool, ctx context.Context) (err error) {
+func UpdateRequisition(requisition_number int64, typeDoc string, degree string, publicationLink string, publication_date string, dbpool *pgxpool.Pool, ctx context.Context) (err error) {
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("UPDATE %s SET reference='%s', close_date='%v', degree='%v', email='%s',user_fnp='%s',leader_fnp='%s',user_id='%v' WHERE requisition_number=$1 RETURNING user_id", typeDoc, publicationLink, time.Now().UnixNano(), degree, "", "", "", 0), requisition_number)
+	publicationDate := dateStringToUnixNano(publication_date)
+
+	row, err := dbpool.Query(ctx, fmt.Sprintf("UPDATE %s SET reference='%s', publication_date='%v', close_date='%v', degree='%v', email='%s',user_fnp='%s',leader_fnp='%s',user_id='%v' WHERE requisition_number=$1 RETURNING user_id", typeDoc, publicationLink, publicationDate, time.Now().UnixNano(), degree, "", "", "", 0), requisition_number)
 
 	if err != nil {
 		return fmt.Errorf("Query \"UPDATE\" to db is failed: %W", err)
@@ -1994,9 +1917,25 @@ func UpdateRequisition(requisition_number int64, typeDoc string, degree string, 
 
 func FillInPDFForm(userID int64) (error, string) {
 
+	var x float64
+	var y float64 = 305
+	var step float64 = 15
+	var text string
+	var widthText float64
+	var centerX float64 = 297.5
+	var boilerplatePDFPath string
+
 	usersRequisition := userPolling.Get(userID)
 
-	boilerplatePDFPath := fmt.Sprintf("./external/imgs/%s_%s_degree%v.jpg", contests[usersRequisition.Contest], usersRequisition.TableDB, usersRequisition.Degree)
+	if usersRequisition.TableDB == cons.CERTIFICATE.String() && usersRequisition.LeaderFNP != "" {
+
+		boilerplatePDFPath = fmt.Sprintf("./external/imgs/%s_%s_curator.jpg", contests[usersRequisition.Contest], usersRequisition.TableDB)
+
+	} else {
+
+		boilerplatePDFPath = fmt.Sprintf("./external/imgs/%s_%s.jpg", contests[usersRequisition.Contest], usersRequisition.TableDB)
+
+	}
 
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
@@ -2012,9 +1951,36 @@ func FillInPDFForm(userID int64) (error, string) {
 	rect := &gopdf.Rect{W: 595, H: 842} //Page size A4 format
 	pdf.Image(boilerplatePDFPath, 0, 0, rect)
 
-	//1. Requisition number
+	//1. Degree
 
-	pdf.SetXY(90, 260)
+	pdf.SetXY(240, 210)
+	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
+	err = pdf.SetFont("TelegraphLine", "", 24)
+
+	if err != nil {
+		zrlog.Info().Msg(err.Error())
+	}
+
+	err = pdf.Text(fmt.Sprintf("%v", usersRequisition.Degree))
+
+	if err != nil {
+		zrlog.Info().Msg(err.Error())
+	}
+
+	//2. Requisition number
+
+	switch {
+	case usersRequisition.RequisitionNumber > 10000:
+		x = 70
+	case usersRequisition.RequisitionNumber > 1000:
+		x = 80
+	case usersRequisition.RequisitionNumber > 100:
+		x = 90
+	default:
+		x = 100
+	}
+
+	pdf.SetXY(x, 245)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
 	err = pdf.SetFont("TelegraphLine", "", 14)
 
@@ -2028,11 +1994,10 @@ func FillInPDFForm(userID int64) (error, string) {
 		log.Print(err.Error())
 	}
 
-	//2. Name and Age
+	//3. Name and Age
 
-	pdf.SetXY(200, 290)
-	pdf.SetTextColorCMYK(0, 100, 83, 24) //Red
-	err = pdf.SetFont("TelegraphLine", "", 18)
+	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
+	err = pdf.SetFont("TelegraphLine", "", 24)
 
 	age_string := strconv.Itoa(usersRequisition.Age)
 
@@ -2089,40 +2054,128 @@ func FillInPDFForm(userID int64) (error, string) {
 		}
 	}
 
-	err = pdf.Text(fmt.Sprintf("%s, %s", usersRequisition.FNP, age_string))
+	text = fmt.Sprintf("%s, %s", usersRequisition.FNP, age_string)
+
+	widthText, err = pdf.MeasureTextWidth(text)
+
+	x = centerX - widthText/2
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(text, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		y = pdf.GetY() + 2*step
+
+		for _, t := range arrayText {
+
+			widthText, err = pdf.MeasureTextWidth(t)
+
+			x = centerX - widthText/2
+
+			pdf.SetXY(x, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+
+		pdf.SetXY(x, 270)
+		err = pdf.Text(text)
+		if err != nil {
+			log.Print(err.Error())
+		}
+	}
+
+	//4. Name institution
+
+	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
+	err = pdf.SetFont("TelegraphLine", "", 18)
+
+	widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
 
 	if err != nil {
 		log.Print(err.Error())
 	}
 
-	//3. Name institution
+	if widthText > maxWidthPDF {
 
-	pdf.SetXY(200, 310)
-	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
+		var arrayText []string
 
-	err = pdf.Text(usersRequisition.NameInstitution)
+		arrayText, err = pdf.SplitText(usersRequisition.NameInstitution, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
 
-	if err != nil {
-		log.Print(err.Error())
+		for _, t := range arrayText {
+
+			widthText, err = pdf.MeasureTextWidth(t)
+
+			x = centerX - widthText/2
+
+			pdf.SetXY(x, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+
+		x = centerX - widthText/2
+
+		pdf.SetXY(x, 305)
+		err = pdf.Text(usersRequisition.NameInstitution)
+		if err != nil {
+			log.Print(err.Error())
+		}
 	}
 
-	//4. Locality
+	//5. Locality
 
-	pdf.SetXY(200, 340)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
 
-	err = pdf.Text(usersRequisition.Locality)
+	widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
 
-	if err != nil {
-		log.Print(err.Error())
+	y = pdf.GetY() + 1.5*step
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(usersRequisition.Locality, maxWidthPDF)
+		if err != nil {
+			log.Print(err.Error())
+		}
+
+		for _, t := range arrayText {
+
+			widthText, err = pdf.MeasureTextWidth(t)
+
+			x = centerX - widthText/2
+
+			pdf.SetXY(x, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+
+		x = centerX - widthText/2
+
+		pdf.SetXY(x, y)
+		err = pdf.Text(usersRequisition.Locality)
+		if err != nil {
+			log.Print(err.Error())
+		}
 	}
 
-	//5. Naming unit
+	//6. Naming unit
 
-	pdf.SetXY(180, 625)
+	pdf.SetXY(152, 622)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
-
-	err = pdf.SetFont("TelegraphLine", "", 16)
 
 	err = pdf.Text(usersRequisition.NamingUnit)
 
@@ -2132,7 +2185,7 @@ func FillInPDFForm(userID int64) (error, string) {
 
 	//6. Publication title
 
-	pdf.SetXY(200, 660)
+	pdf.SetXY(194, 645)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
 
 	err = pdf.Text(usersRequisition.PublicationTitle)
@@ -2141,12 +2194,23 @@ func FillInPDFForm(userID int64) (error, string) {
 		log.Print(err.Error())
 	}
 
-	//7. Publication date
+	//7. Leader's FNP
 
-	pdf.SetXY(400, 760)
+	if usersRequisition.TableDB == cons.CERTIFICATE.String() && usersRequisition.LeaderFNP != "" {
+
+		pdf.SetXY(194, 668)
+
+		err = pdf.Text(usersRequisition.LeaderFNP)
+
+		if err != nil {
+			log.Print(err.Error())
+		}
+	}
+
+	//8. Publication date
+
+	pdf.SetXY(355, 717)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
-
-	err = pdf.SetFont("TelegraphLine", "", 16)
 
 	err = pdf.Text(usersRequisition.PublicationDate)
 
@@ -2154,12 +2218,10 @@ func FillInPDFForm(userID int64) (error, string) {
 		log.Print(err.Error())
 	}
 
-	//8. Publication link
+	//9. Publication link
 
-	pdf.SetXY(200, 780)
+	pdf.SetXY(50, 740)
 	pdf.SetTextColorCMYK(30, 0, 0, 100) //black
-
-	err = pdf.SetFont("TelegraphLine", "", 16)
 
 	err = pdf.Text(usersRequisition.PublicationLink)
 
@@ -2613,11 +2675,6 @@ func UserDataToStringForTelegramm(userID int64) string {
 		text = strings.Join(body, "\n")
 
 		body = append(body, "___________________________________")
-		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.TableDB.String()))
-		body = append(body, fmt.Sprintf("   %s", data.TableDB))
-		text = strings.Join(body, "\n")
-
-		body = append(body, "___________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.DEGREE.String()))
 		body = append(body, fmt.Sprintf("   %s", data.Degree))
 		text = strings.Join(body, "\n")
@@ -2714,25 +2771,18 @@ func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.C
 
 		if botstateindex == botstate.ASK_PHOTO.EnumIndex() {
 			userPolling.Set(userID, enumapplic.PHOTO, file_path)
-			fmt.Printf("Здесь\n\n")
 		}
 
 		if botstateindex == botstate.ASK_FILE.EnumIndex() {
 			userPolling.Set(userID, enumapplic.FILE, file_path)
-			fmt.Printf("Тут!!!!!!!!\n\n\n")
 		}
 
 		err = downloadFile(file_path, url)
 
 		if err != nil {
 			zrlog.Fatal().Msg(fmt.Sprintf("bot can't download this file: %+v\n", err.Error()))
-			log.Printf("FATAL: %v", fmt.Sprintf("bot can't download this file: %+v\n", err.Error()))
-
-		} else {
-			fmt.Printf("Скачан файл!\n\n\n")
 		}
 
-		fmt.Printf("Выходные данные %v\n\n", userData)
 	}
 
 }
@@ -2768,4 +2818,32 @@ func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
 func deleteClosingRequisition(userID int64) {
 	closingRequisition.Delete(userID)
 	cacheBotSt.Set(userID, botstate.UNDEFINED)
+}
+
+func dateStringToUnixNano(dateString string) int64 {
+
+	var d string
+	var m string
+	var y string
+
+	sliceDate := strings.Split(dateString, ".")
+
+	for k, v := range sliceDate {
+
+		switch k {
+		case 0:
+			d = v
+		case 1:
+			m = v
+		case 2:
+			y = v
+		}
+	}
+
+	formatted := fmt.Sprintf("%s-%s-%s", y, m, d)
+
+	date, _ := time.Parse(cons.TimeshortForm, formatted)
+
+	return date.UnixNano()
+
 }
