@@ -9,7 +9,9 @@ const (
 	SELECT_PROJECT
 	CANCEL
 	CANCEL_APPLICATION
+	CONTINUE
 	CONTINUE_DATA_POLLING
+	FURTHER
 	DOWN
 	SELECT_FNP_LEADER
 	SELECT_DOCUMENT_TYPE
@@ -29,6 +31,8 @@ const (
 	GET_PUBLICATION_LINK
 	GET_PUBLICATION_DATE
 	CLOSE_REQUISITION_END
+	GET_DIPLOMA
+	ACCESS_DENIED
 )
 
 func (c BotCommand) String() string {
@@ -52,7 +56,12 @@ func (c BotCommand) String() string {
 		return "Настройки"
 	case CONFIRM:
 		return "Подтвердить"
-
+	case CONTINUE:
+		return "Продолжить"
+	case FURTHER:
+		return "Далее"
+	case GET_DIPLOMA:
+		return "Получить диплом" 
 	}
 
 	return "Undefined"

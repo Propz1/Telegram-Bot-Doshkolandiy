@@ -28,7 +28,7 @@ const (
 	PLACE_DELIVERY_OF_DOCUMENTS1              = "Электронная почта"
 	PLACE_DELIVERY_OF_DOCUMENTS2              = "Телеграмм"
 	TableDB                                   = "certificates"
-	TimeshortForm                             = "2006-01-02"
+	TimeshortForm                             = "2006-02-01"
 )
 
 func (s InlineButton) String() string {

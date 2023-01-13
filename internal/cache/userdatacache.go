@@ -52,6 +52,8 @@ type dataPolling struct {
 	Locality               string
 	NamingUnit             string
 	PublicationTitle       string
+	PublicationDate        string
+	PublicationLink        string
 	LeaderFNP              string
 	Email                  string
 	DocumentType           string
@@ -64,9 +66,7 @@ type dataPolling struct {
 	Agree                  bool
 	Photo                  string
 	Files                  []string
-	PublicationLink        string
 	Degree                 int
-	PublicationDate        string
 }
 
 type dataClosingRequisition struct {
