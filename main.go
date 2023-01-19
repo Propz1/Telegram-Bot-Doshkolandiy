@@ -94,18 +94,23 @@ var (
 	)
 
 	contests = map[string]string{
-		"Синичка невеличка и ee друзья": "Titmouse",
-		"Мама лучший друг":              "Mather",
-		"Методическая находка":          "Find",
-		"Осень и ee дары":               "Autumn",
+		"Синичка невеличка и ee друзья":     "Titmouse",
+		"Мама лучший друг":                  "Mather",
+		"Папа лучший друг":                  "Father",
+		"Осень и ee дары":                   "Autumn",
+		"Зимушка-зима в гости к нам пришла": "Winter",
+		"Снежинки-балеринки":                "Snowflakes",
+		"Мой веселый снеговик":              "Snowman",
+		"Символ года":                       "Symbol",
+		"Сердечки для любимых":              "Heart",
+		"Секреты новогодней ёлки":           "Secrets",
+		"Покормите птиц зимой":              "BirdsFeeding",
+		"Широкая масленица":                 "Shrovetide",
+		"В гостях у сказки":                 "Fable",
 	}
 
 	userPolling        = cache.NewCacheDataPolling()
 	closingRequisition = cache.NewCacheDataClosingRequisition()
-	// msgToUser          string
-
-	botsCommand = [10]string{"CompletedApplication", "SendPublication", "Movements", "MovementsPDF", "/start", "EnterPassword", "Settings", "AppendUser", "ShowUsers", "DeleteUser"}
-
 	cellOption_Caption = gopdf.CellOption{Align: 16}
 	cellOption_Default = gopdf.CellOption{Align: 8}
 
@@ -688,7 +693,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_TITLE, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP_LEADER)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (нажать \"Далее\" если нет руководителя):", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_FNP_LEADER, "", "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (через запятую, если двое) или нажмите \"Далее\" если нет руководителя:", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_FNP_LEADER, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -753,7 +758,7 @@ func main() {
 
 				case botstate.ASK_EMAIL:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, messageText)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, strings.TrimSpace(messageText))
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE)
 
 					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", "", false)
@@ -766,7 +771,7 @@ func main() {
 
 				case botstate.ASK_EMAIL_CORRECTION:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, messageText)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, strings.TrimSpace(messageText))
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
 					err = sentToTelegramm(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
@@ -977,8 +982,6 @@ func main() {
 
 			switch callbackQueryText {
 
-			case string(cons.CONTEST_Autumn):
-
 			case string(cons.CONTEST_Titmouse):
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Titmouse.String())
@@ -995,7 +998,25 @@ func main() {
 
 			case string(cons.CONTEST_Mather):
 
-			case string(cons.CONTEST_Find):
+			case string(cons.CONTEST_Father):
+
+			case string(cons.CONTEST_Autumn):
+
+			case string(cons.CONTEST_Winter):
+
+			case string(cons.CONTEST_Snowflakes):
+
+			case string(cons.CONTEST_Snowman):
+
+			case string(cons.CONTEST_Symbol):
+
+			case string(cons.CONTEST_Heart):
+
+			case string(cons.CONTEST_Secrets):
+
+			case string(cons.CONTEST_Shrovetide):
+
+			case string(cons.CONTEST_Fable):
 
 			case string(cons.DEGREE1):
 
@@ -1279,7 +1300,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_LEADER_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя:", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (через запятую, если два):", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1544,18 +1565,54 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton4 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton5 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton6 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton7 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton8 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton9 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton10 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton11 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton12 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton13 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Autumn.String(), string(cons.CONTEST_Autumn)))
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Titmouse.String(), string(cons.CONTEST_Titmouse)))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Titmouse.String(), string(cons.CONTEST_Titmouse)))
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Mather.String(), string(cons.CONTEST_Mather)))
 			rowsButton = append(rowsButton, inlineKeyboardButton2)
 
-			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Mather.String(), string(cons.CONTEST_Mather)))
+			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Father.String(), string(cons.CONTEST_Father)))
 			rowsButton = append(rowsButton, inlineKeyboardButton3)
 
-			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Find.String(), string(cons.CONTEST_Find)))
+			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Autumn.String(), string(cons.CONTEST_Autumn)))
 			rowsButton = append(rowsButton, inlineKeyboardButton4)
+
+			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Winter.String(), string(cons.CONTEST_Winter)))
+			rowsButton = append(rowsButton, inlineKeyboardButton5)
+
+			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Snowflakes.String(), string(cons.CONTEST_Snowflakes)))
+			rowsButton = append(rowsButton, inlineKeyboardButton6)
+
+			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Snowman.String(), string(cons.CONTEST_Snowman)))
+			rowsButton = append(rowsButton, inlineKeyboardButton7)
+
+			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Symbol.String(), string(cons.CONTEST_Symbol)))
+			rowsButton = append(rowsButton, inlineKeyboardButton8)
+
+			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Heart.String(), string(cons.CONTEST_Heart)))
+			rowsButton = append(rowsButton, inlineKeyboardButton9)
+
+			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Secrets.String(), string(cons.CONTEST_Secrets)))
+			rowsButton = append(rowsButton, inlineKeyboardButton10)
+
+			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_BirdsFeeding.String(), string(cons.CONTEST_BirdsFeeding)))
+			rowsButton = append(rowsButton, inlineKeyboardButton11)
+
+			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Shrovetide.String(), string(cons.CONTEST_Shrovetide)))
+			rowsButton = append(rowsButton, inlineKeyboardButton12)
+
+			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Fable.String(), string(cons.CONTEST_Fable)))
+			rowsButton = append(rowsButton, inlineKeyboardButton13)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -2148,7 +2205,9 @@ func FillInPDFForm(userID int64) error {
 
 	//1. Degree
 
-	pdf.SetXY(241, 211)
+	var degree string
+
+	pdf.SetXY(235, 211)
 	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
 	err = pdf.SetFont("TelegraphLine", "", 24)
 
@@ -2156,7 +2215,17 @@ func FillInPDFForm(userID int64) error {
 		zrlog.Info().Msg(err.Error())
 	}
 
-	err = pdf.Text(fmt.Sprintf("%v", usersRequisition.Degree))
+	switch usersRequisition.Degree {
+
+	case 1:
+		degree = "I"
+	case 2:
+		degree = "II"
+	case 3:
+		degree = "III"
+	}
+
+	err = pdf.Text(fmt.Sprintf("%s", degree))
 
 	if err != nil {
 		zrlog.Info().Msg(err.Error())
@@ -2278,7 +2347,6 @@ func FillInPDFForm(userID int64) error {
 		}
 
 	} else {
-
 		pdf.SetXY(x, 270)
 		err = pdf.Text(nameAndAge)
 		if err != nil {
@@ -2393,12 +2461,108 @@ func FillInPDFForm(userID int64) error {
 
 	if usersRequisition.LeaderFNP != "" {
 
-		pdf.SetXY(194, 668)
+		y = 668
+		x = 194
 
-		err = pdf.Text(usersRequisition.LeaderFNP)
+		pdf.SetXY(x, y)
 
-		if err != nil {
-			log.Print(err.Error())
+		var arrayLeaders []string
+		var maxWidth float64
+
+		contain := strings.Contains(usersRequisition.LeaderFNP, cons.Comma)
+
+		switch contain {
+
+		case true:
+
+			arrayLeaders = strings.Split(usersRequisition.LeaderFNP, cons.Comma)
+
+			for i, leader := range arrayLeaders {
+
+				if i == 0 {
+					leader = fmt.Sprintf("%s,", strings.TrimSpace(leader))
+					maxWidth = (maxWidthPDF + 225) / 2
+				} else {
+					leader = strings.TrimSpace(leader)
+					y = pdf.GetY() + 1.2*step
+					maxWidth = maxWidthPDF
+				}
+
+				widthText, err = pdf.MeasureTextWidth(leader)
+
+				if widthText > maxWidth {
+
+					var arrayText []string
+
+					arrayText, err = pdf.SplitText(leader, maxWidth)
+					if err != nil {
+						log.Print(err.Error())
+					}
+
+					for k, t := range arrayText {
+
+						widthText, err = pdf.MeasureTextWidth(t)
+
+						if i > 0 || k > 0 { //Second leader or second part part first leader
+							x = 55
+						}
+
+						pdf.SetXY(x, y)
+						pdf.Text(t)
+						y = y + 1.2*step
+					}
+
+				} else {
+
+					if i > 0 { //Second leader
+						x = 55
+					}
+
+					pdf.SetXY(x, y)
+
+					err = pdf.Text(leader)
+					if err != nil {
+						log.Print(err.Error())
+					}
+
+					y = y + 1.2*step
+				}
+
+			}
+
+		case false:
+
+			maxWidth = (maxWidthPDF + 225) / 2
+			widthText, err = pdf.MeasureTextWidth(usersRequisition.LeaderFNP)
+
+			if widthText > maxWidth {
+
+				var arrayText []string
+
+				arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidth)
+				if err != nil {
+					log.Print(err.Error())
+				}
+
+				for k, t := range arrayText {
+
+					if k > 0 {
+						x = 55
+					}
+
+					pdf.SetXY(x, y)
+					pdf.Text(t)
+					y = y + 1.2*step
+				}
+
+			} else {
+
+				pdf.SetXY(x, y)
+				err = pdf.Text(usersRequisition.LeaderFNP)
+				if err != nil {
+					log.Print(err.Error())
+				}
+			}
 		}
 	}
 
@@ -2463,18 +2627,9 @@ func FillInPDFForm(userID int64) error {
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
 	err = pdf.SetFont("TelegraphLine", "", 14)
 
-	switch {
-	case usersRequisition.RequisitionNumber > 10000:
-		x = 61
-	case usersRequisition.RequisitionNumber > 1000:
-		x = 71
-	case usersRequisition.RequisitionNumber > 100:
-		x = 81
-	default:
-		x = 91
-	}
+	x = 90
 
-	pdf.SetXY(x, 262)
+	pdf.SetXY(x, 242)
 
 	if err != nil {
 		log.Print(err.Error())
@@ -2488,47 +2643,104 @@ func FillInPDFForm(userID int64) error {
 
 	//2. Leader's FNP
 	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
-	err = pdf.SetFont("TelegraphLine", "", 24)
+	err = pdf.SetFont("TelegraphLine", "", 18)
+	var arrayLeaders []string
 
-	widthText, err = pdf.MeasureTextWidth(usersRequisition.LeaderFNP)
-	y = 270
-	x = centerX - widthText/2
+	y = 262
 
-	if widthText > maxWidthPDF {
+	contain := strings.Contains(usersRequisition.LeaderFNP, cons.Comma)
 
-		var arrayText []string
+	switch contain {
 
-		arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidthPDF)
-		if err != nil {
-			log.Print(err.Error())
-		}
+	case true:
 
-		y = pdf.GetY() + 2*step
+		arrayLeaders = strings.Split(usersRequisition.LeaderFNP, cons.Comma)
 
-		for _, t := range arrayText {
+		for i, leader := range arrayLeaders {
 
-			widthText, err = pdf.MeasureTextWidth(t)
+			if i == 0 {
+				leader = fmt.Sprintf("%s,", strings.TrimSpace(leader))
+			} else {
+				leader = strings.TrimSpace(leader)
+				y = pdf.GetY() + 1.3*step
+			}
 
+			widthText, err = pdf.MeasureTextWidth(leader)
 			x = centerX - widthText/2
 
-			pdf.SetXY(x, y)
-			pdf.Text(t)
-			y = y + step
+			if widthText > maxWidthPDF {
+
+				var arrayText []string
+
+				arrayText, err = pdf.SplitText(leader, maxWidthPDF)
+				if err != nil {
+					log.Print(err.Error())
+				}
+
+				for _, t := range arrayText {
+
+					widthText, err = pdf.MeasureTextWidth(t)
+
+					x = centerX - widthText/2
+
+					pdf.SetXY(x, y)
+
+					pdf.Text(t)
+					y = y + 1.2*step
+				}
+
+			} else {
+
+				pdf.SetXY(x, y)
+				err = pdf.Text(leader)
+				if err != nil {
+					log.Print(err.Error())
+				}
+
+			}
+
 		}
 
-	} else {
+	case false:
 
-		pdf.SetXY(x, y)
-		err = pdf.Text(usersRequisition.LeaderFNP)
-		if err != nil {
-			log.Print(err.Error())
+		if widthText > maxWidthPDF {
+
+			var arrayText []string
+
+			arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidthPDF)
+			if err != nil {
+				log.Print(err.Error())
+			}
+
+			y = pdf.GetY() + 2*step
+
+			for _, t := range arrayText {
+
+				widthText, err = pdf.MeasureTextWidth(t)
+
+				x = centerX - widthText/2
+
+				pdf.SetXY(x, y)
+				pdf.Text(t)
+				y = y + 1.2*step
+			}
+
+		} else {
+
+			pdf.SetXY(x, y)
+			err = pdf.Text(usersRequisition.LeaderFNP)
+			if err != nil {
+				log.Print(err.Error())
+			}
 		}
 	}
 
 	//3. Name institution
 
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
-	err = pdf.SetFont("TelegraphLine", "", 18)
+	err = pdf.SetFont("TelegraphLine", "", 16)
+
+	y = pdf.GetY() + 1.5*step
 
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
 
@@ -2560,7 +2772,7 @@ func FillInPDFForm(userID int64) error {
 
 		x = centerX - widthText/2
 
-		pdf.SetXY(x, 305)
+		pdf.SetXY(x, y)
 		err = pdf.Text(usersRequisition.NameInstitution)
 		if err != nil {
 			log.Print(err.Error())
@@ -2568,6 +2780,7 @@ func FillInPDFForm(userID int64) error {
 	}
 
 	//4. Locality
+	err = pdf.SetFont("TelegraphLine", "", 16)
 
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
 
@@ -2645,9 +2858,19 @@ func FillInPDFForm(userID int64) error {
 	}
 
 	//9. Degree
-	pdf.SetXY(226, 717)
+	pdf.SetXY(228, 717)
 
-	err = pdf.Text(fmt.Sprintf(", %v", usersRequisition.Degree))
+	switch usersRequisition.Degree {
+
+	case 1:
+		degree = "I"
+	case 2:
+		degree = "II"
+	case 3:
+		degree = "III"
+	}
+
+	err = pdf.Text(fmt.Sprintf(", %s", degree))
 
 	if err != nil {
 		log.Print(err.Error())
