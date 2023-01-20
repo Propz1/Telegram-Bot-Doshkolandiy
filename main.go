@@ -980,6 +980,8 @@ func main() {
 			callbackQueryData := bytes.TrimPrefix([]byte(update.CallbackQuery.Data), []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
 			callbackQueryText := string(callbackQueryData[:])
 
+			var description string
+
 			switch callbackQueryText {
 
 			case string(cons.CONTEST_Titmouse):
@@ -987,36 +989,145 @@ func main() {
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Titmouse.String())
 
 				//Concise description of contest
-				description := GetConciseDescription(string(cons.CONTEST_Titmouse))
+				description = GetConciseDescription(string(cons.CONTEST_Titmouse))
 
 				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case string(cons.CONTEST_Mather):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Mather.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Mather))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Father):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Father.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Father))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Autumn):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Autumn.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Autumn))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Winter):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Winter.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Winter))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Snowflakes):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Snowflakes.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Snowflakes))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Snowman):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Snowman.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Snowman))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Symbol):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Symbol.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Symbol))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Heart):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Heart.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Heart))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Secrets):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Secrets.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Secrets))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Shrovetide):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Shrovetide.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Shrovetide))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.CONTEST_Fable):
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Fable.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_Fable))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
 
 			case string(cons.DEGREE1):
 
@@ -1640,28 +1751,10 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 				return err
 			}
 
-			msg = tgbotapi.NewMessage(id, "или здесь", styleText)
-
-			msg.ReplyMarkup = keyboardApplicationStart
-
-			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
-				return err
-			}
-
-			err := sentToTelegrammPDF(bot, id, "./external/files/Положение ТК Синичка невеличка и ее друзья.pdf", "", botcommand.SELECT_PROJECT)
-
-			if err != nil {
-				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
-				return err
-			}
-
 			body := make([]string, 3)
 			body = append(body, "В любой момент вы можете отменить заявку, нажав \"Отмена\"")
 			body = append(body, "")
-			body = append(body, "Для продолжения заполнения заявки, необходимо дать согласие на обработку персональных данных и нажать \"Продолжить\".\n Ознакомиться с пользователським соглашением и политикой конфидециальности\n можно по ссылке https://vk.com/topic-138597952_49458742 ")
+			body = append(body, fmt.Sprintf("Для продолжения заполнения заявки, необходимо дать согласие на обработку персональных данных и нажать \"Продолжить\".\n Ознакомиться с пользователським соглашением и политикой конфидециальности\n можно по ссылке %s", os.Getenv("PrivacyPolicy_Terms_Conditions")))
 			text := strings.Join(body, "\n")
 
 			var rowsButton [][]tgbotapi.InlineKeyboardButton
@@ -1678,7 +1771,6 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
 				return err
 			}
 
@@ -3371,7 +3463,10 @@ func GetConciseDescription(contest string) string {
 
 	body := make([]string, 14)
 
-	if contest == string(cons.CONTEST_Titmouse) {
+	if contest == string(cons.CONTEST_Titmouse) || contest == string(cons.CONTEST_Mather) || contest == string(cons.CONTEST_Father) || contest == string(
+		cons.CONTEST_Autumn) || contest == string(cons.CONTEST_Winter) || contest == string(cons.CONTEST_Snowflakes) || contest == string(cons.CONTEST_Snowman) || contest == string(
+		cons.CONTEST_Symbol) || contest == string(cons.CONTEST_Heart) || contest == string(cons.CONTEST_Secrets) || contest == string(cons.CONTEST_BirdsFeeding) || contest == string(
+		cons.CONTEST_Shrovetide) || contest == string(cons.CONTEST_Fable) {
 
 		body = append(body, "<b>В заявке потребуется указать следующие данные:\n</b>")
 		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
