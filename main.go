@@ -125,7 +125,7 @@ func main() {
 
 	logFile, err := os.OpenFile("./temp/info.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	zrlog.Logger.Output(logFile)
-	log.SetOutput(logFile)
+	//log.SetOutput(logFile)
 
 	if err != nil {
 		zrlog.Fatal().Msg(err.Error())
@@ -135,13 +135,12 @@ func main() {
 	err = godotenv.Load("app.env")
 	if err != nil {
 		zrlog.Fatal().Msg("Error loading .env file: ")
-		log.Printf("FATAL: %s", "Error loading .env file: ")
 	}
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		zrlog.Fatal().Msg(err.Error())
-		log.Printf("FATAL: %v", err.Error())
+		//log.Printf("FATAL: %v", err.Error())
 	}
 
 	bot.Debug = true
@@ -154,21 +153,21 @@ func main() {
 	_, err = bot.SetWebhook(webHookInfo)
 	if err != nil {
 		zrlog.Fatal().Msg(err.Error())
-		log.Printf("FATAL: %v", err.Error())
+		//log.Printf("FATAL: %v", err.Error())
 	}
 	info, err := bot.GetWebhookInfo()
 	if err != nil {
 		zrlog.Fatal().Msg(err.Error())
-		log.Printf("FATAL: %v", err.Error())
+		//log.Printf("FATAL: %v", err.Error())
 	}
 	if info.LastErrorDate != 0 {
 		zrlog.Fatal().Msg(fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
-		log.Printf("FATAL: %v", fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
+		//log.Printf("FATAL: %v", fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
 	}
 	updates := bot.ListenForWebhook("/" + bot.Token)
 
 	zrlog.Info().Msg(fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
-	log.Printf("INFO: %v", fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
+	//log.Printf("INFO: %v", fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
 
 	go http.ListenAndServeTLS("0.0.0.0:8443", cons.CERT_PAHT, cons.KEY_PATH, nil)
 
@@ -216,7 +215,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -236,7 +235,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -256,7 +255,7 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					return
 				}
 
@@ -305,7 +304,7 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case botcommand.SELECT_PROJECT.String():
@@ -314,11 +313,11 @@ func main() {
 
 					if userPolling.Get(update.Message.Chat.ID).Agree {
 
-						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+						err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -330,7 +329,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 					}
@@ -345,7 +344,7 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case botcommand.CANCEL_APPLICATION.String():
@@ -356,18 +355,18 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case botcommand.START_APPLICATION.String():
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
 
-				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", "", false)
+				err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", "", false)
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case "Настройки":
@@ -376,7 +375,7 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.SETTINGS)
@@ -486,7 +485,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -499,7 +498,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -536,15 +535,19 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_AGE)
 
-					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника/группы участников (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
 				case botstate.ASK_FNP_CORRECTION:
+
+					//test
+					fmt.Printf("%v\n", "Попал в нужное меню: botstate.ASK_FNP_CORRECTION")
+					//test
 
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
 
@@ -554,7 +557,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -564,13 +567,13 @@ func main() {
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("Error convert age: %+v\n", err.Error()))
-						log.Printf("ERROR: %v", fmt.Sprintf("Error convert age: %+v\n", err.Error()))
+						//log.Printf("ERROR: %v", fmt.Sprintf("Error convert age: %+v\n", err.Error()))
 
 						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 					} else if age > 120 || age == 0 || age < 0 {
@@ -579,7 +582,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -592,7 +595,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 					}
@@ -606,7 +609,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -619,7 +622,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -632,7 +635,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -645,7 +648,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -658,7 +661,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -671,7 +674,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -684,7 +687,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -697,7 +700,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -710,7 +713,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -725,7 +728,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -738,7 +741,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 					}
@@ -752,7 +755,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -765,7 +768,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -778,7 +781,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -792,7 +795,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -804,7 +807,7 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+								//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 								return
 							}
 
@@ -814,7 +817,7 @@ func main() {
 							dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
+								//log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
 								os.Exit(1)
 								return
 							}
@@ -826,7 +829,7 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error append requisition to db: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Error append requisition to db: %+v\n", err.Error()))
+								//log.Printf("FATAL: %v", fmt.Sprintf("Error append requisition to db: %+v\n", err.Error()))
 								os.Exit(1)
 								return
 							}
@@ -835,8 +838,7 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
-								fmt.Printf(err.Error())
+								//log.Printf("FATAL: %v", fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
 							}
 
 							if !ok {
@@ -864,12 +866,8 @@ func main() {
 								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, *userPolling, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
 
 								if err != nil {
-
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
-									log.Printf("FATAL: %v", fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
-
-									fmt.Printf("%v", err)
-
+									//log.Printf("FATAL: %v", fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error())
 								}
 
 								if send {
@@ -882,7 +880,7 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+									//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 									return
 								}
 
@@ -899,7 +897,7 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
-								log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
+								//log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
 								os.Exit(1)
 								return
 							}
@@ -954,7 +952,7 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+									//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 									return
 								}
 							}
@@ -1105,6 +1103,19 @@ func main() {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
+			case string(cons.CONTEST_BirdsFeeding):
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_BirdsFeeding.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_BirdsFeeding))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
+
 			case string(cons.CONTEST_Shrovetide):
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Shrovetide.String())
 
@@ -1140,7 +1151,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1159,7 +1170,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -1179,7 +1190,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -1204,7 +1215,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -1216,7 +1227,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 					}
@@ -1238,7 +1249,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 
@@ -1250,7 +1261,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 							return
 						}
 					}
@@ -1258,9 +1269,7 @@ func main() {
 
 			case cons.PLACE_DELIVERY_OF_DOCUMENTS1:
 
-				cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
-
-				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS {
 
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS1)
 
@@ -1270,17 +1279,30 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
 				}
 
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS1)
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+				}
+
 			case cons.PLACE_DELIVERY_OF_DOCUMENTS2:
 
-				cb := cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID)
-
-				if cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS || cb == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS {
 
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
 
@@ -1290,7 +1312,23 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						return
+					}
+
+				}
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+
+					if err != nil {
+						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1305,7 +1343,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1317,11 +1355,10 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v Введите ФИО:", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.START_APPLICATION, "", "", false)
-
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					}
 
 				}
@@ -1332,11 +1369,11 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_AGE_CORRECTION)
 
-					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника/группы участников (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1352,7 +1389,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1368,7 +1405,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1384,7 +1421,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1400,7 +1437,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 				}
@@ -1415,7 +1452,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1431,7 +1468,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1447,7 +1484,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1463,7 +1500,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 				}
@@ -1478,7 +1515,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1494,7 +1531,7 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						return
 					}
 
@@ -1508,7 +1545,7 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					return
 				}
 
@@ -1610,7 +1647,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
+				//log.Printf("PANIC: %v", err.Error())
 				return err
 			}
 
@@ -1628,7 +1665,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1656,7 +1693,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1732,7 +1769,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
+				//log.Printf("PANIC: %v", err.Error())
 				return err
 			}
 		}
@@ -1747,7 +1784,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
+				//log.Printf("PANIC: %v", err.Error())
 				return err
 			}
 
@@ -1820,7 +1857,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1831,7 +1868,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1856,7 +1893,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
+				//log.Printf("PANIC: %v", err.Error())
 				return err
 			}
 
@@ -1874,7 +1911,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1890,7 +1927,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1906,7 +1943,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1955,7 +1992,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 			if _, err := bot.Send(msg); err != nil {
 				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
+				//log.Printf("PANIC: %v", err.Error())
 				return err
 			}
 		}
@@ -1972,7 +2009,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -1988,7 +2025,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -2042,7 +2079,7 @@ func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
+			//log.Printf("PANIC: %v", err.Error())
 			return err
 		}
 
@@ -2287,7 +2324,8 @@ func FillInPDFForm(userID int64) error {
 	err := pdf.AddTTFFont("TelegraphLine", "./external/fonts/ttf/TelegraphLine.ttf")
 
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
+		//log.Print(err.Error())
 	}
 
 	pdf.AddPage()
@@ -2341,13 +2379,13 @@ func FillInPDFForm(userID int64) error {
 	err = pdf.SetFont("TelegraphLine", "", 14)
 
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	err = pdf.Text(fmt.Sprintf("%v", usersRequisition.RequisitionNumber))
 
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	//3. Name and Age
@@ -2422,7 +2460,7 @@ func FillInPDFForm(userID int64) error {
 
 		arrayText, err = pdf.SplitText(nameAndAge, maxWidthPDF)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		y = pdf.GetY() + 2*step
@@ -2442,7 +2480,7 @@ func FillInPDFForm(userID int64) error {
 		pdf.SetXY(x, 270)
 		err = pdf.Text(nameAndAge)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 	}
 
@@ -2463,7 +2501,7 @@ func FillInPDFForm(userID int64) error {
 
 		arrayText, err = pdf.SplitText(usersRequisition.NameInstitution, maxWidthPDF)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		for _, t := range arrayText {
@@ -2484,7 +2522,7 @@ func FillInPDFForm(userID int64) error {
 		pdf.SetXY(x, 305)
 		err = pdf.Text(usersRequisition.NameInstitution)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 	}
 
@@ -2502,7 +2540,7 @@ func FillInPDFForm(userID int64) error {
 
 		arrayText, err = pdf.SplitText(usersRequisition.Locality, maxWidthPDF)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		for _, t := range arrayText {
@@ -2523,7 +2561,7 @@ func FillInPDFForm(userID int64) error {
 		pdf.SetXY(x, y)
 		err = pdf.Text(usersRequisition.Locality)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 	}
 
@@ -2818,6 +2856,10 @@ func FillInPDFForm(userID int64) error {
 			}
 
 		} else {
+
+			widthText, err = pdf.MeasureTextWidth(usersRequisition.LeaderFNP)
+
+			x = centerX - widthText/2
 
 			pdf.SetXY(x, y)
 			err = pdf.Text(usersRequisition.LeaderFNP)
