@@ -1,6 +1,6 @@
 package cons
 
-type TablesDB string
+//type TablesDB string
 type InlineButton string
 
 const (
@@ -34,8 +34,8 @@ const (
 	CERTIFICATE                  InlineButton = "Грамота"
 	CERTIFICATE_AND_DIPLOMA      InlineButton = "Грамота и диплом куратора"
 	DIPLOMA                      InlineButton = "Диплом куратора"
-	PLACE_DELIVERY_OF_DOCUMENTS1              = "Электронная почта"
-	PLACE_DELIVERY_OF_DOCUMENTS2              = "Телеграмм"
+	PLACE_DELIVERY_OF_DOCUMENTS1 string       = "Электронная почта"
+	PLACE_DELIVERY_OF_DOCUMENTS2 string       = "Телеграм"
 	TableDB                                   = "certificates"
 	TimeshortForm                             = "2006-02-01"
 	Comma                                     = ","

@@ -77,6 +77,7 @@ type dataClosingRequisition struct {
 	Degree            string
 	PublicationLink   string
 	PublicationDate   string
+	UserID            int64
 }
 
 type CacheDataClosingRequisition struct {
@@ -141,6 +142,9 @@ func (c *CacheDataClosingRequisition) Set(userID int64, enum enumapplic.ApplicEn
 		st.PublicationLink = text
 	case enumapplic.PUBLICATION_DATE:
 		st.PublicationDate = text
+	case enumapplic.USER_ID:
+		u_id, _ := strconv.Atoi(text)
+		st.UserID = int64(u_id)
 	}
 
 	c.closingRequisitionCache[userID] = st

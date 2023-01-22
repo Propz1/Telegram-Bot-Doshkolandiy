@@ -31,6 +31,7 @@ const (
 	DEGREE
 	PUBLICATION_LINK
 	PUBLICATION_DATE
+	USER_ID
 )
 
 func (e ApplicEnum) String() string {

@@ -9,6 +9,7 @@ const (
 	SELECT_PROJECT
 	CANCEL
 	CANCEL_APPLICATION
+	CANCEL_CLOSE_REQUISITION
 	CONTINUE
 	CONTINUE_DATA_POLLING
 	FURTHER
@@ -17,6 +18,7 @@ const (
 	SELECT_DOCUMENT_TYPE
 	SELECT_PLACE_DELIVERY_OF_DOCUMENTS
 	CHECK_DATA
+	CHECK_PDF_FILES
 	COMPLETE_APPLICATION
 	START_APPLICATION
 	END_APPLICATION
@@ -33,6 +35,7 @@ const (
 	CLOSE_REQUISITION_END
 	GET_DIPLOMA
 	ACCESS_DENIED
+	SEND_PDF_FILES
 )
 
 func (c BotCommand) String() string {
@@ -61,7 +64,13 @@ func (c BotCommand) String() string {
 	case FURTHER:
 		return "Далее"
 	case GET_DIPLOMA:
-		return "Получить диплом" 
+		return "Получить диплом"
+	case SEND_PDF_FILES:
+		return "Подтверждаю закрытие"
+	case CANCEL_CLOSE_REQUISITION:
+		return "Отменяю закрытие"
+	case START:
+		return "/start"
 	}
 
 	return "Undefined"
