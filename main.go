@@ -131,16 +131,10 @@ var (
 
 func main() {
 
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
 	logFile, err := os.OpenFile("./temp/info.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	zrlog.Logger.Output(logFile)
-	//log.SetOutput(logFile)
-
-	if err != nil {
-		zrlog.Fatal().Msg(err.Error())
-	}
 	defer logFile.Close()
+
+	zrlog.Logger = zerolog.New(logFile).With().Timestamp().Logger()
 
 	err = godotenv.Load("app.env")
 	if err != nil {
@@ -150,34 +144,34 @@ func main() {
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		zrlog.Fatal().Msg(err.Error())
-		//log.Printf("FATAL: %v", err.Error())
+		os.Exit(1)
 	}
 
 	bot.Debug = true
 
 	zrlog.Info().Msg(fmt.Sprintf("Authorized on account %s", bot.Self.UserName))
-	log.Printf("%v", fmt.Sprintf("INFO: Authorized on account %s", bot.Self.UserName))
 
 	webHookInfo := tgbotapi.NewWebhookWithCert(fmt.Sprintf("https://%s:%s/%s", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT"), bot.Token), cons.CERT_PAHT)
 
 	_, err = bot.SetWebhook(webHookInfo)
 	if err != nil {
 		zrlog.Fatal().Msg(err.Error())
-		//log.Printf("FATAL: %v", err.Error())
+		os.Exit(1)
 	}
+
 	info, err := bot.GetWebhookInfo()
+
 	if err != nil {
-		zrlog.Fatal().Msg(err.Error())
-		//log.Printf("FATAL: %v", err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
+
 	if info.LastErrorDate != 0 {
-		zrlog.Fatal().Msg(fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
-		//log.Printf("FATAL: %v", fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
+		zrlog.Error().Msg(fmt.Sprintf("Telegram callback failed: %s", info.LastErrorMessage))
 	}
+
 	updates := bot.ListenForWebhook("/" + bot.Token)
 
-	zrlog.Info().Msg(fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
-	//log.Printf("INFO: %v", fmt.Sprintf("INFO: Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
+	zrlog.Info().Msg(fmt.Sprintf("Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
 
 	go http.ListenAndServeTLS("0.0.0.0:8443", cons.CERT_PAHT, cons.KEY_PATH, nil)
 
@@ -207,8 +201,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				} else if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE || cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE_CORRECTION {
@@ -225,8 +217,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -245,8 +235,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -265,8 +253,6 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					return
 				}
 
 			}
@@ -314,7 +300,6 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case botcommand.SELECT_PROJECT.String():
@@ -327,8 +312,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
@@ -339,8 +322,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 					}
 
@@ -354,7 +335,6 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case botcommand.CANCEL_APPLICATION.String():
@@ -365,7 +345,6 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case botcommand.START_APPLICATION.String():
@@ -376,7 +355,6 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 			case botcommand.SETTINGS.String():
@@ -385,7 +363,6 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.SETTINGS)
@@ -406,7 +383,6 @@ func main() {
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
 						os.Exit(1)
-						return
 					}
 					defer dbpool.Close()
 
@@ -421,7 +397,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					} else {
@@ -430,7 +405,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error in GetRequisitionForUser(): %+v\n", err.Error()))
-							return
 						}
 
 						switch {
@@ -441,7 +415,6 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
 							}
 
 						case update.Message.Chat.ID != userID:
@@ -450,7 +423,6 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
 							}
 
 						case strings.TrimSpace(userPolling.Get(update.Message.Chat.ID).PublicationLink) == "":
@@ -459,7 +431,6 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
 							}
 
 						default:
@@ -475,7 +446,6 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %v\n", err))
-									return
 								}
 
 							}
@@ -483,7 +453,7 @@ func main() {
 							err = UpdateRequisition(false, false, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, 0, "", "", dbpool, ctx)
 
 							if err != nil {
-								zrlog.Info().Msg(fmt.Sprintf("Error UpdateRequisition(): %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("Error UpdateRequisition(): %+v\n", err))
 							}
 
 							cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
@@ -503,8 +473,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_PUBLICATION_LINK:
@@ -516,8 +484,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_REQUISITION_NUMBER:
@@ -525,13 +491,12 @@ func main() {
 					_, err := strconv.Atoi(messageText)
 
 					if err != nil {
-						zrlog.Info().Msg(fmt.Sprintf("Error convert strconv.Atoi: %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("Error convert strconv.Atoi: %+v\n", err.Error()))
 
 						err := sentToTelegramm(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					} else {
@@ -544,7 +509,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 					}
 
@@ -557,8 +521,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_FNP_CORRECTION:
@@ -571,8 +533,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_AGE:
@@ -581,14 +541,11 @@ func main() {
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("Error convert age: %+v\n", err.Error()))
-						//log.Printf("ERROR: %v", fmt.Sprintf("Error convert age: %+v\n", err.Error()))
 
 						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 					} else if age > 120 || age == 0 || age < 0 {
 
@@ -596,8 +553,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					} else {
@@ -609,8 +564,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 					}
 
@@ -623,8 +576,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_NAME_INSTITUTION:
@@ -636,8 +587,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_NAME_INSTITUTION_CORRECTION:
@@ -649,8 +598,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_LOCALITY:
@@ -662,8 +609,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_LOCALITY_CORRECTION:
@@ -675,8 +620,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_NAMING_UNIT:
@@ -688,8 +631,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_NAMING_UNIT_CORRECTION:
@@ -701,8 +642,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_PUBLICATION_TITLE:
@@ -714,8 +653,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_PUBLICATION_TITLE_CORRECTION:
@@ -727,8 +664,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_FNP_LEADER:
@@ -742,8 +677,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					} else {
@@ -755,8 +688,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 					}
 
@@ -769,8 +700,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_EMAIL:
@@ -782,8 +711,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_EMAIL_CORRECTION:
@@ -795,8 +722,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				case botstate.ASK_CHECK_DATA:
@@ -809,8 +734,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					} else if messageText == botcommand.CONFIRM.String() {
@@ -821,8 +744,6 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
 							}
 
 							ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -831,9 +752,7 @@ func main() {
 							dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
-								//log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
 								os.Exit(1)
-								return
 							}
 							defer dbpool.Close()
 
@@ -843,16 +762,13 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error append requisition to db: %+v\n", err.Error()))
-								//log.Printf("FATAL: %v", fmt.Sprintf("Error append requisition to db: %+v\n", err.Error()))
 								os.Exit(1)
-								return
 							}
 
 							ok, err := ConvertRequisitionToPDF(update.Message.Chat.ID)
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
-								//log.Printf("FATAL: %v", fmt.Sprintf("Error converting requisition into PDF: %+v\n", err.Error()))
 							}
 
 							if !ok {
@@ -870,7 +786,6 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %v\n", err))
-									return
 								}
 
 								//Email
@@ -881,7 +796,6 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error()))
-									//log.Printf("FATAL: %v", fmt.Sprintf("Error sending letter to admin's email: %+v\n", err.Error())
 								}
 
 								if send {
@@ -894,8 +808,6 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									return
 								}
 
 							}
@@ -912,9 +824,7 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
-								//log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
 								os.Exit(1)
-								return
 							}
 							defer dbpool.Close()
 
@@ -939,7 +849,6 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending file pdf to user: %v\n", err))
-									return
 								}
 							}
 
@@ -947,8 +856,6 @@ func main() {
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
 							}
 						}
 
@@ -962,9 +869,7 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Unable to establish connection to database: %+v\n", err.Error()))
 							os.Exit(1)
-							return
 						}
 						defer dbpool.Close()
 
@@ -989,13 +894,12 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									return
 								}
 
 								err = UpdateRequisition(true, true, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool, ctx)
 
 								if err != nil {
-									zrlog.Info().Msg(fmt.Sprintf("Error UpdateRequisition() for admin: %+v\n", err))
+									zrlog.Error().Msg(fmt.Sprintf("Error UpdateRequisition() for admin: %+v\n", err))
 								}
 
 								cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
@@ -1009,8 +913,6 @@ func main() {
 
 								if err != nil {
 									zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-									return
 								}
 							}
 
@@ -1019,14 +921,13 @@ func main() {
 							err = UpdateRequisition(true, false, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool, ctx)
 
 							if err != nil {
-								zrlog.Info().Msg(fmt.Sprintf("Error UpdateRequisition() for admin: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("Error UpdateRequisition() for admin: %+v\n", err))
 							}
 
 							err = sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
 
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-								return
 							}
 
 							cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
@@ -1045,14 +946,11 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						}
 
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
 						go deleteUserPolling(closingRequisition.Get(update.Message.Chat.ID).UserID, *userPolling)
 
-					} else {
-						//Сообщаем пользователю, что бы нажал одну из кнопок меню.
 					}
 
 				case botstate.UNDEFINED:
@@ -1240,8 +1138,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1259,8 +1155,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					}
@@ -1279,8 +1173,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					}
@@ -1302,8 +1194,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					} else {
@@ -1314,8 +1204,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 					}
 				}
@@ -1336,8 +1224,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 
 					} else {
@@ -1348,8 +1234,6 @@ func main() {
 
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-							return
 						}
 					}
 				}
@@ -1366,8 +1250,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1382,8 +1264,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 				}
 
@@ -1399,8 +1279,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1415,8 +1293,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1430,8 +1306,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1443,9 +1317,9 @@ func main() {
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_CORRECTION)
 
 					err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО участника или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 					}
 
 				}
@@ -1460,8 +1334,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1476,8 +1348,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1492,8 +1362,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1508,8 +1376,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1524,8 +1390,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 				}
 
@@ -1539,8 +1403,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1555,8 +1417,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1571,8 +1431,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1587,8 +1445,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 				}
 
@@ -1602,8 +1458,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1618,8 +1472,6 @@ func main() {
 
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-						return
 					}
 
 				}
@@ -1632,8 +1484,6 @@ func main() {
 
 				if err != nil {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					//log.Printf("FATAL: %v", fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
-					return
 				}
 
 			}
@@ -1708,9 +1558,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
 			}
 
 			message = "или"
@@ -1718,9 +1566,8 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = keyboardContinueDataPolling1
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				log.Printf("PANIC: %v", err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
+
 			}
 
 			message = "нажмите"
@@ -1733,9 +1580,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				//log.Printf("PANIC: %v", err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
 			}
 
 		}
@@ -1751,9 +1596,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.ACCESS_DENIED:
@@ -1762,8 +1605,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = keyboardMainMenue
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 		deleteUserPolling(id, *userPolling)
@@ -1779,9 +1621,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 		if thisIsAdmin(id) {
@@ -1855,9 +1695,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				//log.Printf("PANIC: %v", err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
 			}
 		}
 
@@ -1870,9 +1708,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = keyboardApplicationStart
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				//log.Printf("PANIC: %v", err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
 			}
 
 			body := make([]string, 3)
@@ -1894,8 +1730,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
 			}
 
 		}
@@ -1923,8 +1758,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = inlineKeyboardMarkup
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Error().Msg(err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.GET_DIPLOMA:
@@ -1933,8 +1767,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = keyboardContinueClosingApplication
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Error().Msg(err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.GET_PUBLICATION_DATE:
@@ -1943,9 +1776,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = keyboardContinueClosingApplication
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.GET_PUBLICATION_LINK:
@@ -1954,9 +1785,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = keyboardContinueClosingApplication
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.WAITING_FOR_ACCEPTANCE:
@@ -1979,9 +1808,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			}
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				//log.Printf("PANIC: %v", err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
 			}
 
 		}
@@ -1997,9 +1824,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.RECORD_TO_DB:
@@ -2013,9 +1838,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.SELECT_FNP_LEADER:
@@ -2029,9 +1852,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.SELECT_DOCUMENT_TYPE:
@@ -2054,7 +1875,6 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 		if _, err := bot.Send(msg); err != nil {
 			zrlog.Fatal().Msg(err.Error())
-			return err
 		}
 
 	case botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS:
@@ -2078,9 +1898,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				zrlog.Panic().Msg(err.Error())
-				//log.Printf("PANIC: %v", err.Error())
-				return err
+				zrlog.Fatal().Msg(err.Error())
 			}
 		}
 
@@ -2095,9 +1913,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 		message = UserDataToStringForTelegramm(id)
@@ -2111,9 +1927,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.CHECK_PDF_FILES:
@@ -2122,9 +1936,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 		msg.ReplyMarkup = keyboardConfirmAndSendForAdmin
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	case botcommand.SETTINGS:
@@ -2156,9 +1968,7 @@ func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	default:
@@ -2176,9 +1986,7 @@ func sentToTelegrammPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			zrlog.Panic().Msg(err.Error())
-			//log.Printf("PANIC: %v", err.Error())
-			return err
+			zrlog.Fatal().Msg(err.Error())
 		}
 
 	}
@@ -2432,7 +2240,6 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 
 	if err != nil {
 		zrlog.Error().Msg(err.Error())
-		//log.Print(err.Error())
 	}
 
 	pdf.AddPage()
@@ -2447,7 +2254,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	err = pdf.SetFont("TelegraphLine", "", 24)
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	switch usersRequisition.Degree {
@@ -2463,7 +2270,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	err = pdf.Text(fmt.Sprintf("%s", degree))
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	//2. Requisition number
@@ -2597,8 +2404,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
-		//log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	if widthText > maxWidthPDF {
@@ -2679,8 +2485,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	err = pdf.Text(usersRequisition.NamingUnit)
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
-		//log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	//6. Publication title
@@ -2691,8 +2496,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	err = pdf.Text(usersRequisition.PublicationTitle)
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
-		//log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	//7. Leader's FNP
@@ -2734,8 +2538,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 
 					arrayText, err = pdf.SplitText(leader, maxWidth)
 					if err != nil {
-						zrlog.Info().Msg(err.Error())
-						//log.Print(err.Error())
+						zrlog.Error().Msg(err.Error())
 					}
 
 					for k, t := range arrayText {
@@ -2761,8 +2564,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 
 					err = pdf.Text(leader)
 					if err != nil {
-						zrlog.Info().Msg(err.Error())
-						//log.Print(err.Error())
+						zrlog.Error().Msg(err.Error())
 					}
 
 					y = y + 1.2*step
@@ -2781,7 +2583,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 
 				arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidth)
 				if err != nil {
-					log.Print(err.Error())
+					zrlog.Error().Msg(err.Error())
 				}
 
 				for k, t := range arrayText {
@@ -2800,8 +2602,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 				pdf.SetXY(x, y)
 				err = pdf.Text(usersRequisition.LeaderFNP)
 				if err != nil {
-					zrlog.Info().Msg(err.Error())
-					//log.Print(err.Error())
+					zrlog.Error().Msg(err.Error())
 				}
 			}
 		}
@@ -2815,8 +2616,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	err = pdf.Text(usersRequisition.PublicationDate)
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
-		//log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	//9. Publication link
@@ -2827,8 +2627,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	err = pdf.Text(usersRequisition.PublicationLink)
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
-		//log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	path = fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.CERTIFICATE), usersRequisition.RequisitionNumber)
@@ -2836,8 +2635,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 	err = pdf.WritePdf(path)
 
 	if err != nil {
-		zrlog.Info().Msg(err.Error())
-		//log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	userPolling.Set(userID, enumapplic.FILE, path)
@@ -2870,8 +2668,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err := pdf.AddTTFFont("TelegraphLine", "./external/fonts/ttf/TelegraphLine.ttf")
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		pdf.AddPage()
@@ -2894,15 +2691,13 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		pdf.SetXY(x, 242)
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		err = pdf.Text(fmt.Sprintf("%v", usersRequisition.DiplomaNumber))
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//2. Leader's FNP
@@ -2939,8 +2734,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 					arrayText, err = pdf.SplitText(leader, maxWidthPDF)
 
 					if err != nil {
-						zrlog.Info().Msg(err.Error())
-						//log.Print(err.Error())
+						zrlog.Error().Msg(err.Error())
 					}
 
 					for _, t := range arrayText {
@@ -2960,8 +2754,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 					pdf.SetXY(x, y)
 					err = pdf.Text(leader)
 					if err != nil {
-						zrlog.Info().Msg(err.Error())
-						//log.Print(err.Error())
+						zrlog.Error().Msg(err.Error())
 					}
 
 				}
@@ -2976,8 +2769,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 
 				arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidthPDF)
 				if err != nil {
-					zrlog.Info().Msg(err.Error())
-					//log.Print(err.Error())
+					zrlog.Error().Msg(err.Error())
 				}
 
 				y = pdf.GetY() + 2*step
@@ -3002,8 +2794,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 				pdf.SetXY(x, y)
 				err = pdf.Text(usersRequisition.LeaderFNP)
 				if err != nil {
-					zrlog.Info().Msg(err.Error())
-					//log.Print(err.Error())
+					zrlog.Error().Msg(err.Error())
 				}
 			}
 		}
@@ -3018,8 +2809,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		if widthText > maxWidthPDF {
@@ -3028,8 +2818,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 
 			arrayText, err = pdf.SplitText(usersRequisition.NameInstitution, maxWidthPDF)
 			if err != nil {
-				zrlog.Info().Msg(err.Error())
-				//log.Print(err.Error())
+				zrlog.Error().Msg(err.Error())
 			}
 
 			for _, t := range arrayText {
@@ -3050,8 +2839,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 			pdf.SetXY(x, y)
 			err = pdf.Text(usersRequisition.NameInstitution)
 			if err != nil {
-				zrlog.Info().Msg(err.Error())
-				//log.Print(err.Error())
+				zrlog.Error().Msg(err.Error())
 			}
 		}
 
@@ -3068,8 +2856,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 
 			arrayText, err = pdf.SplitText(usersRequisition.Locality, maxWidthPDF)
 			if err != nil {
-				zrlog.Info().Msg(err.Error())
-				//log.Print(err.Error())
+				zrlog.Error().Msg(err.Error())
 			}
 
 			for _, t := range arrayText {
@@ -3090,8 +2877,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 			pdf.SetXY(x, y)
 			err = pdf.Text(usersRequisition.Locality)
 			if err != nil {
-				zrlog.Info().Msg(err.Error())
-				//log.Print(err.Error())
+				zrlog.Error().Msg(err.Error())
 			}
 		}
 
@@ -3102,8 +2888,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 
 		err = pdf.Text(nameAndAge)
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//6. Naming unit
@@ -3113,8 +2898,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.Text(usersRequisition.NamingUnit)
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//7. Publication title
@@ -3124,8 +2908,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.Text(usersRequisition.PublicationTitle)
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//8. Requisition number
@@ -3135,8 +2918,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.Text(fmt.Sprintf("%v", usersRequisition.RequisitionNumber))
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//9. Degree
@@ -3155,8 +2937,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.Text(fmt.Sprintf(", %s", degree))
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//10. Publication date
@@ -3166,8 +2947,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.Text(usersRequisition.PublicationDate)
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//11. Publication link
@@ -3177,8 +2957,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.Text(usersRequisition.PublicationLink)
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		path := fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.DIPLOMA), usersRequisition.RequisitionNumber)
@@ -3186,8 +2965,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.WritePdf(path)
 
 		if err != nil {
-			zrlog.Info().Msg(err.Error())
-			//log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		userPolling.Set(userID, enumapplic.FILE, path)
@@ -3203,46 +2981,10 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 
-	err := pdf.AddTTFFont("a_AlternaNr", "./external/fonts/ttf/a_AlternaNr.ttf")
+	err := pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Merriweather-Bold.ttf")
 
 	if err != nil {
-		log.Print(err.Error())
-	}
-
-	err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Inter-ExtraLight.ttf")
-
-	if err != nil {
-		log.Print(err.Error())
-	}
-
-	err = pdf.AddTTFFont("Inter-Bold", "./external/fonts/ttf/Inter-Bold.ttf")
-
-	if err != nil {
-		log.Print(err.Error())
-	}
-
-	err = pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
-
-	if err != nil {
-		log.Print(err.Error())
-	}
-
-	err = pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Merriweather-Bold.ttf")
-
-	if err != nil {
-		log.Print(err.Error())
-	}
-
-	err = pdf.AddTTFFont("arialblack", "./external/fonts/ttf/arialblack.ttf")
-
-	if err != nil {
-		log.Print(err.Error())
-	}
-
-	err = pdf.AddTTFFont("times", "./external/fonts/ttf/times.ttf")
-
-	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	pdf.SetTextColorCMYK(100, 100, 100, 100)
@@ -3256,7 +2998,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	pdf.SetTextColorCMYK(100, 70, 0, 67)
 	err = pdf.SetFont("Merriweather-Bold", "", 14)
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	t := time.Now()
@@ -3264,7 +3006,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 	err = pdf.CellWithOption(nil, fmt.Sprintf("Заявка №%v от %v ", usersRequisition.RequisitionNumber, formattedTime), cellOption_Caption)
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	y := 270.0
@@ -3273,7 +3015,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	pdf.SetXY(25, y)
 	err = pdf.Text(fmt.Sprintf("Участник: %s", usersRequisition.FNP))
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	y = y + step
@@ -3281,7 +3023,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	if usersRequisition.LeaderFNP != "" {
 		err = pdf.Text(fmt.Sprintf("Руководитель: %s", usersRequisition.LeaderFNP))
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 		y = y + step
 	}
@@ -3290,7 +3032,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 	err = pdf.Text(fmt.Sprintf("Конкурс: \"%s\"", usersRequisition.Contest))
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 	y = y + step
 
@@ -3298,7 +3040,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	text := fmt.Sprintf("%s: \"%s\"", enumapplic.NAMING_UNIT, usersRequisition.NamingUnit)
 	widthText, err := pdf.MeasureTextWidth(text)
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	if widthText > maxWidthPDF {
@@ -3307,7 +3049,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		arrayText, err = pdf.SplitText(text, maxWidthPDF)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		for _, t := range arrayText {
@@ -3319,7 +3061,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	} else {
 		err = pdf.Text(text)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 		y = y + step
 	}
@@ -3328,7 +3070,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	text = fmt.Sprintf("%s: \"%s\"", enumapplic.PUBLICATION_TITLE, usersRequisition.PublicationTitle)
 	widthText, err = pdf.MeasureTextWidth(text)
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	if widthText > maxWidthPDF {
@@ -3337,7 +3079,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		arrayText, err = pdf.SplitText(text, maxWidthPDF)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		for _, t := range arrayText {
@@ -3349,7 +3091,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	} else {
 		err = pdf.Text(text)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 		y = y + step
 	}
@@ -3358,7 +3100,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	text = fmt.Sprintf("%s: %s", enumapplic.DOCUMENT_TYPE, usersRequisition.DocumentType)
 	widthText, err = pdf.MeasureTextWidth(text)
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	if widthText > maxWidthPDF {
@@ -3367,7 +3109,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		arrayText, err = pdf.SplitText(text, maxWidthPDF)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		for _, t := range arrayText {
@@ -3379,7 +3121,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	} else {
 		err = pdf.Text(text)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 		y = y + step
 	}
@@ -3388,7 +3130,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	text = fmt.Sprintf("%s: %s", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, usersRequisition.PlaceDeliveryDocuments)
 	widthText, err = pdf.MeasureTextWidth(text)
 	if err != nil {
-		log.Print(err.Error())
+		zrlog.Error().Msg(err.Error())
 	}
 
 	if widthText > maxWidthPDF {
@@ -3397,7 +3139,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		arrayText, err = pdf.SplitText(text, maxWidthPDF)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 
 		for _, t := range arrayText {
@@ -3409,7 +3151,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	} else {
 		err = pdf.Text(text)
 		if err != nil {
-			log.Print(err.Error())
+			zrlog.Error().Msg(err.Error())
 		}
 		y = y + step
 	}
@@ -3417,8 +3159,6 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	err = pdf.WritePdf(fmt.Sprintf("./external/files/usersfiles/Заявка_№%v.pdf", usersRequisition.RequisitionNumber))
 
 	if err != nil {
-		log.Print(err.Error())
-
 		return false, err
 	}
 
@@ -3456,7 +3196,6 @@ func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin 
 	d := gomail.NewDialer(os.Getenv("SMTP_SERVER"), 465, os.Getenv("BOT_LOGIN_EMAIL"), os.Getenv("BOT_PASSWORD_EMAIL"))
 
 	if err := d.DialAndSend(m); err != nil {
-		fmt.Println(err)
 		return false, err
 	}
 
@@ -3753,7 +3492,6 @@ func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
 	e := os.Remove(userDP.RequisitionPDFpath)
 	if e != nil {
 		zrlog.Error().Msg(fmt.Sprintf("Error delete reqisition PDF file: %+v\n", e.Error()))
-		log.Printf("ERROR: %v", fmt.Sprintf("Error delete reqisition PDF file: %+v\n", e.Error()))
 	}
 
 	e = os.Remove(userDP.Photo)
