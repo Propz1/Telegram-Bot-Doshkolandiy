@@ -139,6 +139,7 @@ func main() {
 	err = godotenv.Load("app.env")
 	if err != nil {
 		zrlog.Fatal().Msg("Error loading .env file: ")
+		os.Exit(1)
 	}
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
@@ -2651,7 +2652,6 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 	var x float64
 	var y float64 = 305
 	var step float64 = 15
-	var nameAndAge string
 	var widthText float64
 	var centerX float64 = 297.5
 	var degree string
@@ -2676,9 +2676,7 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		err = pdf.Image(boilerplatePDFPath, 0, 0, rect)
 
 		if err != nil {
-			//test
-			fmt.Printf("err = pdf.Image(boilerplatePDFPath, 0, 0, rect)  => %v", err)
-			//test
+			zrlog.Error().Msg(err.Error())
 		}
 
 		//1. Diploma number
@@ -2883,10 +2881,9 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 
 		//5. FNP
 		pdf.SetXY(142, 627)
-
 		err = pdf.SetFont("TelegraphLine", "", 18)
 
-		err = pdf.Text(nameAndAge)
+		err = pdf.Text(usersRequisition.FNP)
 		if err != nil {
 			zrlog.Error().Msg(err.Error())
 		}
@@ -2922,19 +2919,25 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		}
 
 		//9. Degree
-		pdf.SetXY(228, 717)
+
+		var textDegree string
 
 		switch usersRequisition.Degree {
 
 		case 1:
 			degree = "I"
+			textDegree = fmt.Sprintf(",   %s", degree)
 		case 2:
 			degree = "II"
+			x = 230
+			textDegree = fmt.Sprintf(",  %s", degree)
 		case 3:
 			degree = "III"
+			textDegree = fmt.Sprintf(", %s", degree)
 		}
 
-		err = pdf.Text(fmt.Sprintf(", %s", degree))
+		pdf.SetXY(228, 717)
+		err = pdf.Text(textDegree)
 
 		if err != nil {
 			zrlog.Error().Msg(err.Error())
@@ -2981,7 +2984,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 
-	err := pdf.AddTTFFont("Inter-ExtraLight", "./external/fonts/ttf/Merriweather-Bold.ttf")
+	err := pdf.AddTTFFont("Merriweather-Bold", "./external/fonts/ttf/Merriweather-Bold.ttf")
 
 	if err != nil {
 		zrlog.Error().Msg(err.Error())
@@ -3536,17 +3539,33 @@ func dateStringToUnixNano(dateString string) int64 {
 		}
 	}
 
-	formatted := fmt.Sprintf("%s-%s-%s", y, m, d)
+	year, err := strconv.Atoi(y)
 
-	date, _ := time.Parse(cons.TimeshortForm, formatted)
+	if err != nil {
+		zrlog.Error().Msg(fmt.Sprintf("dateStringToUnixNano() year: %+v\n", err.Error()))
+	}
 
-	return date.UnixNano()
+	month, err := strconv.Atoi(m)
 
+	if err != nil {
+		zrlog.Error().Msg(fmt.Sprintf("dateStringToUnixNano() month: %+v\n", err.Error()))
+	}
+
+	day, err := strconv.Atoi(d)
+
+	if err != nil {
+		zrlog.Error().Msg(fmt.Sprintf("dateStringToUnixNano() day: %+v\n", err.Error()))
+	}
+
+	unixTime := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+
+	return unixTime.UnixNano()
 }
 
 func unixNanoToDateString(publication_date int64) string {
 
 	t := time.Unix(0, publication_date)
+
 	dateString := t.Format(cons.TimeshortForm)
 
 	var d string
