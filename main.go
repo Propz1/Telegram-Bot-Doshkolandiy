@@ -437,8 +437,8 @@ func main() {
 						default:
 
 							wg.Add(2)
-							go FillInCertificatesPDFForms(userID, *userPolling)
-							go FillInDiplomasPDFForms(userID, *userPolling)
+							go FillInCertificatesPDFForms(&wg, userID, *userPolling)
+							go FillInDiplomasPDFForms(&wg, userID, *userPolling)
 							wg.Wait()
 
 							for _, path := range userPolling.Get(userID).Files {
@@ -838,8 +838,8 @@ func main() {
 							}
 
 							wg.Add(2)
-							go FillInCertificatesPDFForms(userID, *userPolling)
-							go FillInDiplomasPDFForms(userID, *userPolling)
+							go FillInCertificatesPDFForms(&wg, userID, *userPolling)
+							go FillInDiplomasPDFForms(&wg, userID, *userPolling)
 							wg.Wait()
 
 							//Send to admin for check
@@ -2207,14 +2207,13 @@ func UpdateRequisition(admin bool, cleanOut bool, requisition_number int64, tabl
 	return row.Err()
 }
 
-func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling) {
+func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.CacheDataPolling) {
 
 	defer wg.Done()
 
 	var x float64
 	var y float64 = 305
 	var step float64 = 15
-	var nameAndAge string
 	var widthText float64
 	var centerX float64 = 297.5
 	var path string
@@ -2301,10 +2300,46 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		zrlog.Error().Msg(err.Error())
 	}
 
-	//3. Name and Age
+	//3. Name
 
 	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
-	err = pdf.SetFont("TelegraphLine", "", 24)
+	err = pdf.SetFont("TelegraphLine", "", 22)
+
+	widthText, err = pdf.MeasureTextWidth(usersRequisition.FNP)
+
+	x = centerX - widthText/2
+
+	if widthText > maxWidthPDF {
+
+		var arrayText []string
+
+		arrayText, err = pdf.SplitText(usersRequisition.FNP, maxWidthPDF)
+		if err != nil {
+			zrlog.Error().Msg(err.Error())
+		}
+
+		y = pdf.GetY() + 2*step
+
+		for _, t := range arrayText {
+
+			widthText, err = pdf.MeasureTextWidth(t)
+
+			x = centerX - widthText/2
+
+			pdf.SetXY(x, y)
+			pdf.Text(t)
+			y = y + step
+		}
+
+	} else {
+		pdf.SetXY(x, 275)
+		err = pdf.Text(usersRequisition.FNP)
+		if err != nil {
+			zrlog.Error().Msg(err.Error())
+		}
+	}
+
+	//4. Age
 
 	age_string := strconv.Itoa(usersRequisition.Age)
 
@@ -2361,43 +2396,20 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		}
 	}
 
-	nameAndAge = fmt.Sprintf("%s, %s", usersRequisition.FNP, age_string)
-
-	widthText, err = pdf.MeasureTextWidth(nameAndAge)
+	widthText, err = pdf.MeasureTextWidth(age_string)
 
 	x = centerX - widthText/2
+	y = pdf.GetY() + 1.5*step
 
-	if widthText > maxWidthPDF {
-
-		var arrayText []string
-
-		arrayText, err = pdf.SplitText(nameAndAge, maxWidthPDF)
-		if err != nil {
-			zrlog.Error().Msg(err.Error())
-		}
-
-		y = pdf.GetY() + 2*step
-
-		for _, t := range arrayText {
-
-			widthText, err = pdf.MeasureTextWidth(t)
-
-			x = centerX - widthText/2
-
-			pdf.SetXY(x, y)
-			pdf.Text(t)
-			y = y + step
-		}
-
-	} else {
-		pdf.SetXY(x, 275)
-		err = pdf.Text(nameAndAge)
-		if err != nil {
-			zrlog.Error().Msg(err.Error())
-		}
+	pdf.SetXY(x, y)
+	err = pdf.Text(age_string)
+	if err != nil {
+		zrlog.Error().Msg(err.Error())
 	}
 
-	//4. Name institution
+	//5. Name institution
+
+	y = pdf.GetY() + 2*step
 
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
 	err = pdf.SetFont("TelegraphLine", "", 18)
@@ -2408,63 +2420,83 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		zrlog.Error().Msg(err.Error())
 	}
 
-	if widthText > maxWidthPDF {
+	if widthText > maxWidthPDF-20 {
 
-		var arrayText []string
+		arrayText := strings.Split(usersRequisition.NameInstitution, " ")
 
-		arrayText, err = pdf.SplitText(usersRequisition.NameInstitution, maxWidthPDF)
-		if err != nil {
-			zrlog.Error().Msg(err.Error())
-		}
+		var t string
 
-		for _, t := range arrayText {
+		for _, word := range arrayText {
+
+			t = fmt.Sprintf("%s %s", t, word)
 
 			widthText, err = pdf.MeasureTextWidth(t)
 
-			x = centerX - widthText/2
+			if widthText > maxWidthPDF-20 {
 
-			pdf.SetXY(x, y)
-			pdf.Text(t)
-			y = y + step
+				widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)])
+
+				x = centerX - widthText/2
+
+				pdf.SetXY(x, y)
+				pdf.Text(usersRequisition.NameInstitution[:len(t)])
+				y = y + step
+
+				pdf.SetXY(x, y)
+				pdf.Text(usersRequisition.NameInstitution[len(t):])
+				y = y + step
+				break
+
+			}
 		}
 
 	} else {
 
+		y = pdf.GetY() + 2*step
 		x = centerX - widthText/2
 
-		pdf.SetXY(x, 305)
+		pdf.SetXY(x, y)
 		err = pdf.Text(usersRequisition.NameInstitution)
 		if err != nil {
 			zrlog.Error().Msg(err.Error())
 		}
 	}
 
-	//5. Locality
+	//6. Locality
+
+	y = pdf.GetY() + 1.5*step
 
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
 
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
 
-	y = pdf.GetY() + 1.5*step
+	if widthText > maxWidthPDF-20 {
 
-	if widthText > maxWidthPDF {
+		arrayText := strings.Split(usersRequisition.Locality, " ")
 
-		var arrayText []string
+		var t string
 
-		arrayText, err = pdf.SplitText(usersRequisition.Locality, maxWidthPDF)
-		if err != nil {
-			zrlog.Error().Msg(err.Error())
-		}
+		for _, word := range arrayText {
 
-		for _, t := range arrayText {
+			t = fmt.Sprintf("%s %s", t, word)
 
 			widthText, err = pdf.MeasureTextWidth(t)
 
-			x = centerX - widthText/2
+			if widthText > maxWidthPDF-20 {
 
-			pdf.SetXY(x, y)
-			pdf.Text(t)
-			y = y + step
+				widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)])
+
+				x = centerX - widthText/2
+
+				pdf.SetXY(x, y)
+				pdf.Text(usersRequisition.Locality[:len(t)])
+				y = y + step
+
+				pdf.SetXY(x, y)
+				pdf.Text(usersRequisition.Locality[len(t):])
+				y = y + step
+				break
+			}
 		}
 
 	} else {
@@ -2478,7 +2510,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		}
 	}
 
-	//6. Naming unit
+	//7. Naming unit
 
 	pdf.SetXY(152, 622)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
@@ -2489,7 +2521,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		zrlog.Error().Msg(err.Error())
 	}
 
-	//6. Publication title
+	//8. Publication title
 
 	pdf.SetXY(194, 646)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
@@ -2500,7 +2532,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		zrlog.Error().Msg(err.Error())
 	}
 
-	//7. Leader's FNP
+	//9. Leader's FNP
 
 	if usersRequisition.LeaderFNP != "" {
 
@@ -2609,7 +2641,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		}
 	}
 
-	//8. Publication date
+	//10. Publication date
 
 	pdf.SetXY(426, 718)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
@@ -2620,7 +2652,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 		zrlog.Error().Msg(err.Error())
 	}
 
-	//9. Publication link
+	//11. Publication link
 
 	pdf.SetXY(50, 740)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
@@ -2645,7 +2677,7 @@ func FillInCertificatesPDFForms(userID int64, userPolling cache.CacheDataPolling
 
 }
 
-func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
+func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.CacheDataPolling) {
 
 	defer wg.Done()
 
@@ -2810,28 +2842,39 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 			zrlog.Error().Msg(err.Error())
 		}
 
-		if widthText > maxWidthPDF {
+		if widthText > maxWidthPDF-20 {
 
-			var arrayText []string
+			arrayText := strings.Split(usersRequisition.NameInstitution, " ")
 
-			arrayText, err = pdf.SplitText(usersRequisition.NameInstitution, maxWidthPDF)
-			if err != nil {
-				zrlog.Error().Msg(err.Error())
-			}
+			var t string
 
-			for _, t := range arrayText {
+			for _, word := range arrayText {
+
+				t = fmt.Sprintf("%s %s", t, word)
 
 				widthText, err = pdf.MeasureTextWidth(t)
 
-				x = centerX - widthText/2
+				if widthText > maxWidthPDF-20 {
 
-				pdf.SetXY(x, y)
-				pdf.Text(t)
-				y = y + step
+					widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)])
+
+					x = centerX - widthText/2
+
+					pdf.SetXY(x, y)
+					pdf.Text(usersRequisition.NameInstitution[:len(t)])
+					y = y + step
+
+					pdf.SetXY(x, y)
+					pdf.Text(usersRequisition.NameInstitution[len(t):])
+					y = y + step
+					break
+
+				}
 			}
 
 		} else {
 
+			y = pdf.GetY() + 2*step
 			x = centerX - widthText/2
 
 			pdf.SetXY(x, y)
@@ -2842,30 +2885,40 @@ func FillInDiplomasPDFForms(userID int64, userPolling cache.CacheDataPolling) {
 		}
 
 		//4. Locality
+		pdf.SetTextColorCMYK(58, 46, 41, 94) //black
 		err = pdf.SetFont("TelegraphLine", "", 16)
-
-		widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
 
 		y = pdf.GetY() + 1.5*step
 
-		if widthText > maxWidthPDF {
+		widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
 
-			var arrayText []string
+		if widthText > maxWidthPDF-20 {
 
-			arrayText, err = pdf.SplitText(usersRequisition.Locality, maxWidthPDF)
-			if err != nil {
-				zrlog.Error().Msg(err.Error())
-			}
+			arrayText := strings.Split(usersRequisition.Locality, " ")
 
-			for _, t := range arrayText {
+			var t string
+
+			for _, word := range arrayText {
+
+				t = fmt.Sprintf("%s %s", t, word)
 
 				widthText, err = pdf.MeasureTextWidth(t)
 
-				x = centerX - widthText/2
+				if widthText > maxWidthPDF-20 {
 
-				pdf.SetXY(x, y)
-				pdf.Text(t)
-				y = y + step
+					widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)])
+
+					x = centerX - widthText/2
+
+					pdf.SetXY(x, y)
+					pdf.Text(usersRequisition.Locality[:len(t)])
+					y = y + step
+
+					pdf.SetXY(x, y)
+					pdf.Text(usersRequisition.Locality[len(t):])
+					y = y + step
+					break
+				}
 			}
 
 		} else {
