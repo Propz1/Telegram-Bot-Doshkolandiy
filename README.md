@@ -5,4 +5,4 @@ It also help creating documents (files PDF) and dispatch of letters to users wit
 Links
 
 * [DoshkolandiyBot](https://t.me/DoshkolandiyBot)
-* [Группа в VK](https://vk.com/club138597952)
+* [VK](https://vk.com/club138597952)
