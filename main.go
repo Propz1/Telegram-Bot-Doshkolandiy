@@ -3342,42 +3342,42 @@ func UserDataToStringForTelegramm(userID int64) string {
 		usdata := userPolling.Get(userID)
 		body := make([]string, 39)
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.Contest))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.FNP))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
 		body = append(body, fmt.Sprintf("      %v", usdata.Age))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.NameInstitution))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.Locality))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.NamingUnit))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.PublicationTitle))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		if usdata.LeaderFNP == "" {
 			body = append(body, fmt.Sprintf("(%v). <s><i><b>%s:</b></i></s>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
 			body = append(body, fmt.Sprintf("      %s", "-"))
@@ -3387,27 +3387,27 @@ func UserDataToStringForTelegramm(userID int64) string {
 		}
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.Email))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.DocumentType))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.PlaceDeliveryDocuments))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()))
 		body = append(body, fmt.Sprintf("      %s", "Прикреплена"))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "___________________________________"))
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()))
 		body = append(body, fmt.Sprintf("      %s", "Прикреплена"))
 		text = strings.Join(body, "\n")
@@ -3417,22 +3417,22 @@ func UserDataToStringForTelegramm(userID int64) string {
 		data := closingRequisition.Get(userID)
 		body := make([]string, 12)
 
-		body = append(body, "___________________________________")
+		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.REQUISITION_NUMBER.String()))
 		body = append(body, fmt.Sprintf("   %v", data.RequisitionNumber))
 		text = strings.Join(body, "\n")
 
-		body = append(body, "___________________________________")
+		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.DEGREE.String()))
 		body = append(body, fmt.Sprintf("   %s", data.Degree))
 		text = strings.Join(body, "\n")
 
-		body = append(body, "___________________________________")
+		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PUBLICATION_DATE.String()))
 		body = append(body, fmt.Sprintf("   %s", data.PublicationDate))
 		text = strings.Join(body, "\n")
 
-		body = append(body, "___________________________________")
+		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PUBLICATION_LINK.String()))
 		body = append(body, fmt.Sprintf("   %s", data.PublicationLink))
 		text = strings.Join(body, "\n")

@@ -41,7 +41,7 @@ func (e ApplicEnum) String() string {
 	case CONTEST:
 		return "Участие в конкурсе"
 	case FNP:
-		return "ФИО"
+		return "ФИО / название группы участников"
 	case AGE:
 		return "Возраст"
 	case NAME_INSTITUTION:
