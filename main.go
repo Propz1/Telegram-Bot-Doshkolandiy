@@ -124,7 +124,7 @@ var (
 
 	wg sync.WaitGroup
 
-	maxWidthPDF = 507.0
+	maxWidthPDF float64 = 507.0
 
 	cacheBotSt cache.CacheBotSt
 )
@@ -831,11 +831,11 @@ func main() {
 
 							err, userID := GetRequisitionForAdmin(*userPolling, closingRequisition.Get(update.Message.Chat.ID).RequisitionNumber, closingRequisition.Get(update.Message.Chat.ID).TableDB, closingRequisition.Get(update.Message.Chat.ID).Degree, closingRequisition.Get(update.Message.Chat.ID).PublicationDate, closingRequisition.Get(update.Message.Chat.ID).PublicationLink, dbpool, ctx)
 
-							closingRequisition.Set(update.Message.Chat.ID, enumapplic.USER_ID, strconv.Itoa(int(userID)))
-
 							if err != nil {
 								zrlog.Fatal().Msg(fmt.Sprintf("Error in GetRequisitionForAdmin(): %+v\n", err.Error()))
 							}
+
+							closingRequisition.Set(update.Message.Chat.ID, enumapplic.USER_ID, strconv.Itoa(int(userID)))
 
 							wg.Add(2)
 							go FillInCertificatesPDFForms(&wg, userID, *userPolling)
@@ -2305,7 +2305,15 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	pdf.SetTextColorCMYK(0, 100, 100, 0) //Red
 	err = pdf.SetFont("TelegraphLine", "", 22)
 
+	if err != nil {
+		zrlog.Error().Msg(err.Error())
+	}
+
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.FNP)
+
+	if err != nil {
+		zrlog.Error().Msg(err.Error())
+	}
 
 	x = centerX - widthText/2
 
@@ -2398,6 +2406,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 	widthText, err = pdf.MeasureTextWidth(age_string)
 
+	if err != nil {
+		zrlog.Error().Msg(err.Error())
+	}
+
 	x = centerX - widthText/2
 	y = pdf.GetY() + 1.5*step
 
@@ -2420,7 +2432,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(err.Error())
 	}
 
-	if widthText > maxWidthPDF-20 {
+	if widthText > maxWidthPDF-80 {
 
 		arrayText := strings.Split(usersRequisition.NameInstitution, " ")
 
@@ -2432,19 +2444,38 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 			widthText, err = pdf.MeasureTextWidth(t)
 
-			if widthText > maxWidthPDF-20 {
+			if err != nil {
+				zrlog.Error().Msg(err.Error())
+			}
+
+			if widthText > maxWidthPDF-80 {
 
 				widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)])
+
+				if err != nil {
+					zrlog.Error().Msg(err.Error())
+				}
+
+				x = centerX - widthText/2
+
+				textPart1 := usersRequisition.NameInstitution[:len(t)]
+
+				pdf.SetXY(x, y)
+				pdf.Text(textPart1)
+				y = y + step
+
+				textPart2 := usersRequisition.NameInstitution[len(t):]
+
+				widthText, err = pdf.MeasureTextWidth(textPart2)
 
 				x = centerX - widthText/2
 
 				pdf.SetXY(x, y)
-				pdf.Text(usersRequisition.NameInstitution[:len(t)])
+				pdf.Text(textPart2)
 				y = y + step
 
-				pdf.SetXY(x, y)
-				pdf.Text(usersRequisition.NameInstitution[len(t):])
-				y = y + step
+				zrlog.Info().Msg("Split long name institution")
+
 				break
 
 			}
@@ -2470,6 +2501,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
 
+	if err != nil {
+		zrlog.Error().Msg(err.Error())
+	}
+
 	if widthText > maxWidthPDF-20 {
 
 		arrayText := strings.Split(usersRequisition.Locality, " ")
@@ -2481,6 +2516,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 			t = fmt.Sprintf("%s %s", t, word)
 
 			widthText, err = pdf.MeasureTextWidth(t)
+
+			if err != nil {
+				zrlog.Error().Msg(err.Error())
+			}
 
 			if widthText > maxWidthPDF-20 {
 
@@ -2674,6 +2713,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	userPolling.Set(userID, enumapplic.FILE, path)
 
 	err = pdf.Close()
+
+	if err != nil {
+		zrlog.Error().Msg(err.Error())
+	}
 
 }
 
@@ -3545,19 +3588,24 @@ func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
 	//delete user's files and datas in hashmap
 
 	//removing file from the directory
-	e := os.Remove(userDP.RequisitionPDFpath)
-	if e != nil {
-		zrlog.Error().Msg(fmt.Sprintf("Error delete reqisition PDF file: %+v\n", e.Error()))
+
+	if userDP.RequisitionPDFpath != "" {
+		e := os.Remove(userDP.RequisitionPDFpath)
+		if e != nil {
+			zrlog.Error().Msg(fmt.Sprintf("Error delete reqisition PDF file: %+v\n", e.Error()))
+		}
 	}
 
-	e = os.Remove(userDP.Photo)
-	if e != nil {
-		zrlog.Error().Msg(fmt.Sprintf("Error delete file user's foto: %+v\n", e.Error()))
+	if userDP.Photo != "" {
+		e := os.Remove(userDP.Photo)
+		if e != nil {
+			zrlog.Error().Msg(fmt.Sprintf("Error delete file user's foto: %+v\n", e.Error()))
+		}
 	}
 
 	for _, path := range userDP.Files {
 
-		e = os.Remove(path)
+		e := os.Remove(path)
 		if e != nil {
 			zrlog.Error().Msg(fmt.Sprintf("Error delete file user's (paid check): %+v\n", e.Error()))
 		}
