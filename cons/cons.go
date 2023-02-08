@@ -27,6 +27,7 @@ const (
 	CONTEST_BirdsFeeding         InlineButton = "BirdsFeeding"
 	CONTEST_Shrovetide           InlineButton = "Shrovetide"
 	CONTEST_Fable                InlineButton = "Fable"
+	CONTEST_DefendersFatherland  InlineButton = "DefendersFatherland"
 	AGREE                        InlineButton = "Согласен на обработку данных"
 	DEGREE1                      InlineButton = "DEGREE1"
 	DEGREE2                      InlineButton = "DEGREE2"
@@ -71,6 +72,8 @@ func (s InlineButton) String() string {
 		return "Широкая масленица"
 	case CONTEST_Fable:
 		return "В гостях у сказки"
+	case CONTEST_DefendersFatherland:
+		return "Защитники отечества"
 	case DEGREE1:
 		return "1"
 	case DEGREE2:

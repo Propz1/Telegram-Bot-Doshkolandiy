@@ -115,6 +115,7 @@ var (
 		"Покормите птиц зимой":              "BirdsFeeding",
 		"Широкая масленица":                 "Shrovetide",
 		"В гостях у сказки":                 "Fable",
+		"Защитники отечества":               "DefendersFatherland",
 	}
 
 	userPolling        = cache.NewCacheDataPolling()
@@ -983,6 +984,19 @@ func main() {
 					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
 
+			case string(cons.CONTEST_DefendersFatherland):
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_DefendersFatherland.String())
+
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.CONTEST_DefendersFatherland))
+
+				err = sentToTelegramm(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+
+				if err != nil {
+					zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
+				}
+
 			case string(cons.CONTEST_Mather):
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Mather.String())
 
@@ -1650,6 +1664,7 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 			inlineKeyboardButton11 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton12 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton13 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton14 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Titmouse.String(), string(cons.CONTEST_Titmouse)))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
@@ -1689,6 +1704,9 @@ func sentToTelegramm(bot *tgbotapi.BotAPI, id int64, message string, lenBody map
 
 			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Fable.String(), string(cons.CONTEST_Fable)))
 			rowsButton = append(rowsButton, inlineKeyboardButton13)
+
+			inlineKeyboardButton14 = append(inlineKeyboardButton14, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_DefendersFatherland.String(), string(cons.CONTEST_DefendersFatherland)))
+			rowsButton = append(rowsButton, inlineKeyboardButton14)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -3493,7 +3511,7 @@ func GetConciseDescription(contest string) string {
 	if contest == string(cons.CONTEST_Titmouse) || contest == string(cons.CONTEST_Mather) || contest == string(cons.CONTEST_Father) || contest == string(
 		cons.CONTEST_Autumn) || contest == string(cons.CONTEST_Winter) || contest == string(cons.CONTEST_Snowflakes) || contest == string(cons.CONTEST_Snowman) || contest == string(
 		cons.CONTEST_Symbol) || contest == string(cons.CONTEST_Heart) || contest == string(cons.CONTEST_Secrets) || contest == string(cons.CONTEST_BirdsFeeding) || contest == string(
-		cons.CONTEST_Shrovetide) || contest == string(cons.CONTEST_Fable) {
+		cons.CONTEST_Shrovetide) || contest == string(cons.CONTEST_Fable) || contest == string(cons.CONTEST_DefendersFatherland) {
 
 		body = append(body, "<b>В заявке потребуется указать следующие данные:\n</b>")
 		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
