@@ -549,7 +549,7 @@ func main() {
 						if err != nil {
 							zrlog.Fatal().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						}
-					} else if age > 120 || age == 0 || age < 0 {
+					} else if age > 120 || age < 0 {
 
 						err := sentToTelegramm(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Пожалуйста, укажите \"реальный возраст\" (цифрой/цифрами):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
@@ -2392,6 +2392,8 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		default:
 
 			switch numbers[1] {
+			case 0:
+				age_string = ""
 			case 1:
 				age_string = fmt.Sprintf("%s год", age_string)
 			case 2:
@@ -2409,6 +2411,8 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	} else {
 
 		switch numbers[1] {
+		case 0:
+			age_string = ""
 		case 1:
 			age_string = fmt.Sprintf("%s год", age_string)
 		case 2:
