@@ -2606,9 +2606,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	//4. Age
 	var age_string string
 	var ending string
-	switch usersRequisition.Group {
-	case true:
 
+	switch usersRequisition.Group {
+
+	case true:
 		groupAge := strings.TrimSpace(usersRequisition.GroupAge)
 		age_string = groupAge
 
@@ -3646,9 +3647,8 @@ func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
 
 	var age_string string
-	var ending string
 	if (!usdata.Group && usdata.Age != 0) || (usdata.Group && strings.TrimSpace(usdata.GroupAge) != "0") {
-
+		var ending string
 		switch usdata.Group {
 		case true:
 			groupAge := strings.TrimSpace(usdata.GroupAge)
@@ -3765,9 +3765,10 @@ func UserDataToStringForTelegramm(userID int64) string {
 		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
 
 		var age_string string
-		var ending string
+
 		if (!usdata.Group && usdata.Age != 0) || (usdata.Group && strings.TrimSpace(usdata.GroupAge) != "0") {
 
+			var ending string
 			switch usdata.Group {
 			case true:
 				groupAge := strings.TrimSpace(usdata.GroupAge)
@@ -4158,7 +4159,11 @@ func convertAgeToString(age int) string {
 
 			switch numbers[1] {
 			case 0:
-				ending = ""
+				if numbers[0] != 0 {
+					ending = "лет"
+				} else {
+					ending = ""
+				}
 			case 1:
 				ending = "год"
 			case 2:
