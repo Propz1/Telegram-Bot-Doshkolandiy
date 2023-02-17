@@ -7,11 +7,46 @@ import (
 	"telegrammBot/internal/enumapplic"
 )
 
+type tempUsersIDCache struct {
+	usersIDCache map[int64]struct{}
+	mu           sync.Mutex
+}
+
 type userBotState map[int64]bs.BotState
 
 type CacheBotSt struct {
 	userBotState userBotState
 	mu           sync.RWMutex
+}
+
+func NewTempUsersIDCache() *tempUsersIDCache {
+	var t tempUsersIDCache
+	t.usersIDCache = make(map[int64]struct{})
+	return &t
+}
+
+func (t *tempUsersIDCache) Check(userID int64) bool {
+	t.mu.Lock()
+	_, found := t.usersIDCache[userID]
+	t.mu.Unlock()
+	return found
+}
+
+func (t *tempUsersIDCache) Add(userID int64) {
+	t.mu.Lock()
+	t.usersIDCache[userID] = struct{}{}
+	t.mu.Unlock()
+}
+
+func (t *tempUsersIDCache) Delete(userID int64) {
+	t.mu.Lock()
+	if t.usersIDCache != nil {
+		_, found := t.usersIDCache[userID]
+		if found {
+			delete(t.usersIDCache, userID)
+		}
+	}
+	t.mu.Unlock()
 }
 
 func NewCacheBotSt() CacheBotSt {
@@ -48,6 +83,8 @@ type dataPolling struct {
 	Contest                string
 	FNP                    string
 	Age                    int
+	GroupAge               string
+	Group                  bool
 	NameInstitution        string
 	Locality               string
 	NamingUnit             string
@@ -194,6 +231,12 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	case enumapplic.AGE:
 		age, _ := strconv.Atoi(text)
 		st.Age = age
+	case enumapplic.GROUP_AGE:
+		st.GroupAge = text
+	case enumapplic.GROUP:
+		st.Group = true
+	case enumapplic.NOT_GROUP:
+		st.Group = false
 	case enumapplic.NAME_INSTITUTION:
 		st.NameInstitution = text
 	case enumapplic.LOCALITY:

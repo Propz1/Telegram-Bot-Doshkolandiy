@@ -20,7 +20,7 @@ const (
 	PHOTO
 	FILE
 	CHECKING
-	CANSEL_CORRECTION
+	CANCEL_CORRECTION
 	REQUISITION_NUMBER
 	REQUISITION_PDF
 	DOCUMENT_PDF
@@ -32,6 +32,9 @@ const (
 	PUBLICATION_LINK
 	PUBLICATION_DATE
 	USER_ID
+	GROUP_AGE
+	GROUP
+	NOT_GROUP
 )
 
 func (e ApplicEnum) String() string {
@@ -64,7 +67,7 @@ func (e ApplicEnum) String() string {
 		return "Фотография работы"
 	case FILE:
 		return "Квитанция об оплате орг. взноса"
-	case CANSEL_CORRECTION:
+	case CANCEL_CORRECTION:
 		return "Отменить исправление"
 	case REQUISITION_NUMBER:
 		return "Номер заявки"
@@ -78,6 +81,8 @@ func (e ApplicEnum) String() string {
 		return "Дата публикации работы"
 	case PUBLICATION_LINK:
 		return "Ссылка на опубликованную работу"
+	case GROUP_AGE:
+		return "Произвольный текст"
 	}
 	return "Undefined"
 }

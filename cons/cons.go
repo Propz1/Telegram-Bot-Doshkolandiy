@@ -35,6 +35,8 @@ const (
 	CERTIFICATE                  InlineButton = "Грамота"
 	CERTIFICATE_AND_DIPLOMA      InlineButton = "Грамота и диплом куратора"
 	DIPLOMA                      InlineButton = "Диплом куратора"
+	FORMAT_CHOICE_SINGL          InlineButton = "цифрой"
+	FORMAT_CHOICE_GROUP          InlineButton = "произвольный формат"
 	PLACE_DELIVERY_OF_DOCUMENTS1 string       = "Электронная почта"
 	PLACE_DELIVERY_OF_DOCUMENTS2 string       = "Телеграм"
 	TableDB                                   = "certificates"
@@ -86,6 +88,10 @@ func (s InlineButton) String() string {
 		return "certificates"
 	case CERTIFICATE_AND_DIPLOMA:
 		return "certificate and diploma"
+	case FORMAT_CHOICE_SINGL:
+		return "FORMAT_CHOICE_SINGL"
+	case FORMAT_CHOICE_GROUP:
+		return "FORMAT_CHOICE_GROUP"
 	}
 
 	return ""
