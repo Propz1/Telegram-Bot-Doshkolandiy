@@ -402,7 +402,7 @@ func main() {
 					requisitionNumber, err := strconv.Atoi(messageText)
 
 					if err != nil {
-						zrlog.Info().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, unable to convert string to int (strconv.Atoi): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, unable to convert string to int (strconv.Atoi): %+v\n", err.Error()))
 
 						err := sentToTelegram(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
 
@@ -2691,7 +2691,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 			if widthText > maxWidthPDF-80 {
 
-				widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)])
+				widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)-1])
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err.Error()))
@@ -2699,13 +2699,13 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 				x = centerX - widthText/2
 
-				textPart1 := usersRequisition.NameInstitution[:len(t)]
+				textPart1 := usersRequisition.NameInstitution[:len(t)-1]
 
 				pdf.SetXY(x, y)
 				pdf.Text(textPart1)
 				y = y + step
 
-				textPart2 := usersRequisition.NameInstitution[len(t):]
+				textPart2 := usersRequisition.NameInstitution[len(t)-1:]
 
 				widthText, err = pdf.MeasureTextWidth(textPart2)
 
@@ -2750,7 +2750,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality): %v", err.Error()))
 	}
 
-	if widthText > maxWidthPDF-20 {
+	if widthText > maxWidthPDF-80 {
 
 		arrayText := strings.Split(usersRequisition.Locality, " ")
 
@@ -2766,9 +2766,11 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err.Error()))
 			}
 
-			if widthText > maxWidthPDF-20 {
+			if widthText > maxWidthPDF-80 {
 
-				widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)])
+				textPart1 := usersRequisition.Locality[:len(t)-1]
+
+				widthText, err = pdf.MeasureTextWidth(textPart1)
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)]): %v", err.Error()))
@@ -2777,11 +2779,21 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				x = centerX - widthText/2
 
 				pdf.SetXY(x, y)
-				pdf.Text(usersRequisition.Locality[:len(t)])
+				pdf.Text(textPart1)
 				y = y + step
 
+				textPart2 := usersRequisition.Locality[len(t)-1:]
+
+				widthText, err = pdf.MeasureTextWidth(textPart2)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)]): %v", err.Error()))
+				}
+
+				x = centerX - widthText/2
+
 				pdf.SetXY(x, y)
-				pdf.Text(usersRequisition.Locality[len(t):])
+				pdf.Text(textPart2)
 				y = y + step
 				break
 			}
