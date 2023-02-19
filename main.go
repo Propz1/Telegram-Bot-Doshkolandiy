@@ -2621,7 +2621,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 			contain3 := strings.Contains(groupAge, "год")
 			contain4 := strings.Contains(groupAge, "годов")
 			contain5 := strings.Contains(groupAge, "годиков")
-			contain6 := strings.Contains(groupAge, "годков")
+			contain6 := strings.Contains(groupAge, "годика")
 
 			if !contain1 && !contain2 && !contain3 && !contain4 && !contain5 && !contain6 {
 				var age int
@@ -2657,7 +2657,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	pdf.SetXY(x, y)
 	err = pdf.Text(age_string)
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(): %v", err))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(age_string): %v", err))
 	}
 
 	//5. Name institution
@@ -2670,7 +2670,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
 
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.NameInstitution): %v", err))
 	}
 
 	if widthText > maxWidthPDF-80 {
@@ -2686,7 +2686,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 			widthText, err = pdf.MeasureTextWidth(t)
 
 			if err != nil {
-				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err.Error()))
+				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(t) name institution: %v", err.Error()))
 			}
 
 			if widthText > maxWidthPDF-80 {
@@ -2694,7 +2694,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)-1])
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(textPart1) name institution: %v", err.Error()))
 				}
 
 				x = centerX - widthText/2
@@ -2710,7 +2710,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				widthText, err = pdf.MeasureTextWidth(textPart2)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(textPart2) name institution: %v", err.Error()))
 				}
 
 				x = centerX - widthText/2
@@ -2763,7 +2763,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 			widthText, err = pdf.MeasureTextWidth(t)
 
 			if err != nil {
-				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err.Error()))
+				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(t) locality: %v", err.Error()))
 			}
 
 			if widthText > maxWidthPDF-80 {
@@ -2773,7 +2773,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				widthText, err = pdf.MeasureTextWidth(textPart1)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)]): %v", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(textPart1) locality: %v", err.Error()))
 				}
 
 				x = centerX - widthText/2
@@ -2787,7 +2787,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				widthText, err = pdf.MeasureTextWidth(textPart2)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)]): %v", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(textPart2) locality: %v", err.Error()))
 				}
 
 				x = centerX - widthText/2
@@ -3177,7 +3177,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(usersRequisition.NameInstitution): %v", err.Error()))
 		}
 
-		if widthText > maxWidthPDF-20 {
+		if widthText > maxWidthPDF-80 {
 
 			arrayText := strings.Split(usersRequisition.NameInstitution, " ")
 
@@ -3190,28 +3190,39 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 				widthText, err = pdf.MeasureTextWidth(t)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(t): %v", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(t) Name institution: %v", err.Error()))
 				}
 
-				if widthText > maxWidthPDF-20 {
+				if widthText > maxWidthPDF-80 {
 
-					widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)])
+					textPart1 := usersRequisition.NameInstitution[:len(t)-1]
+
+					widthText, err = pdf.MeasureTextWidth(textPart1)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)]): %v", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(textPart1) Name institution: %v", err.Error()))
 					}
 
 					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(usersRequisition.NameInstitution[:len(t)])
+					pdf.Text(textPart1)
 					y = y + step
+
+					textPart2 := usersRequisition.NameInstitution[len(t)-1:]
+
+					widthText, err = pdf.MeasureTextWidth(textPart2)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(textPart2) Name institution: %v", err.Error()))
+					}
+
+					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(usersRequisition.NameInstitution[len(t):])
+					pdf.Text(textPart2)
 					y = y + step
 					break
-
 				}
 			}
 
@@ -3239,7 +3250,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality): %v", err.Error()))
 		}
 
-		if widthText > maxWidthPDF-20 {
+		if widthText > maxWidthPDF-80 {
 
 			arrayText := strings.Split(usersRequisition.Locality, " ")
 
@@ -3255,22 +3266,34 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(t): %v", err.Error()))
 				}
 
-				if widthText > maxWidthPDF-20 {
+				if widthText > maxWidthPDF-80 {
 
-					widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)])
+					textPart1 := usersRequisition.Locality[:len(t)-1]
+
+					widthText, err = pdf.MeasureTextWidth(textPart1)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality[:len(t)]): %v", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(textPart1) locality: %v", err.Error()))
 					}
 
 					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(usersRequisition.Locality[:len(t)])
+					pdf.Text(textPart1)
 					y = y + step
 
+					textPart2 := usersRequisition.Locality[len(t)-1:]
+
+					widthText, err = pdf.MeasureTextWidth(textPart2)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(textPart2) locality: %v", err.Error()))
+					}
+
+					x = centerX - widthText/2
+
 					pdf.SetXY(x, y)
-					pdf.Text(usersRequisition.Locality[len(t):])
+					pdf.Text(textPart2)
 					y = y + step
 					break
 				}
@@ -3794,7 +3817,7 @@ func UserDataToStringForTelegramm(userID int64) string {
 					contain3 := strings.Contains(groupAge, "год")
 					contain4 := strings.Contains(groupAge, "годов")
 					contain5 := strings.Contains(groupAge, "годиков")
-					contain6 := strings.Contains(groupAge, "годков")
+					contain6 := strings.Contains(groupAge, "годика")
 
 					if !contain1 && !contain2 && !contain3 && !contain4 && !contain5 && !contain6 {
 						var age int
