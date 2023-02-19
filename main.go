@@ -196,11 +196,11 @@ func main() {
 
 				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PHOTO {
 
-					ph := *update.Message.Photo
+					path := *update.Message.Photo
 
-					max_quality := len(ph) - 1
+					max_quality := len(path) - 1
 
-					go getFile(bot, update.Message.Chat.ID, ph[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
+					go getFile(bot, update.Message.Chat.ID, path[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FILE)
 
@@ -212,11 +212,11 @@ func main() {
 
 				} else if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE || cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE_CORRECTION {
 
-					ph := *update.Message.Photo
+					path := *update.Message.Photo
 
-					max_quality := len(ph) - 1
+					max_quality := len(path) - 1
 
-					go getFile(bot, update.Message.Chat.ID, ph[max_quality].FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
+					go getFile(bot, update.Message.Chat.ID, path[max_quality].FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
@@ -230,11 +230,11 @@ func main() {
 
 				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PHOTO_CORRECTION {
 
-					ph := *update.Message.Photo
+					path := *update.Message.Photo
 
-					max_quality := len(ph) - 1
+					max_quality := len(path) - 1
 
-					go getFile(bot, update.Message.Chat.ID, ph[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
+					go getFile(bot, update.Message.Chat.ID, path[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
@@ -250,18 +250,20 @@ func main() {
 
 			if update.Message.Document != nil {
 
-				ph := *update.Message.Document
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE || cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE_CORRECTION {
 
-				go getFile(bot, update.Message.Chat.ID, ph.FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
+					path := *update.Message.Document
 
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					go getFile(bot, update.Message.Chat.ID, path.FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
 
-				err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
 
-				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("update.Message.Document != nil, error sending to user: %+v\n", err))
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("update.Message.Document != nil, error sending to user: %+v\n", err))
+					}
 				}
-
 			}
 
 			messageByteText := bytes.TrimPrefix([]byte(update.Message.Text), []byte("\xef\xbb\xbf")) //For error deletion of type "invalid character 'ï' looking for beginning of value"
@@ -4000,30 +4002,30 @@ func downloadFile(filepath string, url string) (err error) {
 
 func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.CacheDataPolling, botstateindex int64) {
 
-	fmt.Printf("Входные данные %v\n\n", userData)
-
 	url, err := bot.GetFileDirectURL(fileID)
 
 	if err != nil {
-		zrlog.Fatal().Msg(fmt.Sprintf("bot can't get url's this file: %+v\n", err.Error()))
+		zrlog.Error().Msg(fmt.Sprintf("bot can't get url of this file: %+v\n", err.Error()))
 	} else {
 
 		filename := path.Base(url)
 
-		file_path := fmt.Sprintf("%s/%v_%v_%s", cons.FILE_PATH, userID, botstateindex, filename)
+		file_path := fmt.Sprintf("%s/%v_%v_%v", cons.FILE_PATH, userID, botstateindex, filename)
 
 		if botstateindex == botstate.ASK_PHOTO.EnumIndex() {
 			userPolling.Set(userID, enumapplic.PHOTO, file_path)
+			zrlog.Info().Msg(fmt.Sprintf("func getFile(), photo: %v\n", file_path))
 		}
 
 		if botstateindex == botstate.ASK_FILE.EnumIndex() {
 			userPolling.Set(userID, enumapplic.FILE, file_path)
+			zrlog.Info().Msg(fmt.Sprintf("func getFile(), file: %v\n", file_path))
 		}
 
 		err = downloadFile(file_path, url)
 
 		if err != nil {
-			zrlog.Fatal().Msg(fmt.Sprintf("func getFile(), bot can't download this file: %+v\n", err.Error()))
+			zrlog.Error().Msg(fmt.Sprintf("func getFile(), bot can't download this file: %+v\n", err.Error()))
 		}
 
 	}
