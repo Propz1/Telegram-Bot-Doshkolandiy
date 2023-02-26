@@ -5,73 +5,72 @@ type BotCommand int64
 const (
 	// since iota starts with 0, the first value
 	// defined here will be the default
-	UNDEFINED BotCommand = iota //EnumIndex = 0
-	SELECT_PROJECT
-	CANCEL
-	CANCEL_APPLICATION
-	CANCEL_CLOSE_REQUISITION
-	CONTINUE
-	CONTINUE_DATA_POLLING
-	FURTHER
-	DOWN
-	SELECT_FNP_LEADER
-	SELECT_DOCUMENT_TYPE
-	SELECT_PLACE_DELIVERY_OF_DOCUMENTS
-	CHECK_DATA
-	CHECK_DATA_PAUSE
-	CHECK_PDF_FILES
-	COMPLETE_APPLICATION
-	//START_APPLICATION
-	END_APPLICATION
-	SETTINGS
-	START
-	SELECT_CORRECTION
-	CONFIRM
-	RECORD_TO_DB
-	WAITING_FOR_ACCEPTANCE
-	CLOSE_REQUISITION_START
-	SELECT_DEGREE
-	GET_PUBLICATION_LINK
-	GET_PUBLICATION_DATE
-	CLOSE_REQUISITION_END
-	GET_DIPLOMA
-	ACCESS_DENIED
-	SEND_PDF_FILES
-	FORMAT_CHOICE
+	Undefined BotCommand = iota //EnumIndex = 0
+	SelectProject
+	Cancel
+	CancelApplication
+	CancelCloseRequisition
+	Continue
+	ContinueDataPolling
+	Further
+	Down
+	SelectFNPLeader
+	SelectDocumentType
+	SelectPlaceDeliveryOfDocuments
+	CheckData
+	CheckDataPause
+	CheckPDFFiles
+	CompleteApplication
+	EndApplication
+	Settings
+	Start
+	SelectCorrection
+	Confirm
+	RecordToDB
+	WaitingForAcceptance
+	CloseRequisitionStart
+	SelectDegree
+	GetPublicationLink
+	GetPublicationDate
+	CloseRequisitionEnd
+	GetDiploma
+	AccessDenied
+	SendPDFFiles
+	FormatChoice
 )
 
 func (c BotCommand) String() string {
 	switch c {
 
-	case COMPLETE_APPLICATION:
+	case CompleteApplication:
 		return "Заполнить заявку"
-	case SELECT_PROJECT:
+	case SelectProject:
 		return "Продолжить"
-	case CANCEL:
+	case Cancel:
 		return "Отмена"
-	case CANCEL_APPLICATION:
+	case CancelApplication:
 		return "Отменить заявку"
-	case DOWN:
+	case Down:
 		return "Далее"
-	case SELECT_CORRECTION:
+	case SelectCorrection:
 		return "Исправить"
-	case CLOSE_REQUISITION_START:
+	case CloseRequisitionStart:
 		return "Закрыть заявку"
-	case SETTINGS:
+	case Settings:
 		return "Настройки"
-	case CONFIRM:
+	case Confirm:
 		return "Подтвердить"
-	case CONTINUE:
+	case Continue:
 		return "Продолжить"
-	case FURTHER:
+	case Further:
 		return "Далее"
-	case GET_DIPLOMA:
+	case GetDiploma:
 		return "Получить диплом"
-	case SEND_PDF_FILES:
+	case SendPDFFiles:
 		return "Подтверждаю закрытие"
-	case CANCEL_CLOSE_REQUISITION:
+	case CancelCloseRequisition:
 		return "Отменяю закрытие"
-	case START:
+	case Start:
 		return "/start"
 	}
 

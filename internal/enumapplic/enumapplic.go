@@ -5,83 +5,83 @@ type ApplicEnum int64
 const (
 	// since iota starts with 0, the first value
 	// defined here will be the default
-	UNDEFINED ApplicEnum = iota //EnumIndex = 0
-	CONTEST                     //EnumIndex = 1
+	Undefined ApplicEnum = iota //EnumIndex = 0
+	Contest                     //EnumIndex = 1
 	FNP                         //EnumIndex = 2
-	AGE
-	NAME_INSTITUTION
-	LOCALITY
-	NAMING_UNIT
-	PUBLICATION_TITLE
-	FNP_LEADER
-	EMAIL
-	DOCUMENT_TYPE
-	PLACE_DELIVERY_OF_DOCUMENTS
-	PHOTO
-	FILE
-	CHECKING
-	CANCEL_CORRECTION
-	REQUISITION_NUMBER
-	REQUISITION_PDF
-	DOCUMENT_PDF
+	Age
+	NameInstitution
+	Locality
+	NamingUnit
+	PublicationTitle
+	FNPLeader
+	Email
+	DocumentType
+	PlaceDeliveryOfDocuments
+	Photo
+	File
+	Checking
+	CancelCorrection
+	RequisitionNumber
+	RequisitionPDF
+	DocumentPDF
 	TableDB
-	DIPLOMA
-	DIPLOMA_NUMBER
-	AGREE
-	DEGREE
-	PUBLICATION_LINK
-	PUBLICATION_DATE
-	USER_ID
-	GROUP_AGE
-	GROUP
-	NOT_GROUP
+	Diploma
+	DiplomaNumber
+	Agree
+	Degree
+	PublicationLink
+	PublicationDate
+	UserID
+	GroupAge
+	Group
+	NotGroup
 )
 
 func (e ApplicEnum) String() string {
 
 	switch e {
 
-	case CONTEST:
+	case Contest:
 		return "Участие в конкурсе"
 	case FNP:
 		return "ФИО / название группы участников"
-	case AGE:
+	case Age:
 		return "Возраст"
-	case NAME_INSTITUTION:
+	case NameInstitution:
 		return "Название учреждения (сокращенное)"
-	case LOCALITY:
+	case Locality:
 		return "Населенный пункт"
-	case NAMING_UNIT:
+	case NamingUnit:
 		return "Название номинации"
-	case PUBLICATION_TITLE:
+	case PublicationTitle:
 		return "Название работы"
-	case FNP_LEADER:
+	case FNPLeader:
 		return "ФИО руководителя"
-	case EMAIL:
+	case Email:
 		return "Адрес электронной почты"
-	case DOCUMENT_TYPE:
+	case DocumentType:
 		return "Тип документа"
-	case PLACE_DELIVERY_OF_DOCUMENTS:
+	case PlaceDeliveryOfDocuments:
 		return "Место получения документа"
-	case PHOTO:
+	case Photo:
 		return "Фотография работы"
-	case FILE:
+	case File:
 		return "Квитанция об оплате орг. взноса"
-	case CANCEL_CORRECTION:
+	case CancelCorrection:
 		return "Отменить исправление"
-	case REQUISITION_NUMBER:
+	case RequisitionNumber:
 		return "Номер заявки"
-	case DIPLOMA_NUMBER:
+	case DiplomaNumber:
 		return "Номер диплома куратора"
 	case TableDB:
 		return "Таблица базы данных"
-	case DEGREE:
+	case Degree:
 		return "Степень"
-	case PUBLICATION_DATE:
+	case PublicationDate:
 		return "Дата публикации работы"
-	case PUBLICATION_LINK:
+	case PublicationLink:
 		return "Ссылка на опубликованную работу"
-	case GROUP_AGE:
+	case GroupAge:
 		return "Произвольный текст"
 	}
 	return "Undefined"

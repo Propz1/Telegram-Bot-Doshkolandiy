@@ -7,38 +7,38 @@ import (
 	"telegrammBot/internal/enumapplic"
 )
 
-type tempUsersIDCache struct {
+type TempUsersIDCache struct {
 	usersIDCache map[int64]struct{}
 	mu           sync.Mutex
 }
 
 type userBotState map[int64]bs.BotState
 
-type CacheBotSt struct {
+type BotState struct {
 	userBotState userBotState
 	mu           sync.RWMutex
 }
 
-func NewTempUsersIDCache() *tempUsersIDCache {
-	var t tempUsersIDCache
+func NewTempUsersIDCache() *TempUsersIDCache {
+	var t TempUsersIDCache
 	t.usersIDCache = make(map[int64]struct{})
 	return &t
 }
 
-func (t *tempUsersIDCache) Check(userID int64) bool {
+func (t *TempUsersIDCache) Check(userID int64) bool {
 	t.mu.Lock()
 	_, found := t.usersIDCache[userID]
 	t.mu.Unlock()
 	return found
 }
 
-func (t *tempUsersIDCache) Add(userID int64) {
+func (t *TempUsersIDCache) Add(userID int64) {
 	t.mu.Lock()
 	t.usersIDCache[userID] = struct{}{}
 	t.mu.Unlock()
 }
 
-func (t *tempUsersIDCache) Delete(userID int64) {
+func (t *TempUsersIDCache) Delete(userID int64) {
 	t.mu.Lock()
 	if t.usersIDCache != nil {
 		_, found := t.usersIDCache[userID]
@@ -49,11 +49,11 @@ func (t *tempUsersIDCache) Delete(userID int64) {
 	t.mu.Unlock()
 }
 
-func NewCacheBotSt() CacheBotSt {
-	return CacheBotSt{userBotState: make(userBotState, 0), mu: sync.RWMutex{}}
+func NewCacheBotSt() BotState {
+	return BotState{userBotState: make(userBotState, 0), mu: sync.RWMutex{}}
 }
 
-func (c *CacheBotSt) Get(userID int64) bs.BotState {
+func (c *BotState) Get(userID int64) bs.BotState {
 	c.mu.RLock()
 	state, found := c.userBotState[userID]
 	if !found {
@@ -64,13 +64,13 @@ func (c *CacheBotSt) Get(userID int64) bs.BotState {
 	return state
 }
 
-func (c *CacheBotSt) Set(userID int64, state bs.BotState) {
+func (c *BotState) Set(userID int64, state bs.BotState) {
 	c.mu.Lock()
 	c.userBotState[userID] = state
 	c.mu.Unlock()
 }
 
-func (c *CacheBotSt) Delete(userID int64) {
+func (c *BotState) Delete(userID int64) {
 	if c.userBotState != nil {
 		_, found := c.userBotState[userID]
 		if found {
@@ -79,7 +79,7 @@ func (c *CacheBotSt) Delete(userID int64) {
 	}
 }
 
-type dataPolling struct {
+type DataPolling struct {
 	Contest                string
 	FNP                    string
 	Age                    int
@@ -106,7 +106,7 @@ type dataPolling struct {
 	Degree                 int
 }
 
-type dataClosingRequisition struct {
+type DataOfClosingRequisition struct {
 	RequisitionNumber int64
 	TableDB           string
 	Diploma           bool
@@ -117,29 +117,29 @@ type dataClosingRequisition struct {
 	UserID            int64
 }
 
-type CacheDataClosingRequisition struct {
-	closingRequisitionCache map[int64]dataClosingRequisition
+type ClosingRequisition struct {
+	closingRequisitionCache map[int64]DataOfClosingRequisition
 	//mu               sync.RWMutex
 }
 
-type CacheDataPolling struct {
-	userPollingCache map[int64]dataPolling
+type DataPollingCache struct {
+	userPollingCache map[int64]DataPolling
 	//mu               sync.RWMutex
 }
 
-func NewCacheDataPolling() *CacheDataPolling {
-	var c CacheDataPolling
-	c.userPollingCache = make(map[int64]dataPolling)
+func NewCacheDataPolling() *DataPollingCache {
+	var c DataPollingCache
+	c.userPollingCache = make(map[int64]DataPolling)
 	return &c
 }
 
-func NewCacheDataClosingRequisition() *CacheDataClosingRequisition {
-	var c CacheDataClosingRequisition
-	c.closingRequisitionCache = make(map[int64]dataClosingRequisition)
+func NewCacheDataClosingRequisition() *ClosingRequisition {
+	var c ClosingRequisition
+	c.closingRequisitionCache = make(map[int64]DataOfClosingRequisition)
 	return &c
 }
 
-func (c *CacheDataClosingRequisition) Get(userID int64) dataClosingRequisition {
+func (c *ClosingRequisition) Get(userID int64) DataOfClosingRequisition {
 	//c.mu.RLock()
 	var mu sync.RWMutex
 	mu.RLock()
@@ -154,7 +154,7 @@ func (c *CacheDataClosingRequisition) Get(userID int64) dataClosingRequisition {
 	return st
 }
 
-func (c *CacheDataClosingRequisition) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
+func (c *ClosingRequisition) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
 
 	var mu sync.RWMutex
 	mu.Lock()
@@ -163,32 +163,32 @@ func (c *CacheDataClosingRequisition) Set(userID int64, enum enumapplic.ApplicEn
 
 	switch enum {
 
-	case enumapplic.REQUISITION_NUMBER:
+	case enumapplic.RequisitionNumber:
 		num, _ := strconv.Atoi(text)
 		st.RequisitionNumber = int64(num)
 	case enumapplic.TableDB:
 		st.TableDB = text
-	case enumapplic.DIPLOMA:
+	case enumapplic.Diploma:
 		st.Diploma, _ = strconv.ParseBool(text)
-	case enumapplic.DIPLOMA_NUMBER:
+	case enumapplic.DiplomaNumber:
 		num, _ := strconv.Atoi(text)
 		st.DiplomaNumber = int64(num)
-	case enumapplic.DEGREE:
+	case enumapplic.Degree:
 		st.Degree = text
-	case enumapplic.PUBLICATION_LINK:
+	case enumapplic.PublicationLink:
 		st.PublicationLink = text
-	case enumapplic.PUBLICATION_DATE:
+	case enumapplic.PublicationDate:
 		st.PublicationDate = text
-	case enumapplic.USER_ID:
-		u_id, _ := strconv.Atoi(text)
-		st.UserID = int64(u_id)
+	case enumapplic.UserID:
+		uid, _ := strconv.Atoi(text)
+		st.UserID = int64(uid)
 	}
 
 	c.closingRequisitionCache[userID] = st
 	mu.Unlock()
 }
 
-func (c *CacheDataClosingRequisition) Delete(userID int64) {
+func (c *ClosingRequisition) Delete(userID int64) {
 	var mu sync.RWMutex
 	if c.closingRequisitionCache != nil {
 		mu.Lock()
@@ -200,7 +200,7 @@ func (c *CacheDataClosingRequisition) Delete(userID int64) {
 	}
 }
 
-func (c *CacheDataPolling) Get(userID int64) dataPolling {
+func (c *DataPollingCache) Get(userID int64) DataPolling {
 	//c.mu.RLock()
 	var mu sync.RWMutex
 	mu.RLock()
@@ -215,7 +215,7 @@ func (c *CacheDataPolling) Get(userID int64) dataPolling {
 	return st
 }
 
-func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
+func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
 
 	var mu sync.RWMutex
 	mu.Lock()
@@ -224,58 +224,58 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 
 	switch enum {
 
-	case enumapplic.CONTEST:
+	case enumapplic.Contest:
 		st.Contest = text
 	case enumapplic.FNP:
 		st.FNP = text
-	case enumapplic.AGE:
+	case enumapplic.Age:
 		age, _ := strconv.Atoi(text)
 		st.Age = age
-	case enumapplic.GROUP_AGE:
+	case enumapplic.GroupAge:
 		st.GroupAge = text
-	case enumapplic.GROUP:
+	case enumapplic.Group:
 		st.Group = true
-	case enumapplic.NOT_GROUP:
+	case enumapplic.NotGroup:
 		st.Group = false
-	case enumapplic.NAME_INSTITUTION:
+	case enumapplic.NameInstitution:
 		st.NameInstitution = text
-	case enumapplic.LOCALITY:
+	case enumapplic.Locality:
 		st.Locality = text
-	case enumapplic.NAMING_UNIT:
+	case enumapplic.NamingUnit:
 		st.NamingUnit = text
-	case enumapplic.PUBLICATION_TITLE:
+	case enumapplic.PublicationTitle:
 		st.PublicationTitle = text
-	case enumapplic.FNP_LEADER:
+	case enumapplic.FNPLeader:
 		st.LeaderFNP = text
-	case enumapplic.EMAIL:
+	case enumapplic.Email:
 		st.Email = text
-	case enumapplic.DOCUMENT_TYPE:
+	case enumapplic.DocumentType:
 		st.DocumentType = text
-	case enumapplic.PLACE_DELIVERY_OF_DOCUMENTS:
+	case enumapplic.PlaceDeliveryOfDocuments:
 		st.PlaceDeliveryDocuments = text
-	case enumapplic.PHOTO:
+	case enumapplic.Photo:
 		st.Photo = text
-	case enumapplic.FILE:
+	case enumapplic.File:
 		st.Files = append(st.Files, text)
-	case enumapplic.REQUISITION_NUMBER:
+	case enumapplic.RequisitionNumber:
 		num, _ := strconv.Atoi(text)
 		st.RequisitionNumber = int64(num)
-	case enumapplic.REQUISITION_PDF:
+	case enumapplic.RequisitionPDF:
 		st.RequisitionPDFpath = text
 	case enumapplic.TableDB:
 		st.TableDB = text
-	case enumapplic.DIPLOMA:
+	case enumapplic.Diploma:
 		st.Diploma, _ = strconv.ParseBool(text)
-	case enumapplic.DIPLOMA_NUMBER:
+	case enumapplic.DiplomaNumber:
 		num, _ := strconv.Atoi(text)
 		st.DiplomaNumber = int64(num)
-	case enumapplic.AGREE:
+	case enumapplic.Agree:
 		st.Agree = true
-	case enumapplic.PUBLICATION_LINK:
+	case enumapplic.PublicationLink:
 		st.PublicationLink = text
-	case enumapplic.PUBLICATION_DATE:
+	case enumapplic.PublicationDate:
 		st.PublicationDate = text
-	case enumapplic.DEGREE:
+	case enumapplic.Degree:
 		num, _ := strconv.Atoi(text)
 		st.Degree = num
 	}
@@ -285,7 +285,7 @@ func (c *CacheDataPolling) Set(userID int64, enum enumapplic.ApplicEnum, text st
 
 }
 
-func (c *CacheDataPolling) Delete(userID int64) {
+func (c *DataPollingCache) Delete(userID int64) {
 	var mu sync.RWMutex
 	if c.userPollingCache != nil {
 		mu.Lock()
