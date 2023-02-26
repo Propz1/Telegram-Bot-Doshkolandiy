@@ -4,94 +4,94 @@ package cons
 type InlineButton string
 
 const (
-	TELEGRAMM_URL                             = "https://api.telegramm.org/bot"
-	CERT_PAHT                                 = "./certs/cert.pem"
-	KEY_PATH                                  = "./certs/key.pem"
-	MaxLengMsg                   int          = 4000
-	StyleTextMarkdown                         = "MarkdownV2"
-	StyleTextCommon                           = ""
-	StyleTextHTML                             = "HTML"
-	PDF_PATH                                  = "./external/pdf/"
-	PDF                                       = true
-	FILE_PATH                                 = "./external/files/usersfiles"
-	CONTEST_Titmouse             InlineButton = "Titmouse"
-	CONTEST_Mather               InlineButton = "Mather"
-	CONTEST_Father               InlineButton = "Father"
-	CONTEST_Autumn               InlineButton = "Autumn"
-	CONTEST_Winter               InlineButton = "Winter"
-	CONTEST_Snowflakes           InlineButton = "Snowflakes"
-	CONTEST_Snowman              InlineButton = "Snowman"
-	CONTEST_Symbol               InlineButton = "Symbol"
-	CONTEST_Heart                InlineButton = "Heart"
-	CONTEST_Secrets              InlineButton = "Secrets"
-	CONTEST_BirdsFeeding         InlineButton = "BirdsFeeding"
-	CONTEST_Shrovetide           InlineButton = "Shrovetide"
-	CONTEST_Fable                InlineButton = "Fable"
-	CONTEST_DefendersFatherland  InlineButton = "DefendersFatherland"
-	AGREE                        InlineButton = "Согласен на обработку данных"
-	DEGREE1                      InlineButton = "DEGREE1"
-	DEGREE2                      InlineButton = "DEGREE2"
-	DEGREE3                      InlineButton = "DEGREE3"
-	CERTIFICATE                  InlineButton = "Грамота"
-	CERTIFICATE_AND_DIPLOMA      InlineButton = "Грамота и диплом куратора"
-	DIPLOMA                      InlineButton = "Диплом куратора"
-	FORMAT_CHOICE_SINGL          InlineButton = "цифрой"
-	FORMAT_CHOICE_GROUP          InlineButton = "произвольный формат"
-	PLACE_DELIVERY_OF_DOCUMENTS1 string       = "Электронная почта"
-	PLACE_DELIVERY_OF_DOCUMENTS2 string       = "Телеграм"
-	TableDB                                   = "certificates"
-	TimeshortForm                             = "2006-02-01"
-	Comma                                     = ","
+	TelegrammURL                            = "https://api.telegramm.org/bot"
+	CertPaht                                = "./certs/cert.pem"
+	KeyPath                                 = "./certs/key.pem"
+	MaxLengMsg                 int          = 4000
+	StyleTextMarkdown                       = "MarkdownV2"
+	StyleTextCommon                         = ""
+	StyleTextHTML                           = "HTML"
+	PDFPath                                 = "./external/pdf/"
+	PDF                                     = true
+	FilePath                                = "./external/files/usersfiles"
+	ContestTitmouse            InlineButton = "Titmouse"
+	ContestMather              InlineButton = "Mather"
+	ContestFather              InlineButton = "Father"
+	ContestAutumn              InlineButton = "Autumn"
+	ContestWinter              InlineButton = "Winter"
+	ContestSnowflakes          InlineButton = "Snowflakes"
+	ContestSnowman             InlineButton = "Snowman"
+	ContestSymbol              InlineButton = "Symbol"
+	ContestHeart               InlineButton = "Heart"
+	ContestSecrets             InlineButton = "Secrets"
+	ContestBirdsFeeding        InlineButton = "BirdsFeeding"
+	ContestShrovetide          InlineButton = "Shrovetide"
+	ContestFable               InlineButton = "Fable"
+	ContestDefendersFatherland InlineButton = "DefendersFatherland"
+	Agree                      InlineButton = "Согласен на обработку данных"
+	Degree1                    InlineButton = "DEGREE1"
+	Degree2                    InlineButton = "DEGREE2"
+	Degree3                    InlineButton = "DEGREE3"
+	Certificate                InlineButton = "Грамота"
+	CertificateAndDiploma      InlineButton = "Грамота и диплом куратора"
+	Diploma                    InlineButton = "Диплом куратора"
+	FormatChoiceSingl          InlineButton = "цифрой"
+	FormatChoiceGroup          InlineButton = "произвольный формат"
+	PlaceDeliveryOfDocuments1  string       = "Электронная почта"
+	PlaceDeliveryOfDocuments2  string       = "Телеграм"
+	TableDB                                 = "certificates"
+	TimeshortForm                           = "2006-02-01"
+	Comma                                   = ","
 )
 
 func (s InlineButton) String() string {
 	switch s {
-	case AGREE:
+	case Agree:
 		return "AGREE"
-	case CONTEST_Titmouse:
+	case ContestTitmouse:
 		return "Синичка невеличка и ee друзья"
-	case CONTEST_Mather:
+	case ContestMather:
 		return "Мама лучший друг"
-	case CONTEST_Father:
+	case ContestFather:
 		return "Папа лучший друг"
-	case CONTEST_Autumn:
+	case ContestAutumn:
 		return "Осень и ee дары"
-	case CONTEST_Winter:
+	case ContestWinter:
 		return "Зимушка-зима в гости к нам пришла"
-	case CONTEST_Snowflakes:
+	case ContestSnowflakes:
 		return "Снежинки-балеринки"
-	case CONTEST_Snowman:
+	case ContestSnowman:
 		return "Мой веселый снеговик"
-	case CONTEST_Symbol:
+	case ContestSymbol:
 		return "Символ года"
-	case CONTEST_Heart:
+	case ContestHeart:
 		return "Сердечки для любимых"
-	case CONTEST_Secrets:
+	case ContestSecrets:
 		return "Секреты новогодней ёлки"
-	case CONTEST_BirdsFeeding:
+	case ContestBirdsFeeding:
 		return "Покормите птиц зимой"
-	case CONTEST_Shrovetide:
+	case ContestShrovetide:
 		return "Широкая масленица"
-	case CONTEST_Fable:
+	case ContestFable:
 		return "В гостях у сказки"
-	case CONTEST_DefendersFatherland:
+	case ContestDefendersFatherland:
 		return "Защитники отечества"
-	case DEGREE1:
+	case Degree1:
 		return "1"
-	case DEGREE2:
+	case Degree2:
 		return "2"
-	case DEGREE3:
+	case Degree3:
 		return "3"
-	case DIPLOMA:
+	case Diploma:
 		return "diplomas"
-	case CERTIFICATE:
+	case Certificate:
 		return "certificates"
-	case CERTIFICATE_AND_DIPLOMA:
+	case CertificateAndDiploma:
 		return "certificate and diploma"
-	case FORMAT_CHOICE_SINGL:
-		return "FORMAT_CHOICE_SINGL"
-	case FORMAT_CHOICE_GROUP:
-		return "FORMAT_CHOICE_GROUP"
+	case FormatChoiceSingl:
+		return "FormatChoiceSingl"
+	case FormatChoiceGroup:
+		return "FormatChoiceGroup"
 	}
 
 	return ""

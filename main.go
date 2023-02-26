@@ -32,72 +32,72 @@ import (
 var (
 	keyboardMainMenue = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.COMPLETE_APPLICATION.String()),
+			tgbotapi.NewKeyboardButton(botcommand.CompleteApplication.String()),
 		),
 
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.GET_DIPLOMA.String()),
+			tgbotapi.NewKeyboardButton(botcommand.GetDiploma.String()),
 		),
 	)
 
 	keyboardApplicationStart = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.CONTINUE.String()),
-			tgbotapi.NewKeyboardButton(botcommand.CANCEL.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Continue.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Cancel.String()),
 		),
 	)
 
 	keyboardContinueClosingApplication = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.CANCEL.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Cancel.String()),
 		),
 	)
 
 	keyboardContinueDataPolling1 = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.CANCEL_APPLICATION.String()),
+			tgbotapi.NewKeyboardButton(botcommand.CancelApplication.String()),
 		),
 	)
 
 	keyboardContinueDataPolling2 = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.FURTHER.String()),
-			tgbotapi.NewKeyboardButton(botcommand.CANCEL_APPLICATION.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Further.String()),
+			tgbotapi.NewKeyboardButton(botcommand.CancelApplication.String()),
 		),
 	)
 
 	keyboardConfirm = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.CONFIRM.String()),
-			tgbotapi.NewKeyboardButton(botcommand.SELECT_CORRECTION.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Confirm.String()),
+			tgbotapi.NewKeyboardButton(botcommand.SelectCorrection.String()),
 		),
 
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.CANCEL_APPLICATION.String()),
+			tgbotapi.NewKeyboardButton(botcommand.CancelApplication.String()),
 		),
 	)
 
 	keyboardConfirmForAdmin = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.CONFIRM.String()),
-			tgbotapi.NewKeyboardButton(botcommand.CANCEL_CLOSE_REQUISITION.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Confirm.String()),
+			tgbotapi.NewKeyboardButton(botcommand.CancelCloseRequisition.String()),
 		),
 	)
 
 	keyboardConfirmAndSendForAdmin = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.SEND_PDF_FILES.String()),
-			tgbotapi.NewKeyboardButton(botcommand.CANCEL_CLOSE_REQUISITION.String()),
+			tgbotapi.NewKeyboardButton(botcommand.SendPDFFiles.String()),
+			tgbotapi.NewKeyboardButton(botcommand.CancelCloseRequisition.String()),
 		),
 	)
 
 	keyboardAdminMainMenue = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.CLOSE_REQUISITION_START.String()),
+			tgbotapi.NewKeyboardButton(botcommand.CloseRequisitionStart.String()),
 		),
 
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.SETTINGS.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Settings.String()),
 		),
 	)
 
@@ -121,14 +121,13 @@ var (
 	tempUsersIDCache   = cache.NewTempUsersIDCache()
 	userPolling        = cache.NewCacheDataPolling()
 	closingRequisition = cache.NewCacheDataClosingRequisition()
-	cellOption_Caption = gopdf.CellOption{Align: 16}
-	cellOption_Default = gopdf.CellOption{Align: 8}
+	cellOptionCaption  = gopdf.CellOption{Align: 16}
 
 	wg sync.WaitGroup
 
 	maxWidthPDF float64 = 507.0
 
-	cacheBotSt cache.CacheBotSt
+	cacheBotSt cache.BotState
 )
 
 func main() {
@@ -148,7 +147,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
+	bot, err := tgbotapi.NewBotAPI(os.Getenv("BotToken"))
 	if err != nil {
 		zrlog.Fatal().Msg(err.Error())
 		os.Exit(1)
@@ -158,7 +157,7 @@ func main() {
 
 	zrlog.Info().Msg(fmt.Sprintf("Authorized on account %s", bot.Self.UserName))
 
-	webHookInfo := tgbotapi.NewWebhookWithCert(fmt.Sprintf("https://%s:%s/%s", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT"), bot.Token), cons.CERT_PAHT)
+	webHookInfo := tgbotapi.NewWebhookWithCert(fmt.Sprintf("https://%s:%s/%s", os.Getenv("BotAddress"), os.Getenv("BotPort"), bot.Token), cons.CertPaht)
 
 	_, err = bot.SetWebhook(webHookInfo)
 	if err != nil {
@@ -178,9 +177,9 @@ func main() {
 
 	updates := bot.ListenForWebhook("/" + bot.Token)
 
-	zrlog.Info().Msg(fmt.Sprintf("Starting API server on %s:%s\n", os.Getenv("BOT_ADDRESS"), os.Getenv("BOT_PORT")))
+	zrlog.Info().Msg(fmt.Sprintf("Starting API server on %s:%s\n", os.Getenv("BotAddress"), os.Getenv("BotPort")))
 
-	go http.ListenAndServeTLS("0.0.0.0:8443", cons.CERT_PAHT, cons.KEY_PATH, nil)
+	go http.ListenAndServeTLS("0.0.0.0:8443", cons.CertPaht, cons.KeyPath, nil)
 
 	cacheBotSt = cache.NewCacheBotSt()
 
@@ -194,33 +193,33 @@ func main() {
 
 			if update.Message.Photo != nil {
 
-				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PHOTO {
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskPhoto {
 
 					path := *update.Message.Photo
 
-					max_quality := len(path) - 1
+					maxQuality := len(path) - 1
 
-					go getFile(bot, update.Message.Chat.ID, path[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
+					go getFile(bot, update.Message.Chat.ID, path[maxQuality].FileID, *userPolling, botstate.AskPhoto.EnumIndex())
 
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FILE)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskFile)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.File.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("update.Message.Photo != nil, error sending to user: %+v\n", err))
 					}
 
-				} else if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE || cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE_CORRECTION {
+				} else if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskFile || cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskFileCorrection {
 
 					path := *update.Message.Photo
 
-					max_quality := len(path) - 1
+					maxQuality := len(path) - 1
 
-					go getFile(bot, update.Message.Chat.ID, path[max_quality].FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
+					go getFile(bot, update.Message.Chat.ID, path[maxQuality].FileID, *userPolling, botstate.AskFile.EnumIndex())
 
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("update.Message.Photo != nil, error sending to user: %+v\n", err))
@@ -228,17 +227,17 @@ func main() {
 
 				}
 
-				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PHOTO_CORRECTION {
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskPhotoCorrection {
 
 					path := *update.Message.Photo
 
-					max_quality := len(path) - 1
+					maxQuality := len(path) - 1
 
-					go getFile(bot, update.Message.Chat.ID, path[max_quality].FileID, *userPolling, botstate.ASK_PHOTO.EnumIndex())
+					go getFile(bot, update.Message.Chat.ID, path[maxQuality].FileID, *userPolling, botstate.AskPhoto.EnumIndex())
 
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PHOTO_CORRECTION, error sending to user: %+v\n", err))
@@ -250,15 +249,15 @@ func main() {
 
 			if update.Message.Document != nil {
 
-				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE || cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_FILE_CORRECTION {
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskFile || cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskFileCorrection {
 
 					path := *update.Message.Document
 
-					go getFile(bot, update.Message.Chat.ID, path.FileID, *userPolling, botstate.ASK_FILE.EnumIndex())
+					go getFile(bot, update.Message.Chat.ID, path.FileID, *userPolling, botstate.AskFile.EnumIndex())
 
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("update.Message.Document != nil, error sending to user: %+v\n", err))
@@ -271,91 +270,74 @@ func main() {
 
 			switch messageText {
 
-			case botcommand.START.String():
+			case botcommand.Start.String():
 
-				err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Здравствуйте, %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.START, "", "", false)
-
-				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.START.String(), error sending to user: %+v\n", err))
-				}
-
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
-
-			case botcommand.GET_DIPLOMA.String():
-
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.GET_DIPLOMA)
-
-				err = sentToTelegram(bot, update.Message.Chat.ID, "Номер заявки:", nil, cons.StyleTextCommon, botcommand.GET_DIPLOMA, "", "", false)
+				err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Здравствуйте, %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.Start, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.GET_DIPLOMA.String(), error sending to user: %+v\n", err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.Start.String(), error sending to user: %+v\n", err))
 				}
 
-			case botcommand.CLOSE_REQUISITION_START.String():
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.Start)
 
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_REQUISITION_NUMBER)
+			case botcommand.GetDiploma.String():
 
-				err = sentToTelegram(bot, update.Message.Chat.ID, "Номер заявки:", nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.GetDiploma)
+
+				err = sentToTelegram(bot, update.Message.Chat.ID, "Номер заявки:", nil, cons.StyleTextCommon, botcommand.GetDiploma, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.CLOSE_REQUISITION_START.String(), error sending to user: %+v\n", err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.GetDiploma.String(), error sending to user: %+v\n", err))
 				}
 
-			case botcommand.COMPLETE_APPLICATION.String():
+			case botcommand.CloseRequisitionStart.String():
 
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_PROJECT)
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.AskRequisitionNumber)
 
-				err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.COMPLETE_APPLICATION, "", "", false)
+				err = sentToTelegram(bot, update.Message.Chat.ID, "Номер заявки:", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.COMPLETE_APPLICATION.String(), error sending to user: %+v\n", err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.CloseRequisitionStart.String(), error sending to user: %+v\n", err))
 				}
 
-			case botcommand.SELECT_PROJECT.String():
+			case botcommand.CancelApplication.String():
 
-				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.ASK_PROJECT {
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.AskProject)
+
+				err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.CompleteApplication, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.CancelApplication.String(), error sending to user: %+v\n", err))
+				}
+
+			case botcommand.SelectProject.String():
+
+				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskProject {
 
 					if userPolling.Get(update.Message.Chat.ID).Agree {
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО участника или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО участника или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botcommand.SELECT_PROJECT.String(), error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botcommand.SelectProject.String(), error sending to user: %+v\n", err))
 						}
 
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskFNP)
 
 					} else {
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, "Для продолжения необходимо дать согласние на обработку персональных данных. Или нажмите \"Отмена\"", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", "", false)
+						err = sentToTelegram(bot, update.Message.Chat.ID, "Для продолжения необходимо дать согласние на обработку персональных данных. Или нажмите \"Отмена\"", nil, cons.StyleTextCommon, botcommand.WaitingForAcceptance, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botcommand.SELECT_PROJECT.String(), error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botcommand.SelectProject.String(), error sending to user: %+v\n", err))
 						}
 					}
 
 				}
 
-			case botcommand.CANCEL.String():
+			case botcommand.Cancel.String():
 
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
-
-				if thisIsAdmin(update.Message.Chat.ID) {
-					go deleteClosingRequisition(update.Message.Chat.ID)
-				} else {
-					go deleteUserPolling(update.Message.Chat.ID, *userPolling)
-					go checkUsersIDCache(update.Message.Chat.ID, bot)
-				}
-
-				err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", "", false)
-
-				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.CANCEL.String(), error sending to user: %+v\n", err))
-				}
-
-			case botcommand.CANCEL_APPLICATION.String():
-
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.START)
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.Start)
 
 				if thisIsAdmin(update.Message.Chat.ID) {
 					go deleteClosingRequisition(update.Message.Chat.ID)
@@ -364,21 +346,38 @@ func main() {
 					go checkUsersIDCache(update.Message.Chat.ID, bot)
 				}
 
-				err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", "", false)
+				err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.CANCEL_APPLICATION.String(), error sending to user: %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.Cancel.String(), error sending to user: %+v\n", err))
 				}
 
-			case botcommand.SETTINGS.String():
+			case botcommand.CancelApplication.String():
 
-				err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите действие:", nil, cons.StyleTextCommon, botcommand.SETTINGS, "", "", false)
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.Start)
+
+				if thisIsAdmin(update.Message.Chat.ID) {
+					go deleteClosingRequisition(update.Message.Chat.ID)
+				} else {
+					go deleteUserPolling(update.Message.Chat.ID, *userPolling)
+					go checkUsersIDCache(update.Message.Chat.ID, bot)
+				}
+
+				err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.SETTINGS.String(), error sending to user: %+v\n", err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.CancelApplication.String(), error sending to user: %+v\n", err.Error()))
 				}
 
-				cacheBotSt.Set(update.Message.Chat.ID, botstate.SETTINGS)
+			case botcommand.Settings.String():
+
+				err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите действие:", nil, cons.StyleTextCommon, botcommand.Settings, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.Settings.String(), error sending to user: %+v\n", err))
+				}
+
+				cacheBotSt.Set(update.Message.Chat.ID, botstate.Settings)
 
 			default:
 
@@ -386,15 +385,15 @@ func main() {
 
 				switch stateBot {
 
-				case botstate.GET_DIPLOMA:
+				case botstate.GetDiploma:
 
 					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					defer cancel()
 
-					dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+					dbpool, err := pgxpool.New(ctx, os.Getenv("DatabaseURL"))
 
 					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, unable to establish connection to database: %+v\n", err.Error()))
+						zrlog.Fatal().Msg(fmt.Sprintf("botstate.GetDiploma, unable to establish connection to database: %+v\n", err.Error()))
 						os.Exit(1)
 					}
 					defer dbpool.Close()
@@ -404,46 +403,46 @@ func main() {
 					requisitionNumber, err := strconv.Atoi(messageText)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, unable to convert string to int (strconv.Atoi): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, unable to convert string to int (strconv.Atoi): %+v\n", err.Error()))
 
-						err := sentToTelegram(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+						err := sentToTelegram(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, error sending to user: %+v\n", err))
 						}
 
 					} else {
 
-						err, userID, sent := GetRequisitionForUser(update.Message.Chat.ID, int64(requisitionNumber), dbpool, ctx)
+						userID, sent, err := GetRequisitionForUser(ctx, update.Message.Chat.ID, int64(requisitionNumber), dbpool)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, GetRequisitionForUser(): %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, GetRequisitionForUser(): %+v\n", err))
 						}
 
 						switch {
 
 						case sent:
 
-							err := sentToTelegram(bot, update.Message.Chat.ID, "Данная заявка закрыта, диплом/грамота Вам уже были отправлены.", nil, cons.StyleTextCommon, botcommand.ACCESS_DENIED, "", "", false)
+							err := sentToTelegram(bot, update.Message.Chat.ID, "Данная заявка закрыта, диплом/грамота Вам уже были отправлены.", nil, cons.StyleTextCommon, botcommand.AccessDenied, "", "", false)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, error sending to user: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, error sending to user: %+v\n", err))
 							}
 
 						case update.Message.Chat.ID != userID:
 
-							err := sentToTelegram(bot, update.Message.Chat.ID, "Вы не регистрировали эту заявку.", nil, cons.StyleTextCommon, botcommand.ACCESS_DENIED, "", "", false)
+							err := sentToTelegram(bot, update.Message.Chat.ID, "Вы не регистрировали эту заявку.", nil, cons.StyleTextCommon, botcommand.AccessDenied, "", "", false)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, error sending to user: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, error sending to user: %+v\n", err))
 							}
 
 						case strings.TrimSpace(userPolling.Get(update.Message.Chat.ID).PublicationLink) == "":
 
-							err := sentToTelegram(bot, update.Message.Chat.ID, "Ваша заявка находится в работе.", nil, cons.StyleTextCommon, botcommand.ACCESS_DENIED, "", "", false)
+							err := sentToTelegram(bot, update.Message.Chat.ID, "Ваша заявка находится в работе.", nil, cons.StyleTextCommon, botcommand.AccessDenied, "", "", false)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, error sending to user: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, error sending to user: %+v\n", err))
 							}
 
 						default:
@@ -461,23 +460,23 @@ func main() {
 									continue
 								}
 
-								err = sentToTelegramPDF(bot, update.Message.Chat.ID, path, "", botcommand.UNDEFINED)
+								err = sentToTelegramPDF(bot, update.Message.Chat.ID, path, "", botcommand.Undefined)
 
 								if err != nil {
-									zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, error sending file pdf to user: %v\n", err))
+									zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, error sending file pdf to user: %v\n", err))
 								}
 
 								temp = path
 
 							}
 
-							err = UpdateRequisition(false, false, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, 0, "", "", dbpool, ctx)
+							err = UpdateRequisition(ctx, false, false, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, 0, "", "", dbpool)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.GET_DIPLOMA, UpdateRequisition(): %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, UpdateRequisition(): %+v\n", err))
 							}
 
-							cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
+							cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 							go deleteUserPolling(userID, *userPolling)
 							go checkUsersIDCache(userID, bot)
@@ -486,88 +485,88 @@ func main() {
 
 					}
 
-				case botstate.ASK_PUBLICATION_DATE:
+				case botstate.AskPublicationDate:
 
-					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_DATE, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_PUBLICATION_LINK)
+					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PublicationDate, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskPublicationLink)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Укажите ссылку на опубликованную работу:", nil, cons.StyleTextCommon, botcommand.GET_PUBLICATION_LINK, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_PUBLICATION_DATE, error sending to user: %+v\n", err))
-					}
-
-				case botstate.ASK_PUBLICATION_LINK:
-
-					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_LINK, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
-
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Укажите ссылку на опубликованную работу:", nil, cons.StyleTextCommon, botcommand.GetPublicationLink, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_PUBLICATION_LINK, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationDate, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_REQUISITION_NUMBER:
+				case botstate.AskPublicationLink:
+
+					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PublicationLink, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
+
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationLink, error sending to user: %+v\n", err))
+					}
+
+				case botstate.AskRequisitionNumber:
 
 					_, err := strconv.Atoi(messageText)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_REQUISITION_NUMBER, error convert strconv.Atoi: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskRequisitionNumber, error convert strconv.Atoi: %+v\n", err))
 
-						err := sentToTelegram(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+						err := sentToTelegram(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_REQUISITION_NUMBER, error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskRequisitionNumber, error sending to user: %+v\n", err))
 						}
 
 					} else {
 
-						closingRequisition.Set(update.Message.Chat.ID, enumapplic.REQUISITION_NUMBER, messageText)
+						closingRequisition.Set(update.Message.Chat.ID, enumapplic.RequisitionNumber, messageText)
 						closingRequisition.Set(update.Message.Chat.ID, enumapplic.TableDB, cons.TableDB)
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_DEGREE)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskDegree)
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите степень:", nil, cons.StyleTextCommon, botcommand.SELECT_DEGREE, "", "", false)
+						err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите степень:", nil, cons.StyleTextCommon, botcommand.SelectDegree, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_REQUISITION_NUMBER, error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskRequisitionNumber, error sending to user: %+v\n", err))
 						}
 					}
 
-				case botstate.ASK_FNP:
+				case botstate.AskFNP:
 
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FORMAT_CHOICE)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskFormatChoice)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите как вы хотите ввести возраст участника/участников?", nil, cons.StyleTextCommon, botcommand.FORMAT_CHOICE, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите как вы хотите ввести возраст участника/участников?", nil, cons.StyleTextCommon, botcommand.FormatChoice, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_FNP, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNP, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_FNP_CORRECTION:
+				case botstate.AskFNPCorrection:
 
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
 
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_FNP_CORRECTION, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPCorrection, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_AGE:
+				case botstate.AskAge:
 
 					if userPolling.Get(update.Message.Chat.ID).Group {
 
-						userPolling.Set(update.Message.Chat.ID, enumapplic.GROUP_AGE, messageText)
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_NAME_INSTITUTION)
+						userPolling.Set(update.Message.Chat.ID, enumapplic.GroupAge, messageText)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskNameInstitution)
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NameInstitution.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_AGE, error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
 						}
 
 					} else {
@@ -575,235 +574,235 @@ func main() {
 						age, err := strconv.Atoi(messageText)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_AGE, error convert age: %+v\n", err.Error()))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error convert age: %+v\n", err.Error()))
 
-							err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+							err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_AGE, error sending to user: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
 							}
 						} else if age > 120 || age < 0 {
 
-							err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Пожалуйста, укажите \"реальный возраст\" (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+							err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Пожалуйста, укажите \"реальный возраст\" (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_AGE, error sending to user: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
 							}
 
 						} else {
 
-							userPolling.Set(update.Message.Chat.ID, enumapplic.AGE, messageText)
-							cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_NAME_INSTITUTION)
+							userPolling.Set(update.Message.Chat.ID, enumapplic.Age, messageText)
+							cacheBotSt.Set(update.Message.Chat.ID, botstate.AskNameInstitution)
 
-							err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+							err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NameInstitution.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_AGE, error sending to user: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
 							}
 						}
 					}
 
-				case botstate.ASK_AGE_CORRECTION:
+				case botstate.AskAgeCorrection:
 
 					if userPolling.Get(update.Message.Chat.ID).Group {
-						userPolling.Set(update.Message.Chat.ID, enumapplic.GROUP_AGE, messageText)
-						userPolling.Set(update.Message.Chat.ID, enumapplic.AGE, "0")
+						userPolling.Set(update.Message.Chat.ID, enumapplic.GroupAge, messageText)
+						userPolling.Set(update.Message.Chat.ID, enumapplic.Age, "0")
 					} else {
-						userPolling.Set(update.Message.Chat.ID, enumapplic.AGE, messageText)
+						userPolling.Set(update.Message.Chat.ID, enumapplic.Age, messageText)
 					}
 
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_AGE_CORRECTION, error sending to user: %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskAgeCorrection, error sending to user: %+v\n", err.Error()))
 					}
 
-				case botstate.ASK_NAME_INSTITUTION:
+				case botstate.AskNameInstitution:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.NAME_INSTITUTION, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_LOCALITY)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NameInstitution, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskLocality)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.Locality.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_NAME_INSTITUTION, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskNameInstitution, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_NAME_INSTITUTION_CORRECTION:
+				case botstate.AskNameInstitutionCorrection:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.NAME_INSTITUTION, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NameInstitution, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_NAME_INSTITUTION_CORRECTION, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskNameInstitutionCorrection, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_LOCALITY:
+				case botstate.AskLocality:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.LOCALITY, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_NAMING_UNIT)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.Locality, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskNamingUnit)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NamingUnit.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_LOCALITY, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskLocality, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_LOCALITY_CORRECTION:
+				case botstate.AskLocalityCorrection:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.LOCALITY, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.Locality, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_LOCALITY_CORRECTION, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskLocalityCorrection, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_NAMING_UNIT:
+				case botstate.AskNamingUnit:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.NAMING_UNIT, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_PUBLICATION_TITLE)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NamingUnit, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskPublicationTitle)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PublicationTitle.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_NAMING_UNIT, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskNamingUnit, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_NAMING_UNIT_CORRECTION:
+				case botstate.AskNamingUnitCorrection:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.NAMING_UNIT, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.NamingUnit, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_NAMING_UNIT_CORRECTION, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskNamingUnitCorrection, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_PUBLICATION_TITLE:
+				case botstate.AskPublicationTitle:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_TITLE, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_FNP_LEADER)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.PublicationTitle, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskFNPLeader)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (через запятую, если двое) или нажмите \"Далее\" если нет руководителя:", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_FNP_LEADER, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (через запятую, если двое) или нажмите \"Далее\" если нет руководителя:", enumapplic.FNPLeader.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectFNPLeader, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_PUBLICATION_TITLE, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationTitle, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_PUBLICATION_TITLE_CORRECTION:
+				case botstate.AskPublicationTitleCorrection:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.PUBLICATION_TITLE, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.PublicationTitle, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_PUBLICATION_TITLE_CORRECTION, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationTitleCorrection, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_FNP_LEADER:
+				case botstate.AskFNPLeader:
 
-					if messageText != botcommand.DOWN.String() {
+					if messageText != botcommand.Down.String() {
 
-						userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, messageText)
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_EMAIL)
+						userPolling.Set(update.Message.Chat.ID, enumapplic.FNPLeader, messageText)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskEmail)
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_FNP_LEADER, error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPLeader, error sending to user: %+v\n", err))
 						}
 
 					} else {
 
-						userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, "")
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_EMAIL)
+						userPolling.Set(update.Message.Chat.ID, enumapplic.FNPLeader, "")
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskEmail)
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_FNP_LEADER, error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPLeader, error sending to user: %+v\n", err))
 						}
 					}
 
-				case botstate.ASK_FNP_LEADER_CORRECTION:
+				case botstate.AskFNPLeaderCorrection:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP_LEADER, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.FNPLeader, messageText)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_FNP_LEADER_CORRECTION, error sending to user: %+v\n", err))
-					}
-
-				case botstate.ASK_EMAIL:
-
-					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, strings.TrimSpace(messageText))
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE)
-
-					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_EMAIL, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPLeaderCorrection, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_EMAIL_CORRECTION:
+				case botstate.AskEmail:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.EMAIL, strings.TrimSpace(messageText))
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.Message.Chat.ID, enumapplic.Email, strings.TrimSpace(messageText))
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskDocumentType)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DocumentType.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectDocumentType, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_EMAIL_CORRECTION, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskEmail, error sending to user: %+v\n", err))
 					}
 
-				case botstate.ASK_CHECK_DATA:
+				case botstate.AskEmailCorrection:
 
-					if messageText == botcommand.SELECT_CORRECTION.String() {
+					userPolling.Set(update.Message.Chat.ID, enumapplic.Email, strings.TrimSpace(messageText))
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.SELECT_CORRECTION)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите пункт который нужно исправить:", nil, cons.StyleTextCommon, botcommand.SELECT_CORRECTION, "", "", false)
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskEmailCorrection, error sending to user: %+v\n", err))
+					}
+
+				case botstate.AskCheckData:
+
+					if messageText == botcommand.SelectCorrection.String() {
+
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.SelectCorrection)
+
+						err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите пункт который нужно исправить:", nil, cons.StyleTextCommon, botcommand.SelectCorrection, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData: %+v\n", err))
 						}
 
-					} else if messageText == botcommand.CONFIRM.String() {
+					} else if messageText == botcommand.Confirm.String() {
 
 						if !thisIsAdmin(update.Message.Chat.ID) {
 
-							err := sentToTelegram(bot, update.Message.Chat.ID, "Регистрирую...", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
+							err := sentToTelegram(bot, update.Message.Chat.ID, "Регистрирую...", nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, sending for user: %+v\n", err))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, sending for user: %+v\n", err))
 							}
 
 							ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 							defer cancel()
 
-							dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+							dbpool, err := pgxpool.New(ctx, os.Getenv("DatabaseURL"))
 							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, unable to establish connection to database for users: %+v\n", err.Error()))
+								zrlog.Fatal().Msg(fmt.Sprintf("botstate.AskCheckData, unable to establish connection to database for users: %+v\n", err.Error()))
 								os.Exit(1)
 							}
 							defer dbpool.Close()
 
 							dbpool.Config().MaxConns = 7
 
-							err = AddRequisition(update.Message.Chat.ID, dbpool, ctx)
+							err = AddRequisition(ctx, update.Message.Chat.ID, dbpool)
 
 							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, error append requisition to db for user: %+v\n", err.Error()))
+								zrlog.Fatal().Msg(fmt.Sprintf("botstate.AskCheckData, error append requisition to db for user: %+v\n", err.Error()))
 								os.Exit(1)
 							}
 
@@ -811,40 +810,40 @@ func main() {
 
 							if err != nil || !ok {
 
-								zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, error converting requisition into PDF for user: %+v\n", err.Error()))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, error converting requisition into PDF for user: %+v\n", err.Error()))
 
 							} else {
 
 								numReq := userPolling.Get(update.Message.Chat.ID).RequisitionNumber
-								path_reqPDF := fmt.Sprintf("./external/files/usersfiles/Заявка_№%v.pdf", numReq)
+								pathReqPDF := fmt.Sprintf("./external/files/usersfiles/Заявка_№%v.pdf", numReq)
 
-								userPolling.Set(update.Message.Chat.ID, enumapplic.REQUISITION_PDF, path_reqPDF)
+								userPolling.Set(update.Message.Chat.ID, enumapplic.RequisitionPDF, pathReqPDF)
 
-								err = sentToTelegramPDF(bot, update.Message.Chat.ID, path_reqPDF, "", botcommand.UNDEFINED)
+								err = sentToTelegramPDF(bot, update.Message.Chat.ID, pathReqPDF, "", botcommand.Undefined)
 
 								if err != nil {
-									zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, error sending file pdf to user: %v\n", err))
+									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, error sending file pdf to user: %v\n", err))
 								}
 
 								//Email
 								t := time.Now()
 								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, *userPolling, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
+								send, err := SentEmail(os.Getenv("AdminEmail"), update.Message.Chat.ID, *userPolling, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
 
 								if err != nil {
-									zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, error sending letter to admin's email: %+v\n", err.Error()))
+									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, error sending letter to admin's email: %+v\n", err.Error()))
 								}
 
 								if send {
 
-									cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
+									cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 									go deleteUserPolling(update.Message.Chat.ID, *userPolling)
 									go checkUsersIDCache(update.Message.Chat.ID, bot)
 
 								}
 
-								err = sentToTelegram(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована! Благодарим Вас за участие, ваша заявка будет обработана в течение трех дней.", nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
+								err = sentToTelegram(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована! Благодарим Вас за участие, ваша заявка будет обработана в течение трех дней.", nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -859,29 +858,29 @@ func main() {
 							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 							defer cancel()
 
-							dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+							dbpool, err := pgxpool.New(ctx, os.Getenv("DatabaseURL"))
 							dbpool.Config().MaxConns = 12
 
 							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, unable to establish connection to database for admin: %+v\n", err.Error()))
+								zrlog.Fatal().Msg(fmt.Sprintf("botstate.AskCheckData, unable to establish connection to database for admin: %+v\n", err.Error()))
 								os.Exit(1)
 							}
 							defer dbpool.Close()
 
-							err, userID := GetRequisitionForAdmin(*userPolling, closingRequisition.Get(update.Message.Chat.ID).RequisitionNumber, closingRequisition.Get(update.Message.Chat.ID).TableDB, closingRequisition.Get(update.Message.Chat.ID).Degree, closingRequisition.Get(update.Message.Chat.ID).PublicationDate, closingRequisition.Get(update.Message.Chat.ID).PublicationLink, dbpool, ctx)
+							userID, err := GetRequisitionForAdmin(ctx, *userPolling, closingRequisition.Get(update.Message.Chat.ID).RequisitionNumber, closingRequisition.Get(update.Message.Chat.ID).TableDB, closingRequisition.Get(update.Message.Chat.ID).Degree, closingRequisition.Get(update.Message.Chat.ID).PublicationDate, closingRequisition.Get(update.Message.Chat.ID).PublicationLink, dbpool)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, GetRequisitionForAdmin(): %+v\n", err.Error()))
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, GetRequisitionForAdmin(): %+v\n", err.Error()))
 
-								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка закрытия заявки!\n%s", err.Error()), nil, cons.StyleTextCommon, botcommand.CHECK_DATA_PAUSE, "", "", false)
+								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка закрытия заявки!\n%s", err.Error()), nil, cons.StyleTextCommon, botcommand.CheckDataPause, "", "", false)
 
 								if err != nil {
-									zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, sending for admin: %+v\n", err.Error()))
+									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, sending for admin: %+v\n", err.Error()))
 								}
 
 							} else {
 
-								closingRequisition.Set(update.Message.Chat.ID, enumapplic.USER_ID, strconv.Itoa(int(userID)))
+								closingRequisition.Set(update.Message.Chat.ID, enumapplic.UserID, strconv.Itoa(int(userID)))
 
 								wg.Add(2)
 								go FillInCertificatesPDFForms(&wg, userID, *userPolling)
@@ -897,33 +896,33 @@ func main() {
 										continue
 									}
 
-									err = sentToTelegramPDF(bot, update.Message.Chat.ID, path, "", botcommand.UNDEFINED)
+									err = sentToTelegramPDF(bot, update.Message.Chat.ID, path, "", botcommand.Undefined)
 
 									if err != nil {
-										zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, send to admin for check, error sending file pdf to admin: %v\n", err))
+										zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, send to admin for check, error sending file pdf to admin: %v\n", err))
 									}
 
 									temp = path
 								}
 
-								err = sentToTelegram(bot, update.Message.Chat.ID, "Подтвердить или отменить закрытие?", nil, cons.StyleTextCommon, botcommand.CHECK_PDF_FILES, "", "", false)
+								err = sentToTelegram(bot, update.Message.Chat.ID, "Подтвердить или отменить закрытие?", nil, cons.StyleTextCommon, botcommand.CheckPDFFiles, "", "", false)
 
 								if err != nil {
-									zrlog.Error().Msg(fmt.Sprintf("botstate.ASK_CHECK_DATA, sending for admin: %+v\n", err.Error()))
+									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, sending for admin: %+v\n", err.Error()))
 								}
 							}
 						}
 
-					} else if messageText == botcommand.SEND_PDF_FILES.String() && thisIsAdmin(update.Message.Chat.ID) {
+					} else if messageText == botcommand.SendPDFFiles.String() && thisIsAdmin(update.Message.Chat.ID) {
 
 						ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 						defer cancel()
 
-						dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+						dbpool, err := pgxpool.New(ctx, os.Getenv("DatabaseURL"))
 						dbpool.Config().MaxConns = 12
 
 						if err != nil {
-							zrlog.Fatal().Msg(fmt.Sprintf(" else if messageText == botcommand.SEND_PDF_FILES.String() && thisIsAdmin(update.Message.Chat.ID), Unable to establish connection to database: %+v\n", err.Error()))
+							zrlog.Fatal().Msg(fmt.Sprintf(" else if messageText == botcommand.SendPDFFiles.String() && thisIsAdmin(update.Message.Chat.ID), Unable to establish connection to database: %+v\n", err.Error()))
 							os.Exit(1)
 						}
 						defer dbpool.Close()
@@ -932,7 +931,7 @@ func main() {
 
 						switch userPolling.Get(userID).PlaceDeliveryDocuments {
 
-						case cons.PLACE_DELIVERY_OF_DOCUMENTS1: //Email
+						case cons.PlaceDeliveryOfDocuments1: //Email
 
 							t := time.Now()
 							formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
@@ -940,23 +939,23 @@ func main() {
 							sent, err := SentEmail(userPolling.Get(userID).Email, userID, *userPolling, false, fmt.Sprintf("%s №%v от %s ", userPolling.Get(userID).DocumentType, userPolling.Get(userID).RequisitionNumber, formattedTime), userPolling.Get(userID).Files, "")
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("case cons.PLACE_DELIVERY_OF_DOCUMENTS1:, error sending letter to admin's email: %+v\n", err.Error()))
+								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1:, error sending letter to admin's email: %+v\n", err.Error()))
 							}
 
 							if sent {
 
-								err = UpdateRequisition(true, true, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool, ctx)
+								err = UpdateRequisition(ctx, true, true, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool)
 
 								if err != nil {
-									zrlog.Error().Msg(fmt.Sprintf("case cons.PLACE_DELIVERY_OF_DOCUMENTS1:, UpdateRequisition() for admin: %v\n", err))
+									zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1:, UpdateRequisition() for admin: %v\n", err))
 
-									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка! Заявка №%v НЕ закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
+									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка! Заявка №%v НЕ закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 									if err != nil {
-										zrlog.Error().Msg(fmt.Sprintf("case cons.PLACE_DELIVERY_OF_DOCUMENTS1: %v\n", err))
+										zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1: %v\n", err))
 									}
 
-									cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
+									cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 									//thisIsAdmin == true, therefore
 									// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
@@ -967,13 +966,13 @@ func main() {
 
 								} else {
 
-									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
+									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 									if err != nil {
-										zrlog.Error().Msg(fmt.Sprintf("case cons.PLACE_DELIVERY_OF_DOCUMENTS1: %+v\n", err.Error()))
+										zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1: %+v\n", err.Error()))
 									}
 
-									cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
+									cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 									// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
 									if userPolling.Get(closingRequisition.Get(update.Message.Chat.ID).UserID).RequisitionNumber != 0 {
@@ -988,28 +987,28 @@ func main() {
 
 							if !sent {
 
-								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Не удалось отправить письмо. Заявка №%v не закрыта.", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
+								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Не удалось отправить письмо. Заявка №%v не закрыта.", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 								}
 							}
 
-						case cons.PLACE_DELIVERY_OF_DOCUMENTS2: //Telegram
+						case cons.PlaceDeliveryOfDocuments2: //Telegram
 
-							err = UpdateRequisition(true, false, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool, ctx)
-
-							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("case cons.PLACE_DELIVERY_OF_DOCUMENTS2, UpdateRequisition() for admin: %+v\n", err))
-							}
-
-							err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RECORD_TO_DB, "", "", false)
+							err = UpdateRequisition(ctx, true, false, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool)
 
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("case cons.PLACE_DELIVERY_OF_DOCUMENTS2: %+v\n", err.Error()))
+								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments2, UpdateRequisition() for admin: %+v\n", err))
 							}
 
-							cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
+							err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
+
+							if err != nil {
+								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments2: %+v\n", err.Error()))
+							}
+
+							cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 							if !thisIsAdmin(update.Message.Chat.ID) {
 								go deleteUserPolling(update.Message.Chat.ID, *userPolling)
@@ -1029,9 +1028,9 @@ func main() {
 
 						}
 
-					} else if messageText == botcommand.CANCEL_APPLICATION.String() {
+					} else if messageText == botcommand.CancelApplication.String() {
 
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 						if thisIsAdmin(update.Message.Chat.ID) {
 
@@ -1049,15 +1048,15 @@ func main() {
 							go checkUsersIDCache(update.Message.Chat.ID, bot)
 						}
 
-					} else if messageText == botcommand.CANCEL_CLOSE_REQUISITION.String() && thisIsAdmin(update.Message.Chat.ID) { //excess condition
+					} else if messageText == botcommand.CancelCloseRequisition.String() && thisIsAdmin(update.Message.Chat.ID) { //excess condition
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.CANCEL, "", "", false)
+						err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
 
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 						}
 
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.UNDEFINED)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 						// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
 						if userPolling.Get(closingRequisition.Get(update.Message.Chat.ID).UserID).RequisitionNumber != 0 {
@@ -1069,7 +1068,7 @@ func main() {
 
 					}
 
-				case botstate.UNDEFINED:
+				case botstate.Undefined:
 					//msgToUser = update.Message.Text
 				}
 
@@ -1085,430 +1084,430 @@ func main() {
 
 			switch callbackQueryText {
 
-			case cons.FORMAT_CHOICE_SINGL.String(): //CallBackQwery
+			case cons.FormatChoiceSingl.String(): //CallBackQwery
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_FORMAT_CHOICE {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoice {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.NOT_GROUP, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GROUP_AGE, "")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.NotGroup, "")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GroupAge, "")
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_AGE)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAge)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FORMAT_CHOICE_SINGL.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceSingl.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_FORMAT_CHOICE_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoiceCorrection {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.NOT_GROUP, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GROUP_AGE, "")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.NotGroup, "")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GroupAge, "")
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_AGE_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAgeCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FORMAT_CHOICE_SINGL.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceSingl.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case cons.FORMAT_CHOICE_GROUP.String(): //CallBackQwery
+			case cons.FormatChoiceGroup.String(): //CallBackQwery
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_FORMAT_CHOICE {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoice {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GROUP, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.AGE, "0")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Group, "")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Age, "0")
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_AGE)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAge)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст в произвольном формате:", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст в произвольном формате:", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FORMAT_CHOICE_GROUP.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceGroup.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_FORMAT_CHOICE_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoiceCorrection {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GROUP, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.AGE, "0")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Group, "")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Age, "0")
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_AGE_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAgeCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст в произвольном формате:", enumapplic.AGE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст в произвольном формате:", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FORMAT_CHOICE_GROUP.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceGroup.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case string(cons.CONTEST_Titmouse): //CallBackQwery
+			case string(cons.ContestTitmouse): //CallBackQwery
 
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Titmouse.String())
-
-				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Titmouse))
-
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
-
-				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, 	case string(cons.CONTEST_Titmouse): %+v\n", err.Error()))
-				}
-
-			case string(cons.CONTEST_DefendersFatherland): //CallBackQwery
-
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_DefendersFatherland.String())
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestTitmouse.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_DefendersFatherland))
+				description = GetConciseDescription(string(cons.ContestTitmouse))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_DefendersFatherland): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, 	case string(cons.ContestTitmouse): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Mather): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Mather.String())
+			case string(cons.ContestDefendersFatherland): //CallBackQwery
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestDefendersFatherland.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Mather))
+				description = GetConciseDescription(string(cons.ContestDefendersFatherland))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Mather): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestDefendersFatherland): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Father): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Father.String())
+			case string(cons.ContestMather): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMather.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Father))
+				description = GetConciseDescription(string(cons.ContestMather))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Father): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestMather): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Autumn): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Autumn.String())
+			case string(cons.ContestFather): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFather.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Autumn))
+				description = GetConciseDescription(string(cons.ContestFather))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Autumn): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestFather): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Winter): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Winter.String())
+			case string(cons.ContestAutumn): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestAutumn.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Winter))
+				description = GetConciseDescription(string(cons.ContestAutumn))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Winter): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestAutumn): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Snowflakes): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Snowflakes.String())
+			case string(cons.ContestWinter): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestWinter.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Snowflakes))
+				description = GetConciseDescription(string(cons.ContestWinter))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Snowflakes): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestWinter): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Snowman): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Snowman.String())
+			case string(cons.ContestSnowflakes): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSnowflakes.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Snowman))
+				description = GetConciseDescription(string(cons.ContestSnowflakes))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Snowman): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSnowflakes): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Symbol): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Symbol.String())
+			case string(cons.ContestSnowman): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSnowman.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Symbol))
+				description = GetConciseDescription(string(cons.ContestSnowman))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Symbol): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSnowman): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Heart): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Heart.String())
+			case string(cons.ContestSymbol): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSymbol.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Heart))
+				description = GetConciseDescription(string(cons.ContestSymbol))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Heart): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSymbol): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Secrets): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Secrets.String())
+			case string(cons.ContestHeart): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestHeart.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Secrets))
+				description = GetConciseDescription(string(cons.ContestHeart))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Secrets): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestHeart): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_BirdsFeeding): //CallBackQwery
-
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_BirdsFeeding.String())
+			case string(cons.ContestSecrets): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSecrets.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_BirdsFeeding))
+				description = GetConciseDescription(string(cons.ContestSecrets))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_BirdsFeeding): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSecrets): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Shrovetide): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Shrovetide.String())
+			case string(cons.ContestBirdsFeeding): //CallBackQwery
+
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestBirdsFeeding.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Shrovetide))
+				description = GetConciseDescription(string(cons.ContestBirdsFeeding))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Shrovetide): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestBirdsFeeding): %+v\n", err.Error()))
 				}
 
-			case string(cons.CONTEST_Fable): //CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.CONTEST, cons.CONTEST_Fable.String())
+			case string(cons.ContestShrovetide): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestShrovetide.String())
 
 				//Concise description of contest
-				description = GetConciseDescription(string(cons.CONTEST_Fable))
+				description = GetConciseDescription(string(cons.ContestShrovetide))
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SELECT_PROJECT, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.CONTEST_Fable): %+v\n", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestShrovetide): %+v\n", err.Error()))
 				}
 
-			case string(cons.DEGREE1): //CallBackQwery
+			case string(cons.ContestFable): //CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFable.String())
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DEGREE {
+				//Concise description of contest
+				description = GetConciseDescription(string(cons.ContestFable))
 
-					closingRequisition.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DEGREE, cons.DEGREE1.String())
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PUBLICATION_DATE)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Укажите дату публикации работы:", nil, cons.StyleTextCommon, botcommand.GET_PUBLICATION_DATE, "", "", false)
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestFable): %+v\n", err.Error()))
+				}
+
+			case string(cons.Degree1): //CallBackQwery
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDegree {
+
+					closingRequisition.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Degree, cons.Degree1.String())
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPublicationDate)
+
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Укажите дату публикации работы:", nil, cons.StyleTextCommon, botcommand.GetPublicationDate, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.DEGREE1): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.Degree1): %+v\n", err.Error()))
 					}
 
 				}
 
-			case string(cons.DEGREE2): //CallBackQwery
+			case string(cons.Degree2): //CallBackQwery
 
 				if thisIsAdmin(update.CallbackQuery.Message.Chat.ID) {
 
-					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DEGREE {
+					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDegree {
 
-						closingRequisition.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DEGREE, cons.DEGREE2.String())
-						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PUBLICATION_DATE)
+						closingRequisition.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Degree, cons.Degree2.String())
+						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPublicationDate)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Укажите дату публикации работы:", nil, cons.StyleTextCommon, botcommand.GET_PUBLICATION_DATE, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Укажите дату публикации работы:", nil, cons.StyleTextCommon, botcommand.GetPublicationDate, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.DEGREE2): %+v\n", err.Error()))
+							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.Degree2): %+v\n", err.Error()))
 						}
 
 					}
 				}
 
-			case string(cons.DEGREE3): //CallBackQwery
+			case string(cons.Degree3): //CallBackQwery
 
 				if thisIsAdmin(update.CallbackQuery.Message.Chat.ID) {
 
-					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DEGREE {
+					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDegree {
 
-						closingRequisition.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DEGREE, cons.DEGREE3.String())
-						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PUBLICATION_DATE)
+						closingRequisition.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Degree, cons.Degree3.String())
+						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPublicationDate)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Укажите дату публикации работы:", nil, cons.StyleTextCommon, botcommand.GET_PUBLICATION_DATE, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Укажите дату публикации работы:", nil, cons.StyleTextCommon, botcommand.GetPublicationDate, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.DEGREE3): %+v\n", err.Error()))
+							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.Degree3): %+v\n", err.Error()))
 						}
 
 					}
 				}
 
-			case cons.CERTIFICATE.String(): //CallBackQwery
+			case cons.Certificate.String(): //CallBackQwery
 
 				if !thisIsAdmin(update.CallbackQuery.Message.Chat.ID) {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, string(cons.CERTIFICATE))
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DIPLOMA, "false")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DocumentType, string(cons.Certificate))
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Diploma, "false")
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.TableDB, cons.TableDB)
 
-					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
+					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDocumentTypeCorrection {
 
-						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.CERTIFICATE.String(): %+v\n", err.Error()))
+							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.Certificate.String(): %+v\n", err.Error()))
 						}
 
 					} else {
 
-						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS)
+						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPlaceDeliveryOfDocuments)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PlaceDeliveryOfDocuments.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectPlaceDeliveryOfDocuments, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.CERTIFICATE.String(): %+v\n", err.Error()))
+							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.Certificate.String(): %+v\n", err.Error()))
 						}
 					}
 				}
 
-			case cons.CERTIFICATE_AND_DIPLOMA.String(): //CallBackQwery
+			case cons.CertificateAndDiploma.String(): //CallBackQwery
 
 				if !thisIsAdmin(update.CallbackQuery.Message.Chat.ID) {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DOCUMENT_TYPE, string(cons.DIPLOMA))
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DIPLOMA, "true")
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.DocumentType, string(cons.Diploma))
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Diploma, "true")
 					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.TableDB, cons.TableDB)
 
-					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_DOCUMENT_TYPE_CORRECTION {
+					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDocumentTypeCorrection {
 
-						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.CERTIFICATE_AND_DIPLOMA.String(): %+v\n", err.Error()))
+							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.CertificateAndDiploma.String(): %+v\n", err.Error()))
 						}
 
 					} else {
 
-						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS)
+						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPlaceDeliveryOfDocuments)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PlaceDeliveryOfDocuments.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectPlaceDeliveryOfDocuments, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.CERTIFICATE_AND_DIPLOMA.String(): %+v\n", err.Error()))
+							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.CertificateAndDiploma.String(): %+v\n", err.Error()))
 						}
 					}
 				}
 
-			case cons.PLACE_DELIVERY_OF_DOCUMENTS1: //CallBackQwery
+			case cons.PlaceDeliveryOfDocuments1: //CallBackQwery
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskPlaceDeliveryOfDocuments {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS1)
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PlaceDeliveryOfDocuments, cons.PlaceDeliveryOfDocuments1)
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPhoto)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.PLACE_DELIVERY_OF_DOCUMENTS1: %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.PlaceDeliveryOfDocuments1: %+v\n", err.Error()))
 					}
 
 				}
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskPlaceDeliveryOfDocumentsCorrection {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS1)
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PlaceDeliveryOfDocuments, cons.PlaceDeliveryOfDocuments1)
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.PLACE_DELIVERY_OF_DOCUMENTS1: %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.PlaceDeliveryOfDocuments1: %+v\n", err.Error()))
 					}
 				}
 
-			case cons.PLACE_DELIVERY_OF_DOCUMENTS2: //CallBackQwery
+			case cons.PlaceDeliveryOfDocuments2: //CallBackQwery
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskPlaceDeliveryOfDocuments {
 
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PlaceDeliveryOfDocuments, cons.PlaceDeliveryOfDocuments2)
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPhoto)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.PLACE_DELIVERY_OF_DOCUMENTS2: %+v\n", err.Error()))
-					}
-
-				}
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION {
-
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, cons.PLACE_DELIVERY_OF_DOCUMENTS2)
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.PLACE_DELIVERY_OF_DOCUMENTS2: %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.PlaceDeliveryOfDocuments2: %+v\n", err.Error()))
 					}
 
 				}
 
-			case enumapplic.CANCEL_CORRECTION.String(): //CallBackQwery "CANCEL_CORRECTION"
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskPlaceDeliveryOfDocumentsCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_CHECK_DATA)
+					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.PlaceDeliveryOfDocuments, cons.PlaceDeliveryOfDocuments2)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CHECK_DATA, "", "", false)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
+
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.CANCEL_CORRECTION.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.PlaceDeliveryOfDocuments2: %+v\n", err.Error()))
+					}
+
+				}
+
+			case enumapplic.CancelCorrection.String(): //CallBackQwery "CancelCorrection"
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
+
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.CancelCorrection.String(): %+v\n", err.Error()))
 					}
 				}
 
 			case enumapplic.FNP.String(): //CallBackQwery "FNP"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskFNPCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО участника или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО участника или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.FNP.String(): %+v\n", err.Error()))
@@ -1516,150 +1515,150 @@ func main() {
 
 				}
 
-			case enumapplic.AGE.String(): //CallBackQwery "AGE"
+			case enumapplic.Age.String(): //CallBackQwery "Age"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FORMAT_CHOICE_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskFormatChoiceCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Выберите, как вы хотите ввести возраст участника/группы участников?", nil, cons.StyleTextCommon, botcommand.FORMAT_CHOICE, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Выберите, как вы хотите ввести возраст участника/группы участников?", nil, cons.StyleTextCommon, botcommand.FormatChoice, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.AGE.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.Age.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case enumapplic.NAME_INSTITUTION.String(): //CallBackQwery "NAME_INSTITUTION"
+			case enumapplic.NameInstitution.String(): //CallBackQwery "NameInstitution"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_NAME_INSTITUTION_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskNameInstitutionCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NAME_INSTITUTION.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NameInstitution.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.NAME_INSTITUTION.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.NameInstitution.String(): %+v\n", err.Error()))
 					}
 				}
 
-			case enumapplic.LOCALITY.String(): //CallBackQwery "LOCALITY"
+			case enumapplic.Locality.String(): //CallBackQwery "Locality"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_LOCALITY_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskLocalityCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.LOCALITY.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.LOCALITY.String(): %+v\n", err.Error()))
-					}
-
-				}
-
-			case enumapplic.NAMING_UNIT.String(): //CallBackQwery "NAMING_UNIT"
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_NAMING_UNIT_CORRECTION)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NAMING_UNIT.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите населенный пункт:", enumapplic.Locality.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.NAMING_UNIT.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.Locality.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case enumapplic.PUBLICATION_TITLE.String(): //CallBackQwery "PUBLICATION_TITLE"
+			case enumapplic.NamingUnit.String(): //CallBackQwery "NamingUnit"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PUBLICATION_TITLE_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskNamingUnitCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PUBLICATION_TITLE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.PUBLICATION_TITLE.String(): %+v\n", err.Error()))
-					}
-				}
-
-			case enumapplic.FNP_LEADER.String(): //CallBackQwery "FNP_LEADER"
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FNP_LEADER_CORRECTION)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (через запятую, если два):", enumapplic.FNP_LEADER.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите номинацию:", enumapplic.NamingUnit.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.FNP_LEADER.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.NamingUnit.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case enumapplic.EMAIL.String(): //CallBackQwery "EMAIL"
+			case enumapplic.PublicationTitle.String(): //CallBackQwery "PublicationTitle"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_EMAIL_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPublicationTitleCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.EMAIL.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите название работы:", enumapplic.PublicationTitle.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.EMAIL.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.PublicationTitle.String(): %+v\n", err.Error()))
+					}
+				}
+
+			case enumapplic.FNPLeader.String(): //CallBackQwery "FNPLeader"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskFNPLeaderCorrection)
+
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО руководителя (через запятую, если два):", enumapplic.FNPLeader.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.FNPLeader.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case enumapplic.DOCUMENT_TYPE.String(): //CallBackQwery "DOCUMENT_TYPE"
+			case enumapplic.Email.String(): //CallBackQwery "Email"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_DOCUMENT_TYPE_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskEmailCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DOCUMENT_TYPE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_DOCUMENT_TYPE, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.DOCUMENT_TYPE.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.Enail.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String(): //CallBackQwery "PLACE_DELIVERY_OF_DOCUMENTS"
+			case enumapplic.DocumentType.String(): //CallBackQwery "DocumentType"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PLACE_DELIVERY_OF_DOCUMENTS_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskDocumentTypeCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String: %+v\n", err.Error()))
-					}
-				}
-
-			case enumapplic.PHOTO.String(): //CallBackQwery "PHOTO"
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_PHOTO_CORRECTION)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.PHOTO.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DocumentType.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectDocumentType, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.PHOTO.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.DocumentType.String(): %+v\n", err.Error()))
 					}
 
 				}
 
-			case enumapplic.FILE.String(): //CallBackQwery "FILE"
+			case enumapplic.PlaceDeliveryOfDocuments.String(): //CallBackQwery "PlaceDeliveryOfDocuments"
 
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SELECT_CORRECTION {
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.ASK_FILE_CORRECTION)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPlaceDeliveryOfDocumentsCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.FILE.EnumIndex()), nil, cons.StyleTextCommon, botcommand.CONTINUE_DATA_POLLING, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Выберите место получения документа:", enumapplic.PlaceDeliveryOfDocuments.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectPlaceDeliveryOfDocuments, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.PlaceDeliveryOfDocuments.String(): %+v\n", err.Error()))
+					}
+				}
+
+			case enumapplic.Photo.String(): //CallBackQwery "PHOTO"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPhotoCorrection)
+
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.Photo.String(): %+v\n", err.Error()))
+					}
+
+				}
+
+			case enumapplic.File.String(): //CallBackQwery "FILE"
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskFileCorrection)
+
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Прикрепите квитанцию об оплате:", enumapplic.File.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.FILE.String(): %+v\n", err.Error()))
@@ -1667,11 +1666,11 @@ func main() {
 
 				}
 
-			case cons.AGREE.String():
+			case cons.Agree.String():
 
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.AGREE, "")
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Agree, "")
 
-				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Согласие на обработку персональных данных получено", nil, cons.StyleTextCommon, botcommand.WAITING_FOR_ACCEPTANCE, "", "", false)
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Согласие на обработку персональных данных получено", nil, cons.StyleTextCommon, botcommand.WaitingForAcceptance, "", "", false)
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1687,16 +1686,16 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 	switch command {
 
-	case botcommand.FORMAT_CHOICE:
+	case botcommand.FormatChoice:
 		var rowsButton [][]tgbotapi.InlineKeyboardButton
 
 		inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 		inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.FORMAT_CHOICE_SINGL), cons.FORMAT_CHOICE_SINGL.String()))
+		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.FormatChoiceSingl), cons.FormatChoiceSingl.String()))
 		rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.FORMAT_CHOICE_GROUP), cons.FORMAT_CHOICE_GROUP.String()))
+		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.FormatChoiceGroup), cons.FormatChoiceGroup.String()))
 		rowsButton = append(rowsButton, inlineKeyboardButton2)
 
 		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1705,10 +1704,10 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		msg.ReplyMarkup = inlineKeyboardMarkup
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.FORMAT_CHOICE: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.FormatChoice: %w", err)
 		}
 
-	case botcommand.SELECT_CORRECTION:
+	case botcommand.SelectCorrection:
 
 		if !thisIsAdmin(id) {
 
@@ -1731,37 +1730,37 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()), enumapplic.FNP.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()), enumapplic.AGE.String()))
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.Age.EnumIndex(), enumapplic.Age.String()), enumapplic.Age.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton2)
 
-			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()), enumapplic.NAME_INSTITUTION.String()))
+			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.NameInstitution.EnumIndex(), enumapplic.NameInstitution.String()), enumapplic.NameInstitution.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton3)
 
-			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()), enumapplic.LOCALITY.String()))
+			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.Locality.EnumIndex(), enumapplic.Locality.String()), enumapplic.Locality.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton4)
 
-			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()), enumapplic.NAMING_UNIT.String()))
+			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.NamingUnit.EnumIndex(), enumapplic.NamingUnit.String()), enumapplic.NamingUnit.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton5)
 
-			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()), enumapplic.PUBLICATION_TITLE.String()))
+			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PublicationTitle.EnumIndex(), enumapplic.PublicationTitle.String()), enumapplic.PublicationTitle.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton6)
 
-			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()), enumapplic.FNP_LEADER.String()))
+			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()), enumapplic.FNPLeader.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton7)
 
-			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()), enumapplic.EMAIL.String()))
+			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.Email.EnumIndex(), enumapplic.Email.String()), enumapplic.Email.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton8)
 
-			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()), enumapplic.DOCUMENT_TYPE.String()))
+			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.DocumentType.EnumIndex(), enumapplic.DocumentType.String()), enumapplic.DocumentType.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton9)
 
-			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PlaceDeliveryOfDocuments.EnumIndex(), enumapplic.PlaceDeliveryOfDocuments.String()), enumapplic.PlaceDeliveryOfDocuments.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton10)
 
-			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()), enumapplic.PHOTO.String()))
+			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.Photo.EnumIndex(), enumapplic.Photo.String()), enumapplic.Photo.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton11)
 
-			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()), enumapplic.FILE.String()))
+			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%v. %s", enumapplic.File.EnumIndex(), enumapplic.File.String()), enumapplic.File.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton12)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1770,7 +1769,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.SELECT_CORRECTIONT: %w", err)
+				return fmt.Errorf("sentToTelegram(), botcommand.SelectCorrection: %w", err)
 			}
 
 			message = "или"
@@ -1785,7 +1784,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			msg = tgbotapi.NewMessage(id, message, styleText)
 
 			rowsButton = nil
-			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%s", enumapplic.CANCEL_CORRECTION.String()), enumapplic.CANCEL_CORRECTION.String()))
+			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(enumapplic.CancelCorrection.String(), enumapplic.CancelCorrection.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton13)
 			inlineKeyboardMarkup = tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 			msg.ReplyMarkup = inlineKeyboardMarkup
@@ -1796,7 +1795,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 		}
 
-	case botcommand.START:
+	case botcommand.Start:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 
@@ -1807,22 +1806,22 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.START: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.Start: %w", err)
 		}
 
-	case botcommand.ACCESS_DENIED:
+	case botcommand.AccessDenied:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 		msg.ReplyMarkup = keyboardMainMenue
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.ACCESS_DENIED: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.AccessDenied: %w", err)
 		}
 
 		deleteUserPolling(id, *userPolling)
 		go checkUsersIDCache(id, bot)
 
-	case botcommand.CANCEL:
+	case botcommand.Cancel:
 
 		msg := tgbotapi.NewMessage(id, message, styleText) //enter to main menue
 
@@ -1833,7 +1832,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.CANCEL: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.Cancel: %w", err)
 		}
 
 		if thisIsAdmin(id) {
@@ -1843,7 +1842,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			go checkUsersIDCache(id, bot)
 		}
 
-	case botcommand.COMPLETE_APPLICATION:
+	case botcommand.CompleteApplication:
 
 		if !thisIsAdmin(id) {
 
@@ -1864,46 +1863,46 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton13 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton14 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Titmouse.String(), string(cons.CONTEST_Titmouse)))
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTitmouse.String(), string(cons.ContestTitmouse)))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Mather.String(), string(cons.CONTEST_Mather)))
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.ContestMather.String(), string(cons.ContestMather)))
 			rowsButton = append(rowsButton, inlineKeyboardButton2)
 
-			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Father.String(), string(cons.CONTEST_Father)))
+			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFather.String(), string(cons.ContestFather)))
 			rowsButton = append(rowsButton, inlineKeyboardButton3)
 
-			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Autumn.String(), string(cons.CONTEST_Autumn)))
+			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(cons.ContestAutumn.String(), string(cons.ContestAutumn)))
 			rowsButton = append(rowsButton, inlineKeyboardButton4)
 
-			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Winter.String(), string(cons.CONTEST_Winter)))
+			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(cons.ContestWinter.String(), string(cons.ContestWinter)))
 			rowsButton = append(rowsButton, inlineKeyboardButton5)
 
-			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Snowflakes.String(), string(cons.CONTEST_Snowflakes)))
+			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSnowflakes.String(), string(cons.ContestSnowflakes)))
 			rowsButton = append(rowsButton, inlineKeyboardButton6)
 
-			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Snowman.String(), string(cons.CONTEST_Snowman)))
+			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSnowman.String(), string(cons.ContestSnowman)))
 			rowsButton = append(rowsButton, inlineKeyboardButton7)
 
-			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Symbol.String(), string(cons.CONTEST_Symbol)))
+			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSymbol.String(), string(cons.ContestSymbol)))
 			rowsButton = append(rowsButton, inlineKeyboardButton8)
 
-			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Heart.String(), string(cons.CONTEST_Heart)))
+			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(cons.ContestHeart.String(), string(cons.ContestHeart)))
 			rowsButton = append(rowsButton, inlineKeyboardButton9)
 
-			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Secrets.String(), string(cons.CONTEST_Secrets)))
+			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSecrets.String(), string(cons.ContestSecrets)))
 			rowsButton = append(rowsButton, inlineKeyboardButton10)
 
-			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_BirdsFeeding.String(), string(cons.CONTEST_BirdsFeeding)))
+			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(cons.ContestBirdsFeeding.String(), string(cons.ContestBirdsFeeding)))
 			rowsButton = append(rowsButton, inlineKeyboardButton11)
 
-			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Shrovetide.String(), string(cons.CONTEST_Shrovetide)))
+			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(cons.ContestShrovetide.String(), string(cons.ContestShrovetide)))
 			rowsButton = append(rowsButton, inlineKeyboardButton12)
 
-			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_Fable.String(), string(cons.CONTEST_Fable)))
+			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFable.String(), string(cons.ContestFable)))
 			rowsButton = append(rowsButton, inlineKeyboardButton13)
 
-			inlineKeyboardButton14 = append(inlineKeyboardButton14, tgbotapi.NewInlineKeyboardButtonData(cons.CONTEST_DefendersFatherland.String(), string(cons.CONTEST_DefendersFatherland)))
+			inlineKeyboardButton14 = append(inlineKeyboardButton14, tgbotapi.NewInlineKeyboardButtonData(cons.ContestDefendersFatherland.String(), string(cons.ContestDefendersFatherland)))
 			rowsButton = append(rowsButton, inlineKeyboardButton14)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1912,11 +1911,11 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.COMPLETE_APPLICATION: %w", err)
+				return fmt.Errorf("sentToTelegram(), botcommand.CompleteApplication: %w", err)
 			}
 		}
 
-	case botcommand.SELECT_PROJECT:
+	case botcommand.SelectProject:
 
 		if !thisIsAdmin(id) {
 
@@ -1925,20 +1924,20 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			msg.ReplyMarkup = keyboardApplicationStart
 
 			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.SELECT_PROJECT: %w", err)
+				return fmt.Errorf("sentToTelegram(), botcommand.SelectProject: %w", err)
 			}
 
 			body := make([]string, 3)
 			body = append(body, "В любой момент вы можете отменить заявку, нажав \"Отмена\"")
 			body = append(body, "")
-			body = append(body, fmt.Sprintf("Для продолжения заполнения заявки, необходимо дать согласие на обработку персональных данных и нажать \"Продолжить\".\n Ознакомиться с пользователським соглашением и политикой конфидециальности\n можно по ссылке %s", os.Getenv("PrivacyPolicy_Terms_Conditions")))
+			body = append(body, fmt.Sprintf("Для продолжения заполнения заявки, необходимо дать согласие на обработку персональных данных и нажать \"Продолжить\".\n Ознакомиться с пользователським соглашением и политикой конфидециальности\n можно по ссылке %s", os.Getenv("PrivacyPolicyTermsConditions")))
 			text := strings.Join(body, "\n")
 
 			var rowsButton [][]tgbotapi.InlineKeyboardButton
 
 			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.AGREE), cons.AGREE.String()))
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.Agree), cons.Agree.String()))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1947,12 +1946,12 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.SELECT_PROJECT: %w", err)
+				return fmt.Errorf("sentToTelegram(), botcommand.SelectProject: %w", err)
 			}
 
 		}
 
-	case botcommand.SELECT_DEGREE:
+	case botcommand.SelectDegree:
 
 		var rowsButton [][]tgbotapi.InlineKeyboardButton
 
@@ -1960,13 +1959,13 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 		inlineKeyboardButton3 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE1.String(), string(cons.DEGREE1)))
+		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.Degree1.String(), string(cons.Degree1)))
 		rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE2.String(), string(cons.DEGREE2)))
+		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.Degree2.String(), string(cons.Degree2)))
 		rowsButton = append(rowsButton, inlineKeyboardButton2)
 
-		inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.DEGREE3.String(), string(cons.DEGREE3)))
+		inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.Degree3.String(), string(cons.Degree3)))
 		rowsButton = append(rowsButton, inlineKeyboardButton3)
 
 		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -1975,37 +1974,37 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		msg.ReplyMarkup = inlineKeyboardMarkup
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.SELECT_DEGREE: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.SelectDegree: %w", err)
 		}
 
-	case botcommand.GET_DIPLOMA:
+	case botcommand.GetDiploma:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 		msg.ReplyMarkup = keyboardContinueClosingApplication
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.GET_DIPLOMA: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.GetDiploma: %w", err)
 		}
 
-	case botcommand.GET_PUBLICATION_DATE:
+	case botcommand.GetPublicationDate:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 		msg.ReplyMarkup = keyboardContinueClosingApplication
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.GET_PUBLICATION_DATE: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.GetPublicationDate: %w", err)
 		}
 
-	case botcommand.GET_PUBLICATION_LINK:
+	case botcommand.GetPublicationLink:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 		msg.ReplyMarkup = keyboardContinueClosingApplication
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.GET_PUBLICATION_LINK: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.GetPublicationLink: %w", err)
 		}
 
-	case botcommand.WAITING_FOR_ACCEPTANCE:
+	case botcommand.WaitingForAcceptance:
 
 		if !thisIsAdmin(id) {
 
@@ -2015,7 +2014,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 				var rowsButton [][]tgbotapi.InlineKeyboardButton
 
 				inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-				inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.AGREE), cons.AGREE.String()))
+				inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.Agree), cons.Agree.String()))
 				rowsButton = append(rowsButton, inlineKeyboardButton1)
 				inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -2025,12 +2024,12 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			}
 
 			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.WAITING_FOR_ACCEPTANCE: %w", err)
+				return fmt.Errorf("sentToTelegram(), botcommand.WaitingForAcceptance: %w", err)
 			}
 
 		}
 
-	case botcommand.CONTINUE_DATA_POLLING:
+	case botcommand.ContinueDataPolling:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 
@@ -2041,10 +2040,10 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.CONTINUE_DATA_POLLING: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.ContinueDataPolling: %w", err)
 		}
 
-	case botcommand.RECORD_TO_DB:
+	case botcommand.RecordToDB:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 
@@ -2055,10 +2054,10 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.RECORD_TO_DB: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.RecordToDB: %w", err)
 		}
 
-	case botcommand.SELECT_FNP_LEADER:
+	case botcommand.SelectFNPLeader:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 
@@ -2069,20 +2068,20 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.SELECT_FNP_LEADER: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.SelectFNPLeader: %w", err)
 		}
 
-	case botcommand.SELECT_DOCUMENT_TYPE:
+	case botcommand.SelectDocumentType:
 
 		var rowsButton [][]tgbotapi.InlineKeyboardButton
 
 		inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 		inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.CERTIFICATE), cons.CERTIFICATE.String()))
+		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.Certificate), cons.Certificate.String()))
 		rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.CERTIFICATE_AND_DIPLOMA), cons.CERTIFICATE_AND_DIPLOMA.String()))
+		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.CertificateAndDiploma), cons.CertificateAndDiploma.String()))
 		rowsButton = append(rowsButton, inlineKeyboardButton2)
 
 		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -2091,10 +2090,10 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		msg.ReplyMarkup = inlineKeyboardMarkup
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.SELECT_DOCUMENT_TYPE: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.SelectDocumentType: %w", err)
 		}
 
-	case botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS:
+	case botcommand.SelectPlaceDeliveryOfDocuments:
 
 		if !thisIsAdmin(id) {
 
@@ -2103,10 +2102,10 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS1, cons.PLACE_DELIVERY_OF_DOCUMENTS1))
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.PlaceDeliveryOfDocuments1, cons.PlaceDeliveryOfDocuments1))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.PLACE_DELIVERY_OF_DOCUMENTS2, cons.PLACE_DELIVERY_OF_DOCUMENTS2))
+			inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(cons.PlaceDeliveryOfDocuments2, cons.PlaceDeliveryOfDocuments2))
 			rowsButton = append(rowsButton, inlineKeyboardButton2)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
@@ -2115,11 +2114,11 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			msg.ReplyMarkup = inlineKeyboardMarkup
 
 			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.SELECT_PLACE_DELIVERY_OF_DOCUMENTS: %w", err)
+				return fmt.Errorf("sentToTelegram(), botcommand.SelectPlaceDeliveryOfDocuments: %w", err)
 			}
 		}
 
-	case botcommand.CHECK_DATA:
+	case botcommand.CheckData:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 
@@ -2130,7 +2129,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.CHECK_DATA: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.CheckData: %w", err)
 		}
 
 		message = UserDataToStringForTelegramm(id)
@@ -2144,10 +2143,10 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.CHECK_DATA: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.CheckData: %w", err)
 		}
 
-	case botcommand.CHECK_DATA_PAUSE:
+	case botcommand.CheckDataPause:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 
@@ -2156,27 +2155,27 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.CHECK_DATA_PAUSE: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.CheckDataPause: %w", err)
 		}
 
-	case botcommand.CHECK_PDF_FILES:
+	case botcommand.CheckPDFFiles:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 		msg.ReplyMarkup = keyboardConfirmAndSendForAdmin
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.CHECK_PDF_FILES: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.CheckPDFFiles: %w", err)
 		}
 
-	case botcommand.UNDEFINED:
+	case botcommand.Undefined:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.UNDEFINED: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.Undefined: %w", err)
 		}
 
-	case botcommand.SETTINGS:
+	case botcommand.Settings:
 
 	}
 
@@ -2184,18 +2183,18 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 }
 
-func sentToTelegramPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id string, command botcommand.BotCommand) error {
+func sentToTelegramPDF(bot *tgbotapi.BotAPI, id int64, pdfPath string, fileID string, command botcommand.BotCommand) error {
 
 	var msg tgbotapi.DocumentConfig
 
 	switch command {
 
-	case botcommand.SELECT_PROJECT:
+	case botcommand.SelectProject:
 
-		if file_id != "" {
-			msg = tgbotapi.NewDocumentShare(id, file_id)
+		if fileID != "" {
+			msg = tgbotapi.NewDocumentShare(id, fileID)
 		} else {
-			msg = tgbotapi.NewDocumentUpload(id, pdf_path)
+			msg = tgbotapi.NewDocumentUpload(id, pdfPath)
 		}
 
 		if thisIsAdmin(id) {
@@ -2210,10 +2209,10 @@ func sentToTelegramPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id 
 
 	default:
 
-		if file_id != "" {
-			msg = tgbotapi.NewDocumentShare(id, file_id)
+		if fileID != "" {
+			msg = tgbotapi.NewDocumentShare(id, fileID)
 		} else {
-			msg = tgbotapi.NewDocumentUpload(id, pdf_path)
+			msg = tgbotapi.NewDocumentUpload(id, pdfPath)
 		}
 
 		if thisIsAdmin(id) {
@@ -2223,7 +2222,7 @@ func sentToTelegramPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id 
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegramPDF(), botcommand.SELECT_PROJECT: %w", err)
+			return fmt.Errorf("sentToTelegramPDF(), botcommand.SelectProject: %w", err)
 		}
 
 	}
@@ -2233,14 +2232,14 @@ func sentToTelegramPDF(bot *tgbotapi.BotAPI, id int64, pdf_path string, file_id 
 
 func thisIsAdmin(id int64) bool {
 
-	if i, err := strconv.ParseInt(os.Getenv("ADMIN_ID"), 10, 64); err == nil {
+	if i, err := strconv.ParseInt(os.Getenv("AdminID"), 10, 64); err == nil {
 		return id == i
 	}
 
 	return false
 }
 
-func AddRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) error {
+func AddRequisition(ctx context.Context, userID int64, dbpool *pgxpool.Pool) error {
 
 	userData := userPolling.Get(userID)
 
@@ -2252,21 +2251,21 @@ func AddRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) err
 
 	if row.Next() {
 
-		var requisition_number int
+		var requisitionNumber int
 
-		err := row.Scan(&requisition_number)
+		err := row.Scan(&requisitionNumber)
 
 		if err != nil {
 			return fmt.Errorf("func AddRequisition(), scan datas of row is failed %w", err)
 		}
 
-		userPolling.Set(userID, enumapplic.REQUISITION_NUMBER, fmt.Sprintf("%v", requisition_number))
+		userPolling.Set(userID, enumapplic.RequisitionNumber, fmt.Sprintf("%v", requisitionNumber))
 
 		if userData.Diploma {
 
-			var diploma_number int
+			var diplomaNumber int
 
-			row, err := dbpool.Query(ctx, "insert into diplomas (requisition_number) values ($1) returning diploma_number", requisition_number)
+			row, err := dbpool.Query(ctx, "insert into diplomas (requisition_number) values ($1) returning diploma_number", requisitionNumber)
 
 			if err != nil {
 				return fmt.Errorf("func AddRequisition(), query to db is failed: %w", err)
@@ -2274,13 +2273,13 @@ func AddRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) err
 
 			if row.Next() {
 
-				err := row.Scan(&diploma_number)
+				err := row.Scan(&diplomaNumber)
 
 				if err != nil {
 					return fmt.Errorf("func AddRequisition(), scan datas of row is failed %w", err)
 				}
 
-				userPolling.Set(userID, enumapplic.DIPLOMA_NUMBER, fmt.Sprintf("%v", diploma_number))
+				userPolling.Set(userID, enumapplic.DiplomaNumber, fmt.Sprintf("%v", diplomaNumber))
 			}
 
 		}
@@ -2289,168 +2288,168 @@ func AddRequisition(userID int64, dbpool *pgxpool.Pool, ctx context.Context) err
 	return row.Err()
 }
 
-func GetRequisitionForAdmin(userPolling cache.CacheDataPolling, requisition_number int64, tableDB string, degree string, publicationDate, publicationLink string, dbpool *pgxpool.Pool, ctx context.Context) (err error, userID int64) {
+func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCache, requisitionNumber int64, tableDB string, degree string, publicationDate, publicationLink string, dbpool *pgxpool.Pool) (userID int64, err error) {
 
 	var fnp string
 	var age int
-	var group_age string
-	var name_institution string
+	var groupAge string
+	var nameInstitution string
 	var locality string
-	var naming_unit string
-	var publication_title string
-	var leader_fnp string
+	var namingUnit string
+	var publicationTitle string
+	var leaderFNP string
 	var email string
 	var contest string
-	var document_type string
+	var documentType string
 	var diploma bool
-	var diploma_number int64
-	var place_delivery_of_document string
+	var diplomaNumber int64
+	var placeDeliveryOfDocument string
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, place_delivery_of_document, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", tableDB, tableDB, tableDB), requisition_number)
+	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, place_delivery_of_document, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", tableDB, tableDB, tableDB), requisitionNumber)
 
 	if err != nil {
-		return fmt.Errorf("func GetRequisitionForAdmin(), query to db is failed: %w", err), 0
+		return 0, fmt.Errorf("func GetRequisitionForAdmin(), query to db is failed: %w", err)
 	}
 
 	if row.Next() {
 
-		err = row.Scan(&userID, &fnp, &age, &group_age, &name_institution, &locality, &naming_unit, &publication_title, &leader_fnp, &email, &contest, &document_type, &place_delivery_of_document, &diploma, &diploma_number)
+		err = row.Scan(&userID, &fnp, &age, &groupAge, &nameInstitution, &locality, &namingUnit, &publicationTitle, &leaderFNP, &email, &contest, &documentType, &placeDeliveryOfDocument, &diploma, &diplomaNumber)
 
 		if err != nil {
-			return fmt.Errorf("func GetRequisitionForAdmin(), scan datas of row is failed %w", err), 0
+			return 0, fmt.Errorf("func GetRequisitionForAdmin(), scan datas of row is failed %w", err)
 		}
 
 		// When RequisitionNumber == 0 and Contest != ""  - most likely the user is working on a new requisition
 		if userPolling.Get(userID).RequisitionNumber == 0 && userPolling.Get(userID).Contest != "" {
 			tempUsersIDCache.Add(userID)
-			err = &errs.ErrCacheUserPolling{UserID: userID, RequisitionNumber: requisition_number}
-			return errs.ErrorHandler(err), userID
+			err = &errs.ErrCacheUserPolling{UserID: userID, RequisitionNumber: requisitionNumber}
+			return userID, errs.ErrorHandler(err)
 		}
 
 		userPolling.Set(userID, enumapplic.FNP, fnp)
-		userPolling.Set(userID, enumapplic.AGE, strconv.Itoa(age))
-		userPolling.Set(userID, enumapplic.NAME_INSTITUTION, name_institution)
-		userPolling.Set(userID, enumapplic.LOCALITY, locality)
-		userPolling.Set(userID, enumapplic.NAMING_UNIT, naming_unit)
-		userPolling.Set(userID, enumapplic.PUBLICATION_TITLE, publication_title)
-		userPolling.Set(userID, enumapplic.FNP_LEADER, leader_fnp)
-		userPolling.Set(userID, enumapplic.EMAIL, email)
-		userPolling.Set(userID, enumapplic.CONTEST, contest)
-		userPolling.Set(userID, enumapplic.DOCUMENT_TYPE, document_type)
-		userPolling.Set(userID, enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, place_delivery_of_document)
-		userPolling.Set(userID, enumapplic.REQUISITION_NUMBER, fmt.Sprintf("%v", requisition_number))
-		userPolling.Set(userID, enumapplic.PUBLICATION_LINK, publicationLink)
-		userPolling.Set(userID, enumapplic.PUBLICATION_DATE, publicationDate)
-		userPolling.Set(userID, enumapplic.DEGREE, degree)
-		userPolling.Set(userID, enumapplic.TableDB, cons.CERTIFICATE.String())
-		userPolling.Set(userID, enumapplic.DIPLOMA, strconv.FormatBool(diploma))
-		if group_age != "" {
-			userPolling.Set(userID, enumapplic.GROUP, "")
-			userPolling.Set(userID, enumapplic.GROUP_AGE, group_age)
+		userPolling.Set(userID, enumapplic.Age, strconv.Itoa(age))
+		userPolling.Set(userID, enumapplic.NameInstitution, nameInstitution)
+		userPolling.Set(userID, enumapplic.Locality, locality)
+		userPolling.Set(userID, enumapplic.NamingUnit, namingUnit)
+		userPolling.Set(userID, enumapplic.PublicationTitle, publicationTitle)
+		userPolling.Set(userID, enumapplic.FNPLeader, leaderFNP)
+		userPolling.Set(userID, enumapplic.Email, email)
+		userPolling.Set(userID, enumapplic.Contest, contest)
+		userPolling.Set(userID, enumapplic.DocumentType, documentType)
+		userPolling.Set(userID, enumapplic.PlaceDeliveryOfDocuments, placeDeliveryOfDocument)
+		userPolling.Set(userID, enumapplic.RequisitionNumber, fmt.Sprintf("%v", requisitionNumber))
+		userPolling.Set(userID, enumapplic.PublicationLink, publicationLink)
+		userPolling.Set(userID, enumapplic.PublicationDate, publicationDate)
+		userPolling.Set(userID, enumapplic.Degree, degree)
+		userPolling.Set(userID, enumapplic.TableDB, cons.Certificate.String())
+		userPolling.Set(userID, enumapplic.Diploma, strconv.FormatBool(diploma))
+		if groupAge != "" {
+			userPolling.Set(userID, enumapplic.Group, "")
+			userPolling.Set(userID, enumapplic.GroupAge, groupAge)
 		}
 
 		if diploma {
-			userPolling.Set(userID, enumapplic.DIPLOMA_NUMBER, strconv.Itoa(int(diploma_number)))
+			userPolling.Set(userID, enumapplic.DiplomaNumber, strconv.Itoa(int(diplomaNumber)))
 		}
 
 	}
 
-	return row.Err(), userID
+	return userID, row.Err()
 }
 
-func GetRequisitionForUser(user_id int64, requisition_number int64, dbpool *pgxpool.Pool, ctx context.Context) (err error, userID int64, sent bool) {
+func GetRequisitionForUser(ctx context.Context, userid int64, requisitionNumber int64, dbpool *pgxpool.Pool) (userID int64, sent bool, err error) {
 
 	var fnp string
 	var age int
-	var group_age string
-	var name_institution string
+	var groupAge string
+	var nameInstitution string
 	var locality string
-	var naming_unit string
-	var publication_title string
-	var publication_link string
-	var publication_date int64
+	var namingUnit string
+	var publicationTitle string
+	var publicationLink string
+	var publicationDate int64
 	var degree int
-	var leader_fnp string
+	var leaderFNP string
 	var email string
 	var contest string
-	var document_type string
+	var documentType string
 	var diploma bool
-	var diploma_number int64
+	var diplomaNumber int64
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, COALESCE(reference, ''), publication_date, degree, leader_fnp, email, contest, document_type, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", cons.CERTIFICATE.String(), cons.CERTIFICATE.String(), cons.CERTIFICATE.String()), requisition_number)
+	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, COALESCE(reference, ''), publication_date, degree, leader_fnp, email, contest, document_type, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", cons.Certificate.String(), cons.Certificate.String(), cons.Certificate.String()), requisitionNumber)
 
 	if err != nil {
-		return fmt.Errorf("func GetRequisitionForUser(), query to db is failed: %W", err), 0, sent
+		return 0, sent, fmt.Errorf("func GetRequisitionForUser(), query to db is failed: %W", err)
 	}
 
 	if row.Next() {
 
-		err = row.Scan(&userID, &fnp, &age, &group_age, &name_institution, &locality, &naming_unit, &publication_title, &publication_link, &publication_date, &degree, &leader_fnp, &email, &contest, &document_type, &diploma, &diploma_number)
+		err = row.Scan(&userID, &fnp, &age, &groupAge, &nameInstitution, &locality, &namingUnit, &publicationTitle, &publicationLink, &publicationDate, &degree, &leaderFNP, &email, &contest, &documentType, &diploma, &diplomaNumber)
 
 		if err != nil {
-			return fmt.Errorf("func GetRequisitionForUser(), scan datas of row is failed %w", err), 0, sent
+			return 0, sent, fmt.Errorf("func GetRequisitionForUser(), scan datas of row is failed %w", err)
 		}
 
-		if userID == 0 && publication_date != 0 {
+		if userID == 0 && publicationDate != 0 {
 			sent = true
 		}
 
-		if userID == 0 || userID != user_id {
-			return row.Err(), userID, sent
+		if userID == 0 || userID != userid {
+			return userID, sent, row.Err()
 		}
 
-		dateString := unixNanoToDateString(publication_date)
+		dateString := unixNanoToDateString(publicationDate)
 
 		userPolling.Set(userID, enumapplic.FNP, fnp)
-		userPolling.Set(userID, enumapplic.AGE, strconv.Itoa(age))
-		userPolling.Set(userID, enumapplic.NAME_INSTITUTION, name_institution)
-		userPolling.Set(userID, enumapplic.LOCALITY, locality)
-		userPolling.Set(userID, enumapplic.NAMING_UNIT, naming_unit)
-		userPolling.Set(userID, enumapplic.PUBLICATION_TITLE, publication_title)
-		userPolling.Set(userID, enumapplic.FNP_LEADER, leader_fnp)
-		userPolling.Set(userID, enumapplic.EMAIL, email)
-		userPolling.Set(userID, enumapplic.CONTEST, contest)
-		userPolling.Set(userID, enumapplic.DOCUMENT_TYPE, document_type)
-		userPolling.Set(userID, enumapplic.REQUISITION_NUMBER, fmt.Sprintf("%v", requisition_number))
-		userPolling.Set(userID, enumapplic.PUBLICATION_LINK, publication_link)
-		userPolling.Set(userID, enumapplic.PUBLICATION_DATE, dateString)
-		userPolling.Set(userID, enumapplic.DEGREE, strconv.Itoa(degree))
-		userPolling.Set(userID, enumapplic.TableDB, cons.CERTIFICATE.String())
-		userPolling.Set(userID, enumapplic.DIPLOMA, strconv.FormatBool(diploma))
-		if group_age != "" {
-			userPolling.Set(userID, enumapplic.GROUP, "")
-			userPolling.Set(userID, enumapplic.GROUP_AGE, group_age)
+		userPolling.Set(userID, enumapplic.Age, strconv.Itoa(age))
+		userPolling.Set(userID, enumapplic.NameInstitution, nameInstitution)
+		userPolling.Set(userID, enumapplic.Locality, locality)
+		userPolling.Set(userID, enumapplic.NamingUnit, namingUnit)
+		userPolling.Set(userID, enumapplic.PublicationTitle, publicationTitle)
+		userPolling.Set(userID, enumapplic.FNPLeader, leaderFNP)
+		userPolling.Set(userID, enumapplic.Email, email)
+		userPolling.Set(userID, enumapplic.Contest, contest)
+		userPolling.Set(userID, enumapplic.DocumentType, documentType)
+		userPolling.Set(userID, enumapplic.RequisitionNumber, fmt.Sprintf("%v", requisitionNumber))
+		userPolling.Set(userID, enumapplic.PublicationLink, publicationLink)
+		userPolling.Set(userID, enumapplic.PublicationDate, dateString)
+		userPolling.Set(userID, enumapplic.Degree, strconv.Itoa(degree))
+		userPolling.Set(userID, enumapplic.TableDB, cons.Certificate.String())
+		userPolling.Set(userID, enumapplic.Diploma, strconv.FormatBool(diploma))
+		if groupAge != "" {
+			userPolling.Set(userID, enumapplic.Group, "")
+			userPolling.Set(userID, enumapplic.GroupAge, groupAge)
 		}
 		if diploma {
-			userPolling.Set(userID, enumapplic.DIPLOMA_NUMBER, strconv.Itoa(int(diploma_number)))
+			userPolling.Set(userID, enumapplic.DiplomaNumber, strconv.Itoa(int(diplomaNumber)))
 		}
 
 	}
 
-	return row.Err(), userID, sent
+	return userID, sent, row.Err()
 }
 
-func UpdateRequisition(admin bool, cleanOut bool, requisition_number int64, tableDB string, degree int, publicationLink string, publication_date string, dbpool *pgxpool.Pool, ctx context.Context) (err error) {
+func UpdateRequisition(ctx context.Context, admin bool, cleanOut bool, requisitionNumber int64, tableDB string, degree int, publicationLink string, publicationDate string, dbpool *pgxpool.Pool) (err error) {
 
 	var query string
 
-	publicationDate := dateStringToUnixNano(publication_date)
+	dateOfPublication := dateStringToUnixNano(publicationDate)
 
 	switch admin {
 
 	case true:
 
 		if cleanOut {
-			query = fmt.Sprintf("UPDATE %s SET reference='%v', publication_date='%v', close_date='%v', degree='%v', email='%v',user_fnp='%v',leader_fnp='%v',user_id='%v' WHERE requisition_number=$1 RETURNING user_id", tableDB, publicationLink, publicationDate, time.Now().UnixNano(), degree, "", "", "", 0)
+			query = fmt.Sprintf("UPDATE %s SET reference='%v', publication_date='%v', close_date='%v', degree='%v', email='%v',user_fnp='%v',leader_fnp='%v',user_id='%v' WHERE requisition_number=$1 RETURNING user_id", tableDB, publicationLink, dateOfPublication, time.Now().UnixNano(), degree, "", "", "", 0)
 		} else {
-			query = fmt.Sprintf("UPDATE %s SET reference='%v', publication_date='%v', close_date='%v', degree='%v' WHERE requisition_number=$1 RETURNING user_id", tableDB, publicationLink, publicationDate, time.Now().UnixNano(), degree)
+			query = fmt.Sprintf("UPDATE %s SET reference='%v', publication_date='%v', close_date='%v', degree='%v' WHERE requisition_number=$1 RETURNING user_id", tableDB, publicationLink, dateOfPublication, time.Now().UnixNano(), degree)
 		}
 
 	default:
 		query = fmt.Sprintf("UPDATE %s SET email='%v',user_fnp='%v',leader_fnp='%v',user_id='%v' WHERE requisition_number=$1 RETURNING user_id", tableDB, "", "", "", 0)
 	}
 
-	row, err := dbpool.Query(ctx, query, requisition_number)
+	row, err := dbpool.Query(ctx, query, requisitionNumber)
 
 	if err != nil {
 		return fmt.Errorf("query UPDATE to db is failed: %w", err)
@@ -2461,13 +2460,13 @@ func UpdateRequisition(admin bool, cleanOut bool, requisition_number int64, tabl
 	return row.Err()
 }
 
-func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.CacheDataPolling) {
+func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.DataPollingCache) {
 
 	defer wg.Done()
 
 	var x float64
-	var y float64 = 305
-	var step float64 = 15
+	var y float64 = 305.0
+	var step float64 = 15.0
 	var widthText float64
 	var centerX float64 = 297.5
 	var path string
@@ -2485,7 +2484,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 	}
 
-	boilerplatePDFPath := fmt.Sprintf(path, contests[usersRequisition.Contest], cons.CERTIFICATE.String())
+	boilerplatePDFPath := fmt.Sprintf(path, contests[usersRequisition.Contest], cons.Certificate.String())
 
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
@@ -2525,24 +2524,14 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		degree = "III"
 	}
 
-	err = pdf.Text(fmt.Sprintf("%s", degree))
+	err = pdf.Text(degree)
 
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(), degree: %v", err.Error()))
 	}
 
 	//2. Requisition number
-
-	switch {
-	case usersRequisition.RequisitionNumber > 10000:
-		x = 81
-	case usersRequisition.RequisitionNumber > 1000:
-		x = 91
-	case usersRequisition.RequisitionNumber > 100:
-		x = 101
-	default:
-		x = 111
-	}
+	x = 101
 
 	pdf.SetXY(x, 251)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
@@ -2590,10 +2579,17 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 			widthText, err = pdf.MeasureTextWidth(t)
 
+			if err != nil {
+				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(t): %v", err.Error()))
+			}
+
 			x = centerX - widthText/2
 
 			pdf.SetXY(x, y)
-			pdf.Text(t)
+			err = pdf.Text(t)
+			if err != nil {
+				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(t): %v", err.Error()))
+			}
 			y = y + step
 		}
 
@@ -2606,14 +2602,14 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	}
 
 	//4. Age
-	var age_string string
+	var ageString string
 	var ending string
 
 	switch usersRequisition.Group {
 
 	case true:
 		groupAge := strings.TrimSpace(usersRequisition.GroupAge)
-		age_string = groupAge
+		ageString = groupAge
 
 		if groupAge != "0" {
 			var symbol string
@@ -2638,16 +2634,16 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 					}
 				}
 				ending = convertAgeToString(age)
-				age_string = fmt.Sprintf("%v %v", age_string, ending)
+				ageString = fmt.Sprintf("%v %v", ageString, ending)
 			}
 		}
 
 	case false:
 		ending = convertAgeToString(usersRequisition.Age)
-		age_string = fmt.Sprintf("%v %v", usersRequisition.Age, ending)
+		ageString = fmt.Sprintf("%v %v", usersRequisition.Age, ending)
 	}
 
-	widthText, err = pdf.MeasureTextWidth(age_string)
+	widthText, err = pdf.MeasureTextWidth(ageString)
 
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(age_string): %v", err))
@@ -2657,7 +2653,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	y = pdf.GetY() + 1.5*step
 
 	pdf.SetXY(x, y)
-	err = pdf.Text(age_string)
+	err = pdf.Text(ageString)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(age_string): %v", err))
 	}
@@ -2668,6 +2664,9 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 	pdf.SetTextColorCMYK(58, 46, 41, 94) //black
 	err = pdf.SetFont("TelegraphLine", "", 18)
+	if err != nil {
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SetFont() Name institution: %v", err))
+	}
 
 	widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
 
@@ -2704,7 +2703,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				textPart1 := usersRequisition.NameInstitution[:len(t)-1]
 
 				pdf.SetXY(x, y)
-				pdf.Text(textPart1)
+				err = pdf.Text(textPart1)
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(textPart1): %v", err.Error()))
+				}
 				y = y + step
 
 				textPart2 := usersRequisition.NameInstitution[len(t)-1:]
@@ -2718,7 +2720,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				x = centerX - widthText/2
 
 				pdf.SetXY(x, y)
-				pdf.Text(textPart2)
+				err = pdf.Text(textPart2)
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(textPart2): %v", err.Error()))
+				}
 				y = y + step
 
 				zrlog.Info().Msg("Split long name institution")
@@ -2781,7 +2786,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				x = centerX - widthText/2
 
 				pdf.SetXY(x, y)
-				pdf.Text(textPart1)
+				err = pdf.Text(textPart1)
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(textPart1): %v", err.Error()))
+				}
 				y = y + step
 
 				textPart2 := usersRequisition.Locality[len(t)-1:]
@@ -2795,7 +2803,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				x = centerX - widthText/2
 
 				pdf.SetXY(x, y)
-				pdf.Text(textPart2)
+				err = pdf.Text(textPart2)
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(textPart2) locality: %v", err.Error()))
+				}
 				y = y + step
 				break
 			}
@@ -2877,19 +2888,26 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 					arrayText, err = pdf.SplitText(leader, maxWidth)
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SplitText(leader, maxWidth): %v", err.Error()))
+						zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SplitText(leader, maxWidth) Leader's FNP: %v", err.Error()))
 					}
 
 					for k, t := range arrayText {
 
 						widthText, err = pdf.MeasureTextWidth(t)
+						if err != nil {
+							zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(t) Leader's FNP: %v", err.Error()))
+						}
 
 						if i > 0 || k > 0 { //Second leader or second part part first leader
 							x = 55
 						}
 
 						pdf.SetXY(x, y)
-						pdf.Text(t)
+						err = pdf.Text(t)
+						if err != nil {
+							zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(t) Leader's FNP: %v", err.Error()))
+						}
+
 						y = y + 1.2*step
 					}
 
@@ -2915,6 +2933,9 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 			maxWidth = (maxWidthPDF + 225) / 2
 			widthText, err = pdf.MeasureTextWidth(usersRequisition.LeaderFNP)
+			if err != nil {
+				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.LeaderFNP): %v", err.Error()))
+			}
 
 			if widthText > maxWidth {
 
@@ -2932,7 +2953,11 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 					}
 
 					pdf.SetXY(x, y)
-					pdf.Text(t)
+					err = pdf.Text(t)
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(t): %v", err.Error()))
+					}
+
 					y = y + 1.2*step
 				}
 
@@ -2969,7 +2994,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.PublicationLink): %v", err.Error()))
 	}
 
-	path = fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.CERTIFICATE), usersRequisition.RequisitionNumber)
+	path = fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.Certificate), usersRequisition.RequisitionNumber)
 
 	err = pdf.WritePdf(path)
 
@@ -2977,7 +3002,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.WritePdf(path): %v", err.Error()))
 	}
 
-	userPolling.Set(userID, enumapplic.FILE, path)
+	userPolling.Set(userID, enumapplic.File, path)
 
 	err = pdf.Close()
 
@@ -2987,7 +3012,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 }
 
-func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.CacheDataPolling) {
+func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.DataPollingCache) {
 
 	defer wg.Done()
 
@@ -3002,7 +3027,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 	if usersRequisition.Diploma {
 
-		boilerplatePDFPath := fmt.Sprintf("./external/imgs/%s_%s.jpg", contests[usersRequisition.Contest], cons.DIPLOMA.String())
+		boilerplatePDFPath := fmt.Sprintf("./external/imgs/%s_%s.jpg", contests[usersRequisition.Contest], cons.Diploma.String())
 
 		pdf := gopdf.GoPdf{}
 		pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
@@ -3026,6 +3051,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 		pdf.SetTextColorCMYK(58, 46, 41, 94) //black
 		err = pdf.SetFont("TelegraphLine", "", 14)
 
+		//2. Requisition number
 		x = 90
 
 		pdf.SetXY(x, 242)
@@ -3098,8 +3124,10 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 						x = centerX - widthText/2
 
 						pdf.SetXY(x, y)
-
-						pdf.Text(t)
+						err = pdf.Text(t)
+						if err != nil {
+							zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(t): %v", err.Error()))
+						}
 						y = y + 1.2*step
 					}
 
@@ -3139,7 +3167,10 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(t)
+					err = pdf.Text(t)
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(t): %v", err.Error()))
+					}
 					y = y + 1.2*step
 				}
 
@@ -3208,7 +3239,10 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(textPart1)
+					err = pdf.Text(textPart1)
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(textPart1) Name institution: %v", err.Error()))
+					}
 					y = y + step
 
 					textPart2 := usersRequisition.NameInstitution[len(t)-1:]
@@ -3222,7 +3256,10 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(textPart2)
+					err = pdf.Text(textPart2)
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(textPart2) Name institution: %v", err.Error()))
+					}
 					y = y + step
 					break
 				}
@@ -3243,6 +3280,9 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 		//4. Locality
 		pdf.SetTextColorCMYK(58, 46, 41, 94) //black
 		err = pdf.SetFont("TelegraphLine", "", 16)
+		if err != nil {
+			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.SetFont() Locality: %v", err.Error()))
+		}
 
 		y = pdf.GetY() + 1.5*step
 
@@ -3281,7 +3321,10 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(textPart1)
+					err = pdf.Text(textPart1)
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(textPart1) locality: %v", err.Error()))
+					}
 					y = y + step
 
 					textPart2 := usersRequisition.Locality[len(t)-1:]
@@ -3295,7 +3338,10 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					x = centerX - widthText/2
 
 					pdf.SetXY(x, y)
-					pdf.Text(textPart2)
+					err = pdf.Text(textPart2)
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(textPart2) locality: %v", err.Error()))
+					}
 					y = y + step
 					break
 				}
@@ -3367,7 +3413,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			textDegree = fmt.Sprintf(",   %s", degree)
 		case 2:
 			degree = "II"
-			x = 230
+			x = 230.0
 			textDegree = fmt.Sprintf(",  %s", degree)
 		case 3:
 			degree = "III"
@@ -3401,7 +3447,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.PublicationLink): %v", err.Error()))
 		}
 
-		path := fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.DIPLOMA), usersRequisition.RequisitionNumber)
+		path := fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.Diploma), usersRequisition.RequisitionNumber)
 
 		err = pdf.WritePdf(path)
 
@@ -3409,7 +3455,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.WritePdf(path): %v", err.Error()))
 		}
 
-		userPolling.Set(userID, enumapplic.FILE, path)
+		userPolling.Set(userID, enumapplic.File, path)
 
 		err = pdf.Close()
 
@@ -3453,7 +3499,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	t := time.Now()
 	formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-	err = pdf.CellWithOption(nil, fmt.Sprintf("Заявка №%v от %v ", usersRequisition.RequisitionNumber, formattedTime), cellOption_Caption)
+	err = pdf.CellWithOption(nil, fmt.Sprintf("Заявка №%v от %v ", usersRequisition.RequisitionNumber, formattedTime), cellOptionCaption)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.CellWithOption(): %v", err.Error()))
 	}
@@ -3486,7 +3532,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	y = y + step
 
 	pdf.SetXY(25, y)
-	text := fmt.Sprintf("%s: \"%s\"", enumapplic.NAMING_UNIT, usersRequisition.NamingUnit)
+	text := fmt.Sprintf("%s: \"%s\"", enumapplic.NamingUnit, usersRequisition.NamingUnit)
 	widthText, err := pdf.MeasureTextWidth(text)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.MeasureTextWidth(text): %v", err.Error()))
@@ -3503,7 +3549,10 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		for _, t := range arrayText {
 			pdf.SetXY(25, y)
-			pdf.Text(t)
+			err = pdf.Text(t)
+			if err != nil {
+				zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.Text(t): %v", err.Error()))
+			}
 			y = y + step
 		}
 
@@ -3516,7 +3565,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	}
 
 	pdf.SetXY(25, y)
-	text = fmt.Sprintf("%s: \"%s\"", enumapplic.PUBLICATION_TITLE, usersRequisition.PublicationTitle)
+	text = fmt.Sprintf("%s: \"%s\"", enumapplic.PublicationTitle, usersRequisition.PublicationTitle)
 	widthText, err = pdf.MeasureTextWidth(text)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.MeasureTextWidth(text): %v", err.Error()))
@@ -3533,7 +3582,10 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		for _, t := range arrayText {
 			pdf.SetXY(25, y)
-			pdf.Text(t)
+			err = pdf.Text(t)
+			if err != nil {
+				zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.Text(t): %v", err.Error()))
+			}
 			y = y + step
 		}
 
@@ -3546,7 +3598,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	}
 
 	pdf.SetXY(25, y)
-	text = fmt.Sprintf("%s: %s", enumapplic.DOCUMENT_TYPE, usersRequisition.DocumentType)
+	text = fmt.Sprintf("%s: %s", enumapplic.DocumentType, usersRequisition.DocumentType)
 	widthText, err = pdf.MeasureTextWidth(text)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.MeasureTextWidth(text): %v", err.Error()))
@@ -3563,7 +3615,10 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		for _, t := range arrayText {
 			pdf.SetXY(25, y)
-			pdf.Text(t)
+			err = pdf.Text(t)
+			if err != nil {
+				zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.Text(t): %v", err.Error()))
+			}
 			y = y + step
 		}
 
@@ -3576,7 +3631,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	}
 
 	pdf.SetXY(25, y)
-	text = fmt.Sprintf("%s: %s", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS, usersRequisition.PlaceDeliveryDocuments)
+	text = fmt.Sprintf("%s: %s", enumapplic.PlaceDeliveryOfDocuments, usersRequisition.PlaceDeliveryDocuments)
 	widthText, err = pdf.MeasureTextWidth(text)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.MeasureTextWidth(text): %v", err.Error()))
@@ -3593,7 +3648,10 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 		for _, t := range arrayText {
 			pdf.SetXY(25, y)
-			pdf.Text(t)
+			err = pdf.Text(t)
+			if err != nil {
+				zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.Text(t): %v", err.Error()))
+			}
 			y = y + step
 		}
 
@@ -3614,7 +3672,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	return true, nil
 }
 
-func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin bool, subject string, files []string, message string) (bool, error) {
+func SentEmail(to string, userID int64, userDat cache.DataPollingCache, toAdmin bool, subject string, files []string, message string) (bool, error) {
 
 	usdat := userDat.Get(userID)
 
@@ -3624,7 +3682,7 @@ func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin 
 
 	m := gomail.NewMessage()
 
-	m.SetHeader("From", os.Getenv("BOT_EMAIL"))
+	m.SetHeader("From", os.Getenv("BotEmail"))
 	m.SetHeader("To", to)
 	m.SetHeader("Subject", subject)
 
@@ -3632,7 +3690,7 @@ func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin 
 		m.Embed(usdat.Photo)
 	}
 
-	if files != nil && len(files) > 0 {
+	if len(files) > 0 {
 
 		temp := ""
 		for _, path := range files {
@@ -3652,7 +3710,7 @@ func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin 
 	m.SetBody("text/html", message)
 
 	// Settings for SMTP server
-	d := gomail.NewDialer(os.Getenv("SMTP_SERVER"), 465, os.Getenv("BOT_LOGIN_EMAIL"), os.Getenv("BOT_PASSWORD_EMAIL"))
+	d := gomail.NewDialer(os.Getenv("SMTPServer"), 465, os.Getenv("BotEmailLogin"), os.Getenv("BotEmailPassword"))
 
 	if err := d.DialAndSend(m); err != nil {
 		return false, err
@@ -3661,7 +3719,7 @@ func SentEmail(to string, userID int64, userDat cache.CacheDataPolling, toAdmin 
 	return true, nil
 }
 
-func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
+func UserDataToString(userID int64, userDat cache.DataPollingCache) string {
 
 	usdata := userDat.Get(userID)
 
@@ -3673,7 +3731,7 @@ func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
 
 	body = append(body, "<style type=\"text/css\">BODY {margin: 0; /* Убираем отступы в браузере */}#toplayer {background: #F5FFFA; /* Цвет фона */height: 800px /* Высота слоя */}</style>")
 
-	body = append(body, fmt.Sprintf("<div id=\"toplayer\"><dt><p><b>(%v). %s:</b></p></dt>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
+	body = append(body, fmt.Sprintf("<div id=\"toplayer\"><dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Contest.EnumIndex(), enumapplic.Contest.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Contest))
 	text = strings.Join(body, "\n")
 
@@ -3681,15 +3739,15 @@ func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.FNP))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Age.EnumIndex(), enumapplic.Age.String()))
 
-	var age_string string
+	var ageString string
 	if (!usdata.Group && usdata.Age != 0) || (usdata.Group && strings.TrimSpace(usdata.GroupAge) != "0") {
 		var ending string
 		switch usdata.Group {
 		case true:
 			groupAge := strings.TrimSpace(usdata.GroupAge)
-			age_string = groupAge
+			ageString = groupAge
 
 			if groupAge != "0" {
 				var symbol string
@@ -3713,63 +3771,63 @@ func UserDataToString(userID int64, userDat cache.CacheDataPolling) string {
 						}
 					}
 					ending = convertAgeToString(age)
-					age_string = fmt.Sprintf("%v %v", age_string, ending)
+					ageString = fmt.Sprintf("%v %v", ageString, ending)
 				}
 			}
 
 		case false:
 			ending = convertAgeToString(usdata.Age)
-			age_string = fmt.Sprintf("%v %v", usdata.Age, ending)
+			ageString = fmt.Sprintf("%v %v", usdata.Age, ending)
 		}
 
 	} else {
-		age_string = "возраст не будет указан в грамоте/дипломе"
+		ageString = "возраст не будет указан в грамоте/дипломе"
 	}
-	body = append(body, fmt.Sprintf("<dd><p>      %v</p></dd>", age_string))
+	body = append(body, fmt.Sprintf("<dd><p>      %v</p></dd>", ageString))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NameInstitution.EnumIndex(), enumapplic.NameInstitution.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NameInstitution))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Locality.EnumIndex(), enumapplic.Locality.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.Locality))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NamingUnit.EnumIndex(), enumapplic.NamingUnit.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NamingUnit))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.PublicationTitle.EnumIndex(), enumapplic.PublicationTitle.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PublicationTitle))
 	text = strings.Join(body, "\n")
 
 	if usdata.LeaderFNP == "" {
-		body = append(body, fmt.Sprintf("<dt><p><b>(%v).</b> <s><i><b>%s:</b></i></s></p></dt>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+		body = append(body, fmt.Sprintf("<dt><p><b>(%v).</b> <s><i><b>%s:</b></i></s></p></dt>", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()))
 		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", "-"))
 	} else {
-		body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+		body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()))
 		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.LeaderFNP))
 	}
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Email.EnumIndex(), enumapplic.Email.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Email))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.DocumentType.EnumIndex(), enumapplic.DocumentType.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.DocumentType))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.PlaceDeliveryOfDocuments.EnumIndex(), enumapplic.PlaceDeliveryOfDocuments.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PlaceDeliveryDocuments))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.Photo.EnumIndex(), enumapplic.Photo.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", "Прикреплена"))
 	text = strings.Join(body, "\n")
 
-	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()))
+	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.File.EnumIndex(), enumapplic.File.String()))
 	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd></div>", "Прикреплена"))
 	text = strings.Join(body, "\n")
 
@@ -3789,7 +3847,7 @@ func UserDataToStringForTelegramm(userID int64) string {
 		body := make([]string, 39)
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.Contest.EnumIndex(), enumapplic.Contest.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.Contest))
 		text = strings.Join(body, "\n")
 
@@ -3799,9 +3857,9 @@ func UserDataToStringForTelegramm(userID int64) string {
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.Age.EnumIndex(), enumapplic.Age.String()))
 
-		var age_string string
+		var ageString string
 
 		if (!usdata.Group && usdata.Age != 0) || (usdata.Group && strings.TrimSpace(usdata.GroupAge) != "0") {
 
@@ -3809,7 +3867,7 @@ func UserDataToStringForTelegramm(userID int64) string {
 			switch usdata.Group {
 			case true:
 				groupAge := strings.TrimSpace(usdata.GroupAge)
-				age_string = groupAge
+				ageString = groupAge
 
 				if groupAge != "0" {
 					var symbol string
@@ -3836,74 +3894,74 @@ func UserDataToStringForTelegramm(userID int64) string {
 							}
 						}
 						ending = convertAgeToString(age)
-						age_string = fmt.Sprintf("%v %v", age_string, ending)
+						ageString = fmt.Sprintf("%v %v", ageString, ending)
 					}
 				}
 
 			case false:
 				ending = convertAgeToString(usdata.Age)
-				age_string = fmt.Sprintf("%v %v", usdata.Age, ending)
+				ageString = fmt.Sprintf("%v %v", usdata.Age, ending)
 			}
 
 		} else {
-			age_string = "возраст не будет указан в грамоте/дипломе"
+			ageString = "возраст не будет указан в грамоте/дипломе"
 		}
 
-		body = append(body, fmt.Sprintf("      %v", age_string))
+		body = append(body, fmt.Sprintf("      %v", ageString))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NameInstitution.EnumIndex(), enumapplic.NameInstitution.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.NameInstitution))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.Locality.EnumIndex(), enumapplic.Locality.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.Locality))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.NamingUnit.EnumIndex(), enumapplic.NamingUnit.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.NamingUnit))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PublicationTitle.EnumIndex(), enumapplic.PublicationTitle.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.PublicationTitle))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
 		if usdata.LeaderFNP == "" {
-			body = append(body, fmt.Sprintf("(%v). <s><i><b>%s:</b></i></s>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+			body = append(body, fmt.Sprintf("(%v). <s><i><b>%s:</b></i></s>", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()))
 			body = append(body, fmt.Sprintf("      %s", "-"))
 		} else {
-			body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
+			body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()))
 			body = append(body, fmt.Sprintf("      %s", usdata.LeaderFNP))
 		}
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.Email.EnumIndex(), enumapplic.Email.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.Email))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.DocumentType.EnumIndex(), enumapplic.DocumentType.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.DocumentType))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PlaceDeliveryOfDocuments.EnumIndex(), enumapplic.PlaceDeliveryOfDocuments.String()))
 		body = append(body, fmt.Sprintf("      %s", usdata.PlaceDeliveryDocuments))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.Photo.EnumIndex(), enumapplic.Photo.String()))
 		body = append(body, fmt.Sprintf("      %s", "Прикреплена"))
 		text = strings.Join(body, "\n")
 
 		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()))
+		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.File.EnumIndex(), enumapplic.File.String()))
 		body = append(body, fmt.Sprintf("      %s", "Прикреплена"))
 		text = strings.Join(body, "\n")
 
@@ -3913,22 +3971,22 @@ func UserDataToStringForTelegramm(userID int64) string {
 		body := make([]string, 12)
 
 		body = append(body, "_________________________________")
-		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.REQUISITION_NUMBER.String()))
+		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.RequisitionNumber.String()))
 		body = append(body, fmt.Sprintf("   %v", data.RequisitionNumber))
 		text = strings.Join(body, "\n")
 
 		body = append(body, "_________________________________")
-		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.DEGREE.String()))
+		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.Degree.String()))
 		body = append(body, fmt.Sprintf("   %s", data.Degree))
 		text = strings.Join(body, "\n")
 
 		body = append(body, "_________________________________")
-		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PUBLICATION_DATE.String()))
+		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PublicationDate.String()))
 		body = append(body, fmt.Sprintf("   %s", data.PublicationDate))
 		text = strings.Join(body, "\n")
 
 		body = append(body, "_________________________________")
-		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PUBLICATION_LINK.String()))
+		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PublicationLink.String()))
 		body = append(body, fmt.Sprintf("   %s", data.PublicationLink))
 		text = strings.Join(body, "\n")
 	}
@@ -3939,30 +3997,44 @@ func UserDataToStringForTelegramm(userID int64) string {
 func GetConciseDescription(contest string) string {
 
 	var text string
-
 	body := make([]string, 14)
+	contests := make(map[string]struct{}, 0)
 
-	if contest == string(cons.CONTEST_Titmouse) || contest == string(cons.CONTEST_Mather) || contest == string(cons.CONTEST_Father) || contest == string(
-		cons.CONTEST_Autumn) || contest == string(cons.CONTEST_Winter) || contest == string(cons.CONTEST_Snowflakes) || contest == string(cons.CONTEST_Snowman) || contest == string(
-		cons.CONTEST_Symbol) || contest == string(cons.CONTEST_Heart) || contest == string(cons.CONTEST_Secrets) || contest == string(cons.CONTEST_BirdsFeeding) || contest == string(
-		cons.CONTEST_Shrovetide) || contest == string(cons.CONTEST_Fable) || contest == string(cons.CONTEST_DefendersFatherland) {
+	contests[string(cons.ContestTitmouse)] = struct{}{}
+	contests[string(cons.ContestMather)] = struct{}{}
+	contests[string(cons.ContestFather)] = struct{}{}
+	contests[string(cons.ContestAutumn)] = struct{}{}
+	contests[string(cons.ContestWinter)] = struct{}{}
+	contests[string(cons.ContestSnowflakes)] = struct{}{}
+	contests[string(cons.ContestSnowman)] = struct{}{}
+	contests[string(cons.ContestSymbol)] = struct{}{}
+	contests[string(cons.ContestHeart)] = struct{}{}
+	contests[string(cons.ContestSecrets)] = struct{}{}
+	contests[string(cons.ContestBirdsFeeding)] = struct{}{}
+	contests[string(cons.ContestShrovetide)] = struct{}{}
+	contests[string(cons.ContestFable)] = struct{}{}
+	contests[string(cons.ContestDefendersFatherland)] = struct{}{}
+
+	_, ok := contests[contest]
+
+	if ok {
 
 		body = append(body, "<b>В заявке потребуется указать следующие данные:\n</b>")
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.CONTEST.EnumIndex(), enumapplic.CONTEST.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.Contest.EnumIndex(), enumapplic.Contest.String()))
 		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.AGE.EnumIndex(), enumapplic.AGE.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.NAME_INSTITUTION.EnumIndex(), enumapplic.NAME_INSTITUTION.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.LOCALITY.EnumIndex(), enumapplic.LOCALITY.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.NAMING_UNIT.EnumIndex(), enumapplic.NAMING_UNIT.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.PUBLICATION_TITLE.EnumIndex(), enumapplic.PUBLICATION_TITLE.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.FNP_LEADER.EnumIndex(), enumapplic.FNP_LEADER.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.EMAIL.EnumIndex(), enumapplic.EMAIL.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.DOCUMENT_TYPE.EnumIndex(), enumapplic.DOCUMENT_TYPE.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.EnumIndex(), enumapplic.PLACE_DELIVERY_OF_DOCUMENTS.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.PHOTO.EnumIndex(), enumapplic.PHOTO.String()))
-		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.FILE.EnumIndex(), enumapplic.FILE.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.Age.EnumIndex(), enumapplic.Age.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.NameInstitution.EnumIndex(), enumapplic.NameInstitution.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.Locality.EnumIndex(), enumapplic.Locality.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.NamingUnit.EnumIndex(), enumapplic.NamingUnit.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.PublicationTitle.EnumIndex(), enumapplic.PublicationTitle.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.Email.EnumIndex(), enumapplic.Email.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.DocumentType.EnumIndex(), enumapplic.DocumentType.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.PlaceDeliveryOfDocuments.EnumIndex(), enumapplic.PlaceDeliveryOfDocuments.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.Photo.EnumIndex(), enumapplic.Photo.String()))
+		body = append(body, fmt.Sprintf("(%v). <b>%s</b>", enumapplic.File.EnumIndex(), enumapplic.File.String()))
 		body = append(body, "\n")
-		body = append(body, fmt.Sprintf("Подробнее с условиями конкурса можно ознакомиться на сайте %s\n", os.Getenv("WEBSITE")))
+		body = append(body, fmt.Sprintf("Подробнее с условиями конкурса можно ознакомиться на сайте %s\n", os.Getenv("Website")))
 		body = append(body, "\n")
 
 		text = strings.Join(body, "\n")
@@ -4000,7 +4072,7 @@ func downloadFile(filepath string, url string) (err error) {
 	return nil
 }
 
-func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.CacheDataPolling, botstateindex int64) {
+func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.DataPollingCache, botstateindex int64) {
 
 	url, err := bot.GetFileDirectURL(fileID)
 
@@ -4010,19 +4082,19 @@ func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.C
 
 		filename := path.Base(url)
 
-		file_path := fmt.Sprintf("%s/%v_%v_%v", cons.FILE_PATH, userID, botstateindex, filename)
+		filePath := fmt.Sprintf("%s/%v_%v_%v", cons.FilePath, userID, botstateindex, filename)
 
-		if botstateindex == botstate.ASK_PHOTO.EnumIndex() {
-			userPolling.Set(userID, enumapplic.PHOTO, file_path)
-			zrlog.Info().Msg(fmt.Sprintf("func getFile(), photo: %v\n", file_path))
+		if botstateindex == botstate.AskPhoto.EnumIndex() {
+			userPolling.Set(userID, enumapplic.Photo, filePath)
+			zrlog.Info().Msg(fmt.Sprintf("func getFile(), photo: %v\n", filePath))
 		}
 
-		if botstateindex == botstate.ASK_FILE.EnumIndex() {
-			userPolling.Set(userID, enumapplic.FILE, file_path)
-			zrlog.Info().Msg(fmt.Sprintf("func getFile(), file: %v\n", file_path))
+		if botstateindex == botstate.AskFile.EnumIndex() {
+			userPolling.Set(userID, enumapplic.File, filePath)
+			zrlog.Info().Msg(fmt.Sprintf("func getFile(), file: %v\n", filePath))
 		}
 
-		err = downloadFile(file_path, url)
+		err = downloadFile(filePath, url)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func getFile(), bot can't download this file: %+v\n", err.Error()))
@@ -4032,7 +4104,7 @@ func getFile(bot *tgbotapi.BotAPI, userID int64, fileID string, userData cache.C
 
 }
 
-func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
+func deleteUserPolling(userID int64, userData cache.DataPollingCache) {
 
 	userDP := userData.Get(userID)
 
@@ -4075,7 +4147,7 @@ func deleteUserPolling(userID int64, userData cache.CacheDataPolling) {
 
 func deleteClosingRequisition(userID int64) {
 	closingRequisition.Delete(userID)
-	cacheBotSt.Set(userID, botstate.UNDEFINED)
+	cacheBotSt.Set(userID, botstate.Undefined)
 }
 
 func dateStringToUnixNano(dateString string) int64 {
@@ -4121,9 +4193,9 @@ func dateStringToUnixNano(dateString string) int64 {
 	return unixTime.UnixNano()
 }
 
-func unixNanoToDateString(publication_date int64) string {
+func unixNanoToDateString(publicationDate int64) string {
 
-	t := time.Unix(0, publication_date)
+	t := time.Unix(0, publicationDate)
 
 	dateString := t.Format(cons.TimeshortForm)
 
@@ -4155,9 +4227,9 @@ func checkUsersIDCache(userID int64, bot *tgbotapi.BotAPI) {
 
 		tempUsersIDCache.Delete(userID)
 
-		adminID, err := strconv.ParseInt(os.Getenv("ADMIN_ID"), 10, 64)
+		adminID, err := strconv.ParseInt(os.Getenv("AdminID"), 10, 64)
 
-		err = sentToTelegram(bot, adminID, fmt.Sprintf("Можно закрывать заявки для пользователя %v!", userID), nil, cons.StyleTextCommon, botcommand.UNDEFINED, "", "", false)
+		err = sentToTelegram(bot, adminID, fmt.Sprintf("Можно закрывать заявки для пользователя %v!", userID), nil, cons.StyleTextCommon, botcommand.Undefined, "", "", false)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func checkUsersIDCache(), sentToTelegramm() for admin: %v\n", err))
@@ -4170,19 +4242,19 @@ func convertAgeToString(age int) string {
 
 	var ending string
 
-	age_string := strconv.Itoa(age)
+	ageString := strconv.Itoa(age)
 
 	var numPrev string
 	var numLast string
 	var numbers [2]int
 
 	if age >= 10 {
-		numPrev = age_string[len(age_string)-2 : len(age_string)-1]
+		numPrev = ageString[len(ageString)-2 : len(ageString)-1]
 	} else {
 		numPrev = "0"
 	}
 
-	numLast = age_string[len(age_string)-1:]
+	numLast = ageString[len(ageString)-1:]
 
 	numbers[0], _ = strconv.Atoi(numPrev)
 	numbers[1], _ = strconv.Atoi(numLast)
