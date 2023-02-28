@@ -3,10 +3,10 @@ package botstate
 type BotState int64
 
 const (
-	// since iota starts with 0, the first value
+	// Since iota starts with 0, the first value
 	// defined here will be the default
-	Undefined BotState = iota //EnumIndex = 0
-	Start                     //EnumIndex = 1
+	Undefined BotState = iota // EnumIndex = 0
+	Start                     // EnumIndex = 1
 	Greeting
 	Settings
 	ShowSettings
@@ -50,7 +50,6 @@ const (
 
 func (s BotState) String() string {
 	switch s {
-
 	case Start:
 		return "Start"
 	}

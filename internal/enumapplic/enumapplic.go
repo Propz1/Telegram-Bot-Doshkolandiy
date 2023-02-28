@@ -3,11 +3,11 @@ package enumapplic
 type ApplicEnum int64
 
 const (
-	// since iota starts with 0, the first value
+	// Since iota starts with 0, the first value
 	// defined here will be the default
-	Undefined ApplicEnum = iota //EnumIndex = 0
-	Contest                     //EnumIndex = 1
-	FNP                         //EnumIndex = 2
+	Undefined ApplicEnum = iota // EnumIndex = 0
+	Contest                     // EnumIndex = 1
+	FNP                         // EnumIndex = 2
 	Age
 	NameInstitution
 	Locality
@@ -38,9 +38,7 @@ const (
 )
 
 func (e ApplicEnum) String() string {
-
 	switch e {
-
 	case Contest:
 		return "Участие в конкурсе"
 	case FNP:

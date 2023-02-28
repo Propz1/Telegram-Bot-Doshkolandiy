@@ -3,9 +3,9 @@ package botcommand
 type BotCommand int64
 
 const (
-	// since iota starts with 0, the first value
+	// Since iota starts with 0, the first value
 	// defined here will be the default
-	Undefined BotCommand = iota //EnumIndex = 0
+	Undefined BotCommand = iota // EnumIndex = 0
 	SelectProject
 	Cancel
 	CancelApplication
@@ -41,7 +41,6 @@ const (
 
 func (c BotCommand) String() string {
 	switch c {
-
 	case CompleteApplication:
 		return "Заполнить заявку"
 	case SelectProject:

@@ -119,12 +119,12 @@ type DataOfClosingRequisition struct {
 
 type ClosingRequisition struct {
 	closingRequisitionCache map[int64]DataOfClosingRequisition
-	//mu               sync.RWMutex
+	// mu               sync.RWMutex
 }
 
 type DataPollingCache struct {
 	userPollingCache map[int64]DataPolling
-	//mu               sync.RWMutex
+	// mu               sync.RWMutex
 }
 
 func NewCacheDataPolling() *DataPollingCache {
@@ -140,29 +140,27 @@ func NewCacheDataClosingRequisition() *ClosingRequisition {
 }
 
 func (c *ClosingRequisition) Get(userID int64) DataOfClosingRequisition {
-	//c.mu.RLock()
+	// c.mu.RLock()
 	var mu sync.RWMutex
 	mu.RLock()
 	defer mu.RUnlock()
 	st, found := c.closingRequisitionCache[userID]
 	if !found {
-		//c.mu.RUnlock()
+		// c.mu.RUnlock()
 		return st
 	}
-	//c.mu.RUnlock()
+	// c.mu.RUnlock()
 
 	return st
 }
 
 func (c *ClosingRequisition) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
-
 	var mu sync.RWMutex
 	mu.Lock()
 
 	st := c.closingRequisitionCache[userID]
 
 	switch enum {
-
 	case enumapplic.RequisitionNumber:
 		num, _ := strconv.Atoi(text)
 		st.RequisitionNumber = int64(num)
@@ -201,29 +199,27 @@ func (c *ClosingRequisition) Delete(userID int64) {
 }
 
 func (c *DataPollingCache) Get(userID int64) DataPolling {
-	//c.mu.RLock()
+	// c.mu.RLock()
 	var mu sync.RWMutex
 	mu.RLock()
 	defer mu.RUnlock()
 	st, found := c.userPollingCache[userID]
 	if !found {
-		//c.mu.RUnlock()
+		// c.mu.RUnlock()
 		return st
 	}
-	//c.mu.RUnlock()
+	// c.mu.RUnlock()
 
 	return st
 }
 
 func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
-
 	var mu sync.RWMutex
 	mu.Lock()
 
 	st := c.userPollingCache[userID]
 
 	switch enum {
-
 	case enumapplic.Contest:
 		st.Contest = text
 	case enumapplic.FNP:
@@ -282,7 +278,6 @@ func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text st
 
 	c.userPollingCache[userID] = st
 	mu.Unlock()
-
 }
 
 func (c *DataPollingCache) Delete(userID int64) {

@@ -23,7 +23,6 @@ func (e *ErrCacheUserPolling) GetDescription() string {
 }
 
 func ErrorHandler(err error) error {
-
 	if difErr, ok := err.(*ErrCacheUserPolling); ok {
 		return fmt.Errorf(difErr.GetDescription())
 	}
