@@ -28,6 +28,12 @@ const (
 	ContestShrovetide          InlineButton = "Shrovetide"
 	ContestFable               InlineButton = "Fable"
 	ContestDefendersFatherland InlineButton = "DefendersFatherland"
+	ContestSpring              InlineButton = "Spring"
+	ContestMarchEighth         InlineButton = "MarchEighth"
+	ContestEarth               InlineButton = "Earth"
+	ContestSpaceAdventures     InlineButton = "SpaceAdventures"
+	ContestFeatheredFriends    InlineButton = "FeatheredFriends"
+	ContestTheatricalBackstage InlineButton = "TheatricalBackstage"
 	Agree                      InlineButton = "Согласен на обработку данных"
 	Degree1                    InlineButton = "DEGREE1"
 	Degree2                    InlineButton = "DEGREE2"
@@ -76,6 +82,18 @@ func (s InlineButton) String() string {
 		return "В гостях у сказки"
 	case ContestDefendersFatherland:
 		return "Защитники отечества"
+	case ContestSpring:
+		return "Весна"
+	case ContestMarchEighth:
+		return "8 Марта"
+	case ContestEarth:
+		return "Земля - наш общий дом"
+	case ContestSpaceAdventures:
+		return "Космические приключения"
+	case ContestFeatheredFriends:
+		return "Пернатые друзья"
+	case ContestTheatricalBackstage:
+		return "Театральное закулисье"
 	case Degree1:
 		return "1"
 	case Degree2:

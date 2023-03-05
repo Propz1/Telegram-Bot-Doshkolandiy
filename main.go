@@ -116,6 +116,12 @@ var (
 		"Широкая масленица":                 "Shrovetide",
 		"В гостях у сказки":                 "Fable",
 		"Защитники отечества":               "DefendersFatherland",
+		"Весна":                             "Spring",
+		"8 Марта":                           "MarchEighth",
+		"Земля - наш общий дом":             "Earth",
+		"Космические приключения":           "SpaceAdventures",
+		"Пернатые друзья":                   "FeatheredFriends",
+		"Театральное закулисье":             "TheatricalBackstage",
 	}
 
 	tempUsersIDCache   = cache.NewTempUsersIDCache()
@@ -370,11 +376,11 @@ func main() {
 					defer cancel()
 
 					dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+					defer dbpool.Close()
 					if err != nil {
 						zrlog.Fatal().Msg(fmt.Sprintf("botstate.GetDiploma, unable to establish connection to database: %+v\n", err.Error()))
 						os.Exit(1)
 					}
-					defer dbpool.Close()
 
 					dbpool.Config().MaxConns = 12
 
@@ -1226,6 +1232,78 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestFable): %+v\n", err.Error()))
 				}
 
+			case string(cons.ContestSpring): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSpring.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestSpring))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSpring): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestMarchEighth): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMarchEighth.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestMarchEighth))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestMarchEighth): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestEarth): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestEarth.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestEarth))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestEarth): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestSpaceAdventures): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSpaceAdventures.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestSpaceAdventures))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSpaceAdventures): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestFeatheredFriends): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFeatheredFriends.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestFeatheredFriends))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestFeatheredFriends): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestTheatricalBackstage): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestTheatricalBackstage.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestTheatricalBackstage))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestTheatricalBackstage): %+v\n", err.Error()))
+				}
+
 			case string(cons.Degree1): // CallBackQwery
 
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDegree {
@@ -1717,6 +1795,12 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton12 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton13 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton14 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton15 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton16 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton17 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton18 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton19 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton20 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTitmouse.String(), string(cons.ContestTitmouse)))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
@@ -1759,6 +1843,24 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 			inlineKeyboardButton14 = append(inlineKeyboardButton14, tgbotapi.NewInlineKeyboardButtonData(cons.ContestDefendersFatherland.String(), string(cons.ContestDefendersFatherland)))
 			rowsButton = append(rowsButton, inlineKeyboardButton14)
+
+			inlineKeyboardButton15 = append(inlineKeyboardButton15, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSpring.String(), string(cons.ContestSpring)))
+			rowsButton = append(rowsButton, inlineKeyboardButton15)
+
+			inlineKeyboardButton16 = append(inlineKeyboardButton16, tgbotapi.NewInlineKeyboardButtonData(cons.ContestMarchEighth.String(), string(cons.ContestMarchEighth)))
+			rowsButton = append(rowsButton, inlineKeyboardButton16)
+
+			inlineKeyboardButton17 = append(inlineKeyboardButton17, tgbotapi.NewInlineKeyboardButtonData(cons.ContestEarth.String(), string(cons.ContestEarth)))
+			rowsButton = append(rowsButton, inlineKeyboardButton17)
+
+			inlineKeyboardButton18 = append(inlineKeyboardButton18, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSpaceAdventures.String(), string(cons.ContestSpaceAdventures)))
+			rowsButton = append(rowsButton, inlineKeyboardButton18)
+
+			inlineKeyboardButton19 = append(inlineKeyboardButton19, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFeatheredFriends.String(), string(cons.ContestFeatheredFriends)))
+			rowsButton = append(rowsButton, inlineKeyboardButton19)
+
+			inlineKeyboardButton20 = append(inlineKeyboardButton20, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTheatricalBackstage.String(), string(cons.ContestTheatricalBackstage)))
+			rowsButton = append(rowsButton, inlineKeyboardButton20)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -3756,6 +3858,12 @@ func GetConciseDescription(contest string) string {
 	contests[string(cons.ContestShrovetide)] = struct{}{}
 	contests[string(cons.ContestFable)] = struct{}{}
 	contests[string(cons.ContestDefendersFatherland)] = struct{}{}
+	contests[string(cons.ContestSpring)] = struct{}{}
+	contests[string(cons.ContestMarchEighth)] = struct{}{}
+	contests[string(cons.ContestEarth)] = struct{}{}
+	contests[string(cons.ContestSpaceAdventures)] = struct{}{}
+	contests[string(cons.ContestFeatheredFriends)] = struct{}{}
+	contests[string(cons.ContestTheatricalBackstage)] = struct{}{}
 
 	_, ok := contests[contest]
 
