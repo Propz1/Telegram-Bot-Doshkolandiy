@@ -32,9 +32,6 @@ const (
 	PublicationLink
 	PublicationDate
 	UserID
-	GroupAge
-	Group
-	NotGroup
 )
 
 func (e ApplicEnum) String() string {
@@ -79,8 +76,6 @@ func (e ApplicEnum) String() string {
 		return "Дата публикации работы"
 	case PublicationLink:
 		return "Ссылка на опубликованную работу"
-	case GroupAge:
-		return "Произвольный текст"
 	}
 	return "Undefined"
 }

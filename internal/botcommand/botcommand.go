@@ -12,8 +12,8 @@ const (
 	CancelCloseRequisition
 	Continue
 	ContinueDataPolling
-	Further
 	Down
+	AskAge
 	SelectFNPLeader
 	SelectDocumentType
 	SelectPlaceDeliveryOfDocuments
@@ -61,8 +61,6 @@ func (c BotCommand) String() string {
 		return "Подтвердить"
 	case Continue:
 		return "Продолжить"
-	case Further:
-		return "Далее"
 	case GetDiploma:
 		return "Получить диплом"
 	case SendPDFFiles:

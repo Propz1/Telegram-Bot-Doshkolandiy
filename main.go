@@ -61,7 +61,7 @@ var (
 
 	keyboardContinueDataPolling2 = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(botcommand.Further.String()),
+			tgbotapi.NewKeyboardButton(botcommand.Down.String()),
 			tgbotapi.NewKeyboardButton(botcommand.CancelApplication.String()),
 		),
 	)
@@ -505,12 +505,12 @@ func main() {
 				case botstate.AskFNP:
 
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNP, messageText)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskFormatChoice)
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskAge)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите как вы хотите ввести возраст участника/участников?", nil, cons.StyleTextCommon, botcommand.FormatChoice, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника/группы участников.\n(Если не хотите указывать возраст - нажмите \"Далее\").", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.AskAge, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNP, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(err.Error())
 					}
 
 				case botstate.AskFNPCorrection:
@@ -527,47 +527,24 @@ func main() {
 
 				case botstate.AskAge:
 
-					if userPolling.Get(update.Message.Chat.ID).Group {
-						userPolling.Set(update.Message.Chat.ID, enumapplic.GroupAge, messageText)
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskNameInstitution)
-
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NameInstitution.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-
-						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
-						}
+					if messageText == botcommand.Down.String() {
+						userPolling.Set(update.Message.Chat.ID, enumapplic.Age, cons.Zero)
 					} else {
-						age, err := strconv.Atoi(messageText)
+						userPolling.Set(update.Message.Chat.ID, enumapplic.Age, messageText)
+					}
 
-						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error convert age: %+v\n", err.Error()))
+					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskNameInstitution)
 
-							err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите, пожалуйста, возраст в правильном формате (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
-							}
-						} else if age > 120 || age < 0 {
-							err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Пожалуйста, укажите \"реальный возраст\" (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
-							}
-						} else {
-							userPolling.Set(update.Message.Chat.ID, enumapplic.Age, messageText)
-							cacheBotSt.Set(update.Message.Chat.ID, botstate.AskNameInstitution)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NameInstitution.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
-							err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите название учреждения (сокращенное):", enumapplic.NameInstitution.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-
-							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
-							}
-						}
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskAge, error sending to user: %+v\n", err))
 					}
 
 				case botstate.AskAgeCorrection:
 
-					if userPolling.Get(update.Message.Chat.ID).Group {
-						userPolling.Set(update.Message.Chat.ID, enumapplic.GroupAge, messageText)
-						userPolling.Set(update.Message.Chat.ID, enumapplic.Age, "0")
+					if messageText == botcommand.Down.String() {
+						userPolling.Set(update.Message.Chat.ID, enumapplic.Age, cons.Zero)
 					} else {
 						userPolling.Set(update.Message.Chat.ID, enumapplic.Age, messageText)
 					}
@@ -1005,61 +982,6 @@ func main() {
 			var description string
 
 			switch callbackQueryText {
-			case cons.FormatChoiceSingl.String(): // CallBackQwery
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoice {
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.NotGroup, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GroupAge, "")
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAge)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceSingl.String(): %+v\n", err.Error()))
-					}
-				}
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoiceCorrection {
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.NotGroup, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.GroupAge, "")
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAgeCorrection)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника (цифрой):", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceSingl.String(): %+v\n", err.Error()))
-					}
-				}
-
-			case cons.FormatChoiceGroup.String(): // CallBackQwery
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoice {
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Group, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Age, "0")
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAge)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст в произвольном формате:", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceGroup.String(): %+v\n", err.Error()))
-					}
-				}
-
-				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskFormatChoiceCorrection {
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Group, "")
-					userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Age, "0")
-
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAgeCorrection)
-
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст в произвольном формате:", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.FormatChoiceGroup.String(): %+v\n", err.Error()))
-					}
-				}
 
 			case string(cons.ContestTitmouse): // CallBackQwery
 
@@ -1477,12 +1399,12 @@ func main() {
 			case enumapplic.Age.String(): // CallBackQwery "Age"
 
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
-					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskFormatChoiceCorrection)
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskAgeCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Выберите, как вы хотите ввести возраст участника/группы участников?", nil, cons.StyleTextCommon, botcommand.FormatChoice, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите возраст участника/группы участников.\nЕсли не хотите указывать возраст - нажмите \"Далее\".", enumapplic.Age.EnumIndex()), nil, cons.StyleTextCommon, botcommand.AskAge, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.Age.String(): %+v\n", err.Error()))
+						zrlog.Error().Msg(err.Error())
 					}
 				}
 
@@ -1622,26 +1544,6 @@ func main() {
 
 func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, command botcommand.BotCommand, button, header string, PDF bool) error {
 	switch command {
-	case botcommand.FormatChoice:
-		var rowsButton [][]tgbotapi.InlineKeyboardButton
-
-		inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-		inlineKeyboardButton2 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-
-		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.FormatChoiceSingl), cons.FormatChoiceSingl.String()))
-		rowsButton = append(rowsButton, inlineKeyboardButton1)
-
-		inlineKeyboardButton2 = append(inlineKeyboardButton2, tgbotapi.NewInlineKeyboardButtonData(string(cons.FormatChoiceGroup), cons.FormatChoiceGroup.String()))
-		rowsButton = append(rowsButton, inlineKeyboardButton2)
-
-		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
-
-		msg := tgbotapi.NewMessage(id, message, styleText)
-		msg.ReplyMarkup = inlineKeyboardMarkup
-
-		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.FormatChoice: %w", err)
-		}
 
 	case botcommand.SelectCorrection:
 
@@ -2010,6 +1912,15 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			return fmt.Errorf("sentToTelegram(), botcommand.RecordToDB: %w", err)
 		}
 
+	case botcommand.AskAge:
+
+		msg := tgbotapi.NewMessage(id, message, styleText)
+		msg.ReplyMarkup = keyboardContinueDataPolling2
+
+		if _, err := bot.Send(msg); err != nil {
+			return fmt.Errorf("sentToTelegram(), botcommand.AskAge: %w", err)
+		}
+
 	case botcommand.SelectFNPLeader:
 
 		msg := tgbotapi.NewMessage(id, message, styleText)
@@ -2188,7 +2099,7 @@ func thisIsAdmin(id int64) bool {
 func AddRequisition(ctx context.Context, userID int64, dbpool *pgxpool.Pool) error {
 	userData := userPolling.Get(userID)
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, user_age, group_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, diploma, start_date, expiration, close_date) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.GroupAge, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, userData.Diploma, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()), 0)
+	row, err := dbpool.Query(ctx, fmt.Sprintf("insert into %s (user_id, contest, user_fnp, group_age, name_institution, locality, naming_unit, publication_title, leader_fnp, email, document_type, place_delivery_of_document, diploma, start_date, expiration, close_date) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning requisition_number", userData.TableDB), userID, userData.Contest, userData.FNP, userData.Age, userData.NameInstitution, userData.Locality, userData.NamingUnit, userData.PublicationTitle, userData.LeaderFNP, userData.Email, userData.DocumentType, userData.PlaceDeliveryDocuments, userData.Diploma, time.Now().UnixNano(), int64(time.Now().Add(172800*time.Second).UnixNano()), 0)
 	if err != nil {
 		return fmt.Errorf("func AddRequisition(), query to db is failed: %w", err)
 	}
@@ -2227,8 +2138,7 @@ func AddRequisition(ctx context.Context, userID int64, dbpool *pgxpool.Pool) err
 
 func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCache, requisitionNumber int64, tableDB, degree, publicationDate, publicationLink string, dbpool *pgxpool.Pool) (userID int64, err error) {
 	var fnp string
-	var age int
-	var groupAge string
+	var age string
 	var nameInstitution string
 	var locality string
 	var namingUnit string
@@ -2241,13 +2151,13 @@ func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCa
 	var diplomaNumber int64
 	var placeDeliveryOfDocument string
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, place_delivery_of_document, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", tableDB, tableDB, tableDB), requisitionNumber)
+	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, place_delivery_of_document, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", tableDB, tableDB, tableDB), requisitionNumber)
 	if err != nil {
 		return 0, fmt.Errorf("func GetRequisitionForAdmin(), query to db is failed: %w", err)
 	}
 
 	if row.Next() {
-		err = row.Scan(&userID, &fnp, &age, &groupAge, &nameInstitution, &locality, &namingUnit, &publicationTitle, &leaderFNP, &email, &contest, &documentType, &placeDeliveryOfDocument, &diploma, &diplomaNumber)
+		err = row.Scan(&userID, &fnp, &age, &nameInstitution, &locality, &namingUnit, &publicationTitle, &leaderFNP, &email, &contest, &documentType, &placeDeliveryOfDocument, &diploma, &diplomaNumber)
 
 		if err != nil {
 			return 0, fmt.Errorf("func GetRequisitionForAdmin(), scan datas of row is failed %w", err)
@@ -2261,7 +2171,7 @@ func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCa
 		}
 
 		userPolling.Set(userID, enumapplic.FNP, fnp)
-		userPolling.Set(userID, enumapplic.Age, strconv.Itoa(age))
+		userPolling.Set(userID, enumapplic.Age, age)
 		userPolling.Set(userID, enumapplic.NameInstitution, nameInstitution)
 		userPolling.Set(userID, enumapplic.Locality, locality)
 		userPolling.Set(userID, enumapplic.NamingUnit, namingUnit)
@@ -2277,10 +2187,6 @@ func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCa
 		userPolling.Set(userID, enumapplic.Degree, degree)
 		userPolling.Set(userID, enumapplic.TableDB, cons.Certificate.String())
 		userPolling.Set(userID, enumapplic.Diploma, strconv.FormatBool(diploma))
-		if groupAge != "" {
-			userPolling.Set(userID, enumapplic.Group, "")
-			userPolling.Set(userID, enumapplic.GroupAge, groupAge)
-		}
 
 		if diploma {
 			userPolling.Set(userID, enumapplic.DiplomaNumber, strconv.Itoa(int(diplomaNumber)))
@@ -2292,8 +2198,7 @@ func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCa
 
 func GetRequisitionForUser(ctx context.Context, userid, requisitionNumber int64, dbpool *pgxpool.Pool) (userID int64, sent bool, err error) {
 	var fnp string
-	var age int
-	var groupAge string
+	var age string
 	var nameInstitution string
 	var locality string
 	var namingUnit string
@@ -2308,13 +2213,13 @@ func GetRequisitionForUser(ctx context.Context, userid, requisitionNumber int64,
 	var diploma bool
 	var diplomaNumber int64
 
-	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, user_age, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, COALESCE(reference, ''), publication_date, degree, leader_fnp, email, contest, document_type, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", cons.Certificate.String(), cons.Certificate.String(), cons.Certificate.String()), requisitionNumber)
+	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, COALESCE(reference, ''), publication_date, degree, leader_fnp, email, contest, document_type, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", cons.Certificate.String(), cons.Certificate.String(), cons.Certificate.String()), requisitionNumber)
 	if err != nil {
 		return 0, sent, fmt.Errorf("func GetRequisitionForUser(), query to db is failed: %W", err)
 	}
 
 	if row.Next() {
-		err = row.Scan(&userID, &fnp, &age, &groupAge, &nameInstitution, &locality, &namingUnit, &publicationTitle, &publicationLink, &publicationDate, &degree, &leaderFNP, &email, &contest, &documentType, &diploma, &diplomaNumber)
+		err = row.Scan(&userID, &fnp, &age, &nameInstitution, &locality, &namingUnit, &publicationTitle, &publicationLink, &publicationDate, &degree, &leaderFNP, &email, &contest, &documentType, &diploma, &diplomaNumber)
 
 		if err != nil {
 			return 0, sent, fmt.Errorf("func GetRequisitionForUser(), scan datas of row is failed %w", err)
@@ -2331,7 +2236,7 @@ func GetRequisitionForUser(ctx context.Context, userid, requisitionNumber int64,
 		dateString := unixNanoToDateString(publicationDate)
 
 		userPolling.Set(userID, enumapplic.FNP, fnp)
-		userPolling.Set(userID, enumapplic.Age, strconv.Itoa(age))
+		userPolling.Set(userID, enumapplic.Age, age)
 		userPolling.Set(userID, enumapplic.NameInstitution, nameInstitution)
 		userPolling.Set(userID, enumapplic.Locality, locality)
 		userPolling.Set(userID, enumapplic.NamingUnit, namingUnit)
@@ -2346,10 +2251,7 @@ func GetRequisitionForUser(ctx context.Context, userid, requisitionNumber int64,
 		userPolling.Set(userID, enumapplic.Degree, strconv.Itoa(degree))
 		userPolling.Set(userID, enumapplic.TableDB, cons.Certificate.String())
 		userPolling.Set(userID, enumapplic.Diploma, strconv.FormatBool(diploma))
-		if groupAge != "" {
-			userPolling.Set(userID, enumapplic.Group, "")
-			userPolling.Set(userID, enumapplic.GroupAge, groupAge)
-		}
+
 		if diploma {
 			userPolling.Set(userID, enumapplic.DiplomaNumber, strconv.Itoa(int(diplomaNumber)))
 		}
@@ -2518,59 +2420,67 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	}
 
 	// 4. Age
-	var ageString string
-	var ending string
+	if strings.TrimSpace(usersRequisition.Age) != "0" {
 
-	switch usersRequisition.Group {
-	case true:
-		groupAge := strings.TrimSpace(usersRequisition.GroupAge)
+		var ageString string
+		var ending string
+		var symbols string
+
+		groupAge := strings.TrimSpace(usersRequisition.Age)
 		ageString = groupAge
 
-		if groupAge != "0" {
-			var symbol string
+		contain1 := strings.Contains(groupAge, "лет")
+		contain2 := strings.Contains(groupAge, "года")
+		contain3 := strings.Contains(groupAge, "год")
+		contain4 := strings.Contains(groupAge, "годиков")
+		contain5 := strings.Contains(groupAge, "годика")
+		contain6 := strings.Contains(groupAge, "г")
+		contain7 := strings.Contains(groupAge, "г.")
 
-			contain1 := strings.Contains(groupAge, "лет")
-			contain2 := strings.Contains(groupAge, "года")
-			contain3 := strings.Contains(groupAge, "год")
-			contain4 := strings.Contains(groupAge, "годов")
-			contain5 := strings.Contains(groupAge, "годиков")
-			contain6 := strings.Contains(groupAge, "годика")
-
-			if !contain1 && !contain2 && !contain3 && !contain4 && !contain5 && !contain6 {
-				var age int
+		if !contain1 && !contain2 && !contain3 && !contain4 && !contain5 && !contain6 && !contain7 {
+			var age int
+			if len(groupAge) > 2 {
 				for i := 1; i < len(groupAge)-1; i++ {
-					symbol = string(groupAge[len(groupAge)-i:])
-					age, err = strconv.Atoi(symbol)
+					symbols = string(groupAge[len(groupAge)-i:])
+					age, err = strconv.Atoi(symbols)
 
 					if err != nil {
-						symbol = string(groupAge[len(groupAge)-i+1:])
-						age, _ = strconv.Atoi(symbol)
+						if i > 1 {
+							symbols = string(groupAge[len(groupAge)-i+1:])
+							age, _ = strconv.Atoi(symbols)
+						} else {
+							age = 0
+						}
 						break
 					}
 				}
-				ending = convertAgeToString(age)
-				ageString = fmt.Sprintf("%v %v", ageString, ending)
+
+			} else {
+				age, err = strconv.Atoi(groupAge)
+
+				if err != nil {
+					age = 0
+				}
 			}
+
+			ending = convertAgeToString(age)
+			ageString = fmt.Sprintf("%v %v", ageString, ending)
 		}
 
-	case false:
-		ending = convertAgeToString(usersRequisition.Age)
-		ageString = fmt.Sprintf("%v %v", usersRequisition.Age, ending)
-	}
+		widthText, err = pdf.MeasureTextWidth(ageString)
 
-	widthText, err = pdf.MeasureTextWidth(ageString)
+		if err != nil {
+			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(age_string): %v", err))
+		}
 
-	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(age_string): %v", err))
-	}
+		x = centerX - widthText/2
+		y = pdf.GetY() + 1.5*step
 
-	x = centerX - widthText/2
-	y = pdf.GetY() + 1.5*step
-
-	pdf.SetXY(x, y)
-	err = pdf.Text(ageString)
-	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(age_string): %v", err))
+		pdf.SetXY(x, y)
+		err = pdf.Text(ageString)
+		if err != nil {
+			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(age_string): %v", err))
+		}
 	}
 
 	// 5. Name institution
@@ -3594,43 +3504,54 @@ func UserDataToString(userID int64, userDat cache.DataPollingCache) string {
 	text = strings.Join(body, "\n")
 
 	var ageString string
-	if (!usdata.Group && usdata.Age != 0) || (usdata.Group && strings.TrimSpace(usdata.GroupAge) != "0") {
+
+	if strings.TrimSpace(usdata.Age) != cons.Zero {
 		var ending string
-		switch usdata.Group {
-		case true:
-			groupAge := strings.TrimSpace(usdata.GroupAge)
-			ageString = groupAge
+		var symbols string
 
-			if groupAge != "0" {
-				var symbol string
+		groupAge := strings.TrimSpace(usdata.Age)
+		ageString = groupAge
 
-				contain1 := strings.Contains(groupAge, "лет")
-				contain2 := strings.Contains(groupAge, "года")
-				contain3 := strings.Contains(groupAge, "год")
+		contain1 := strings.Contains(groupAge, "лет")
+		contain2 := strings.Contains(groupAge, "года")
+		contain3 := strings.Contains(groupAge, "год")
+		contain4 := strings.Contains(groupAge, "годиков")
+		contain5 := strings.Contains(groupAge, "годика")
+		contain6 := strings.Contains(groupAge, "г")
+		contain7 := strings.Contains(groupAge, "г.")
 
-				if !contain1 && !contain2 && !contain3 {
-					var age int
-					var err error
+		if !contain1 && !contain2 && !contain3 && !contain4 && !contain5 && !contain6 && !contain7 {
+			var age int
+			var err error
 
-					for i := 1; i < len(groupAge)-1; i++ {
-						symbol = string(groupAge[len(groupAge)-i:])
-						age, err = strconv.Atoi(symbol)
+			if len(groupAge) > 2 {
+				for i := 1; i < len(groupAge)-1; i++ {
+					symbols = string(groupAge[len(groupAge)-i:])
+					age, err = strconv.Atoi(symbols)
 
-						if err != nil {
-							symbol = string(groupAge[len(groupAge)-i+1:])
-							age, err = strconv.Atoi(symbol)
-							break
+					if err != nil {
+						if i > 1 {
+							symbols = string(groupAge[len(groupAge)-i+1:])
+							age, _ = strconv.Atoi(symbols)
+						} else {
+							age = 0
 						}
+						break
 					}
-					ending = convertAgeToString(age)
-					ageString = fmt.Sprintf("%v %v", ageString, ending)
+				}
+
+			} else {
+				age, err = strconv.Atoi(groupAge)
+
+				if err != nil {
+					age = 0
 				}
 			}
 
-		case false:
-			ending = convertAgeToString(usdata.Age)
-			ageString = fmt.Sprintf("%v %v", usdata.Age, ending)
+			ending = convertAgeToString(age)
+			ageString = fmt.Sprintf("%v %v", ageString, ending)
 		}
+
 	} else {
 		ageString = "возраст не будет указан в грамоте/дипломе"
 	}
@@ -3710,46 +3631,53 @@ func UserDataToStringForTelegramm(userID int64) string {
 
 		var ageString string
 
-		if (!usdata.Group && usdata.Age != 0) || (usdata.Group && strings.TrimSpace(usdata.GroupAge) != "0") {
+		if strings.TrimSpace(usdata.Age) != "0" {
 			var ending string
-			switch usdata.Group {
-			case true:
-				groupAge := strings.TrimSpace(usdata.GroupAge)
-				ageString = groupAge
+			var symbols string
 
-				if groupAge != "0" {
-					var symbol string
+			groupAge := strings.TrimSpace(usdata.Age)
+			ageString = groupAge
 
-					contain1 := strings.Contains(groupAge, "лет")
-					contain2 := strings.Contains(groupAge, "года")
-					contain3 := strings.Contains(groupAge, "год")
-					contain4 := strings.Contains(groupAge, "годов")
-					contain5 := strings.Contains(groupAge, "годиков")
-					contain6 := strings.Contains(groupAge, "годика")
+			contain1 := strings.Contains(groupAge, "лет")
+			contain2 := strings.Contains(groupAge, "года")
+			contain3 := strings.Contains(groupAge, "год")
+			contain4 := strings.Contains(groupAge, "годиков")
+			contain5 := strings.Contains(groupAge, "годика")
+			contain6 := strings.Contains(groupAge, "г")
+			contain7 := strings.Contains(groupAge, "г.")
 
-					if !contain1 && !contain2 && !contain3 && !contain4 && !contain5 && !contain6 {
-						var age int
-						var err error
+			if !contain1 && !contain2 && !contain3 && !contain4 && !contain5 && !contain6 && !contain7 {
+				var age int
+				var err error
 
-						for i := 1; i < len(groupAge)-1; i++ {
-							symbol = string(groupAge[len(groupAge)-i:])
-							age, err = strconv.Atoi(symbol)
+				if len(groupAge) > 2 {
+					for i := 1; i < len(groupAge)-1; i++ {
+						symbols = string(groupAge[len(groupAge)-i:])
+						age, err = strconv.Atoi(symbols)
 
-							if err != nil {
-								symbol = string(groupAge[len(groupAge)-i+1:])
-								age, _ = strconv.Atoi(symbol)
-								break
+						if err != nil {
+							if i > 1 {
+								symbols = string(groupAge[len(groupAge)-i+1:])
+								age, _ = strconv.Atoi(symbols)
+							} else {
+								age = 0
 							}
+							break
 						}
-						ending = convertAgeToString(age)
-						ageString = fmt.Sprintf("%v %v", ageString, ending)
+					}
+
+				} else {
+					age, err = strconv.Atoi(groupAge)
+
+					if err != nil {
+						age = 0
 					}
 				}
 
-			case false:
-				ending = convertAgeToString(usdata.Age)
-				ageString = fmt.Sprintf("%v %v", usdata.Age, ending)
+				ending = convertAgeToString(age)
+				ageString = fmt.Sprintf("%v %v", ageString, ending)
 			}
+
 		} else {
 			ageString = "возраст не будет указан в грамоте/дипломе"
 		}

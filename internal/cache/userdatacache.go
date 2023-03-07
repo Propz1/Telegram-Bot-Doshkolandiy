@@ -82,9 +82,7 @@ func (c *BotState) Delete(userID int64) {
 type DataPolling struct {
 	Contest                string
 	FNP                    string
-	Age                    int
-	GroupAge               string
-	Group                  bool
+	Age                    string
 	NameInstitution        string
 	Locality               string
 	NamingUnit             string
@@ -225,14 +223,7 @@ func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	case enumapplic.FNP:
 		st.FNP = text
 	case enumapplic.Age:
-		age, _ := strconv.Atoi(text)
-		st.Age = age
-	case enumapplic.GroupAge:
-		st.GroupAge = text
-	case enumapplic.Group:
-		st.Group = true
-	case enumapplic.NotGroup:
-		st.Group = false
+		st.Age = text
 	case enumapplic.NameInstitution:
 		st.NameInstitution = text
 	case enumapplic.Locality:

@@ -4,16 +4,16 @@ package cons
 type InlineButton string
 
 const (
-	TelegrammURL                            = "https://api.telegramm.org/bot"
-	CertPaht                                = "./certs/cert.pem"
-	KeyPath                                 = "./certs/key.pem"
+	TelegrammURL               string       = "https://api.telegramm.org/bot"
+	CertPaht                   string       = "./certs/cert.pem"
+	KeyPath                    string       = "./certs/key.pem"
 	MaxLengMsg                 int          = 4000
-	StyleTextMarkdown                       = "MarkdownV2"
-	StyleTextCommon                         = ""
-	StyleTextHTML                           = "HTML"
-	PDFPath                                 = "./external/pdf/"
-	PDF                                     = true
-	FilePath                                = "./external/files/usersfiles"
+	StyleTextMarkdown          string       = "MarkdownV2"
+	StyleTextCommon            string       = ""
+	StyleTextHTML              string       = "HTML"
+	PDFPath                    string       = "./external/pdf/"
+	PDF                        bool         = true
+	FilePath                   string       = "./external/files/usersfiles"
 	ContestTitmouse            InlineButton = "Titmouse"
 	ContestMather              InlineButton = "Mather"
 	ContestFather              InlineButton = "Father"
@@ -45,9 +45,10 @@ const (
 	FormatChoiceGroup          InlineButton = "произвольный формат"
 	PlaceDeliveryOfDocuments1  string       = "Электронная почта"
 	PlaceDeliveryOfDocuments2  string       = "Телеграм"
-	TableDB                                 = "certificates"
-	TimeshortForm                           = "2006-01-02"
-	Comma                                   = ","
+	TableDB                    string       = "certificates"
+	TimeshortForm              string       = "2006-01-02"
+	Comma                      string       = ","
+	Zero                       string       = "0"
 )
 
 func (s InlineButton) String() string {
