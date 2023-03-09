@@ -18,7 +18,6 @@ import (
 	"telegrammBot/internal/enumapplic"
 	"telegrammBot/internal/errs"
 	"time"
-	"unicode"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	pgxpool "github.com/jackc/pgx/v5/pgxpool"
@@ -4063,50 +4062,4 @@ func convertAgeToString(age int) string {
 	}
 
 	return ending
-}
-
-func compile(x string) string {
-	if x == "" {
-		return ""
-	}
-
-	input := bytes.NewBufferString(x)
-	output := bytes.NewBufferString("")
-
-	for {
-		i, _, err := input.ReadRune()
-		if err != nil {
-			break
-		}
-		switch i {
-		default:
-			output.WriteRune(i)
-		case ':':
-			output.WriteString(replaseEmoji(input))
-		}
-	}
-	return output.String()
-}
-
-func replaseEmoji(input *bytes.Buffer) string {
-	emoji := bytes.NewBufferString(":")
-	for {
-		i, _, err := input.ReadRune()
-		if err != nil {
-			// not replase
-			return emoji.String()
-		}
-
-		if i == ':' && emoji.Len() == 1 {
-			return emoji.String() + replaseEmoji(input)
-		}
-
-		emoji.WriteRune(i)
-		switch {
-		case unicode.IsSpace(i):
-			return emoji.String()
-		case i == ':':
-			return emoji.String()
-		}
-	}
 }
