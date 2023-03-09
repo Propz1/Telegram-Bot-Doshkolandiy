@@ -18,6 +18,7 @@ import (
 	"telegrammBot/internal/enumapplic"
 	"telegrammBot/internal/errs"
 	"time"
+	"unicode"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	pgxpool "github.com/jackc/pgx/v5/pgxpool"
@@ -102,26 +103,26 @@ var (
 	)
 
 	contests = map[string]string{
-		"Синичка невеличка и ee друзья":     "Titmouse",
-		"Мама лучший друг":                  "Mather",
-		"Папа лучший друг":                  "Father",
-		"Осень и ee дары":                   "Autumn",
-		"Зимушка-зима в гости к нам пришла": "Winter",
-		"Снежинки-балеринки":                "Snowflakes",
-		"Мой веселый снеговик":              "Snowman",
-		"Символ года":                       "Symbol",
-		"Сердечки для любимых":              "Heart",
-		"Секреты новогодней ёлки":           "Secrets",
-		"Покормите птиц зимой":              "BirdsFeeding",
-		"Широкая масленица":                 "Shrovetide",
-		"В гостях у сказки":                 "Fable",
-		"Защитники отечества":               "DefendersFatherland",
-		"Весна":                             "Spring",
-		"8 Марта":                           "MarchEighth",
-		"Земля - наш общий дом":             "Earth",
-		"Космические приключения":           "SpaceAdventures",
-		"Пернатые друзья":                   "FeatheredFriends",
-		"Театральное закулисье":             "TheatricalBackstage",
+		"Синичка невеличка и ee друзья":          "Titmouse",
+		"Мама лучший друг":                       "Mather",
+		"Папа лучший друг":                       "Father",
+		cons.ContestAutumn.String():              "Autumn",
+		"Зимушка-зима в гости к нам пришла":      "Winter",
+		cons.ContestSnowflakes.String():          "Snowflakes",
+		cons.ContestSnowman.String():             "Snowman",
+		"Символ года":                            "Symbol",
+		cons.ContestHearts.String():              "Hearts",
+		cons.ContestSecrets.String():             "Secrets",
+		"Покормите птиц зимой":                   "BirdsFeeding",
+		cons.ContestShrovetide.String():          "Shrovetide",
+		cons.ContestFable.String():               "Fable",
+		"Защитники отечества":                    "DefendersFatherland",
+		cons.ContestSpring.String():              "Spring",
+		cons.ContestMarchEighth.String():         "MarchEighth",
+		cons.ContestEarth.String():               "Earth",
+		cons.ContestSpaceAdventures.String():     "SpaceAdventures",
+		cons.ContestFeatheredFriends.String():    "FeatheredFriends",
+		cons.ContestTheatricalBackstage.String(): "TheatricalBackstage",
 	}
 
 	tempUsersIDCache   = cache.NewTempUsersIDCache()
@@ -1093,11 +1094,11 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSymbol): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestHeart): // CallBackQwery
-				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestHeart.String())
+			case string(cons.ContestHearts): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestHearts.String())
 
 				// Concise description of contest
-				description = GetConciseDescription(string(cons.ContestHeart))
+				description = GetConciseDescription(string(cons.ContestHearts))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
@@ -1728,7 +1729,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSymbol.String(), string(cons.ContestSymbol)))
 			rowsButton = append(rowsButton, inlineKeyboardButton8)
 
-			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(cons.ContestHeart.String(), string(cons.ContestHeart)))
+			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(cons.ContestHearts.String(), string(cons.ContestHearts)))
 			rowsButton = append(rowsButton, inlineKeyboardButton9)
 
 			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSecrets.String(), string(cons.ContestSecrets)))
@@ -3780,7 +3781,7 @@ func GetConciseDescription(contest string) string {
 	contests[string(cons.ContestSnowflakes)] = struct{}{}
 	contests[string(cons.ContestSnowman)] = struct{}{}
 	contests[string(cons.ContestSymbol)] = struct{}{}
-	contests[string(cons.ContestHeart)] = struct{}{}
+	contests[string(cons.ContestHearts)] = struct{}{}
 	contests[string(cons.ContestSecrets)] = struct{}{}
 	contests[string(cons.ContestBirdsFeeding)] = struct{}{}
 	contests[string(cons.ContestShrovetide)] = struct{}{}
@@ -4062,4 +4063,50 @@ func convertAgeToString(age int) string {
 	}
 
 	return ending
+}
+
+func compile(x string) string {
+	if x == "" {
+		return ""
+	}
+
+	input := bytes.NewBufferString(x)
+	output := bytes.NewBufferString("")
+
+	for {
+		i, _, err := input.ReadRune()
+		if err != nil {
+			break
+		}
+		switch i {
+		default:
+			output.WriteRune(i)
+		case ':':
+			output.WriteString(replaseEmoji(input))
+		}
+	}
+	return output.String()
+}
+
+func replaseEmoji(input *bytes.Buffer) string {
+	emoji := bytes.NewBufferString(":")
+	for {
+		i, _, err := input.ReadRune()
+		if err != nil {
+			// not replase
+			return emoji.String()
+		}
+
+		if i == ':' && emoji.Len() == 1 {
+			return emoji.String() + replaseEmoji(input)
+		}
+
+		emoji.WriteRune(i)
+		switch {
+		case unicode.IsSpace(i):
+			return emoji.String()
+		case i == ':':
+			return emoji.String()
+		}
+	}
 }

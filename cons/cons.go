@@ -1,5 +1,7 @@
 package cons
 
+import "github.com/kyokomi/emoji/v2"
+
 // type TablesDB string
 type InlineButton string
 
@@ -22,7 +24,7 @@ const (
 	ContestSnowflakes          InlineButton = "Snowflakes"
 	ContestSnowman             InlineButton = "Snowman"
 	ContestSymbol              InlineButton = "Symbol"
-	ContestHeart               InlineButton = "Heart"
+	ContestHearts              InlineButton = "Hearts"
 	ContestSecrets             InlineButton = "Secrets"
 	ContestBirdsFeeding        InlineButton = "BirdsFeeding"
 	ContestShrovetide          InlineButton = "Shrovetide"
@@ -62,39 +64,39 @@ func (s InlineButton) String() string {
 	case ContestFather:
 		return "Папа лучший друг"
 	case ContestAutumn:
-		return "Осень и ee дары"
+		return emoji.Sprint("Осень и ee дары 🍁")
 	case ContestWinter:
 		return "Зимушка-зима в гости к нам пришла"
 	case ContestSnowflakes:
-		return "Снежинки-балеринки"
+		return emoji.Sprint("Снежинки-балеринки :snowflake:")
 	case ContestSnowman:
-		return "Мой веселый снеговик"
+		return emoji.Sprint("Мой веселый снеговик :snowman:")
 	case ContestSymbol:
 		return "Символ года"
-	case ContestHeart:
-		return "Сердечки для любимых"
+	case ContestHearts:
+		return emoji.Sprint("Сердечки для любимых 💕")
 	case ContestSecrets:
-		return "Секреты новогодней ёлки"
+		return emoji.Sprint("Секреты новогодней ёлки 🎄")
 	case ContestBirdsFeeding:
 		return "Покормите птиц зимой"
 	case ContestShrovetide:
-		return "Широкая масленица"
+		return emoji.Sprint("Широкая масленица 🌞")
 	case ContestFable:
-		return "В гостях у сказки"
+		return emoji.Sprint("В гостях у сказки :fairy:")
 	case ContestDefendersFatherland:
 		return "Защитники отечества"
 	case ContestSpring:
-		return "Весна"
+		return emoji.Sprint("Весна :blossom:")
 	case ContestMarchEighth:
-		return "8 Марта"
+		return emoji.Sprint("8 Марта :bouquet:")
 	case ContestEarth:
-		return "Земля - наш общий дом"
+		return emoji.Sprint("Земля - наш общий дом 🌎")
 	case ContestSpaceAdventures:
-		return "Космические приключения"
+		return emoji.Sprint("Космические приключения :rocket:")
 	case ContestFeatheredFriends:
-		return "Пернатые друзья"
+		return emoji.Sprint("Пернатые друзья :owl:")
 	case ContestTheatricalBackstage:
-		return "Театральное закулисье"
+		return emoji.Sprint("Театральное закулисье 🎭")
 	case Degree1:
 		return "1"
 	case Degree2:

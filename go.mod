@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/jackc/pgx/v5 v5.0.4
+	github.com/kyokomi/emoji/v2 v2.2.12
 	github.com/rs/zerolog v1.28.0
 	github.com/signintech/gopdf v0.14.2
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
