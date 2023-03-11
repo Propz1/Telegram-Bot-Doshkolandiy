@@ -302,17 +302,8 @@ func main() {
 				}
 
 			case botcommand.SelectProject.String():
-
 				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskProject {
-					if userPolling.Get(update.Message.Chat.ID).Agree {
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО участника или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
-
-						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botcommand.SelectProject.String(), error sending to user: %+v\n", err))
-						}
-
-						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskFNP)
-					} else {
+					if !userPolling.Get(update.Message.Chat.ID).Agree {
 						err = sentToTelegram(bot, update.Message.Chat.ID, "Для продолжения необходимо дать согласние на обработку персональных данных. Или нажмите \"Отмена\"", nil, cons.StyleTextCommon, botcommand.WaitingForAcceptance, "", "", false)
 
 						if err != nil {
@@ -1537,6 +1528,17 @@ func main() {
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 				}
+
+				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskProject {
+
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите ФИО участника или группу участников (например, \"страшая группа №7\" или \"старшая группа \"Карамельки\"):", enumapplic.FNP.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("botcommand.SelectProject.String(), error sending to user: %+v\n", err))
+					}
+
+					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskFNP)
+				}
 			}
 		}
 	}
@@ -1776,36 +1778,34 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 	case botcommand.SelectProject:
 
-		if !thisIsAdmin(id) {
-			msg := tgbotapi.NewMessage(id, message, styleText)
+		msg := tgbotapi.NewMessage(id, message, styleText)
 
-			msg.ReplyMarkup = keyboardApplicationStart
+		msg.ReplyMarkup = keyboardApplicationStart
 
-			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.SelectProject: %w", err)
-			}
+		if _, err := bot.Send(msg); err != nil {
+			return fmt.Errorf("sentToTelegram(), botcommand.SelectProject: %w", err)
+		}
 
-			body := make([]string, 3)
-			body = append(body, "В любой момент вы можете отменить заявку, нажав \"Отмена\"")
-			body = append(body, "")
-			body = append(body, fmt.Sprintf("Для продолжения заполнения заявки, необходимо дать согласие на обработку персональных данных и нажать \"Продолжить\".\n Ознакомиться с пользователським соглашением и политикой конфидециальности\n можно по ссылке %s", os.Getenv("PRIVACY_POLICY_TERMS_CONDITIONS")))
-			text := strings.Join(body, "\n")
+		body := make([]string, 3)
+		body = append(body, "В любой момент вы можете отменить заявку, нажав \"Отмена\"")
+		body = append(body, "")
+		body = append(body, fmt.Sprintf("Для продолжения заполнения заявки, необходимо дать согласие на обработку персональных данных.\n Ознакомиться с пользователським соглашением и политикой конфидециальности\n можно по ссылке %s", os.Getenv("PRIVACY_POLICY_TERMS_CONDITIONS")))
+		text := strings.Join(body, "\n")
 
-			var rowsButton [][]tgbotapi.InlineKeyboardButton
+		var rowsButton [][]tgbotapi.InlineKeyboardButton
 
-			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+		inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
-			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.Agree), cons.Agree.String()))
-			rowsButton = append(rowsButton, inlineKeyboardButton1)
+		inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.Agree), cons.Agree.String()))
+		rowsButton = append(rowsButton, inlineKeyboardButton1)
 
-			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+		inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
-			msg = tgbotapi.NewMessage(id, text, cons.StyleTextCommon)
-			msg.ReplyMarkup = inlineKeyboardMarkup
+		msg = tgbotapi.NewMessage(id, text, cons.StyleTextCommon)
+		msg.ReplyMarkup = inlineKeyboardMarkup
 
-			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.SelectProject: %w", err)
-			}
+		if _, err := bot.Send(msg); err != nil {
+			return fmt.Errorf("sentToTelegram(), botcommand.SelectProject: %w", err)
 		}
 
 	case botcommand.SelectDegree:
@@ -1863,25 +1863,23 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 	case botcommand.WaitingForAcceptance:
 
-		if !thisIsAdmin(id) {
-			msg := tgbotapi.NewMessage(id, message, cons.StyleTextCommon)
+		msg := tgbotapi.NewMessage(id, message, cons.StyleTextCommon)
 
-			if !userPolling.Get(id).Agree {
-				var rowsButton [][]tgbotapi.InlineKeyboardButton
+		if !userPolling.Get(id).Agree {
+			var rowsButton [][]tgbotapi.InlineKeyboardButton
 
-				inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
-				inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.Agree), cons.Agree.String()))
-				rowsButton = append(rowsButton, inlineKeyboardButton1)
-				inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
+			inlineKeyboardButton1 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(string(cons.Agree), cons.Agree.String()))
+			rowsButton = append(rowsButton, inlineKeyboardButton1)
+			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
-				msg.ReplyMarkup = inlineKeyboardMarkup
-			} else {
-				msg.ReplyMarkup = keyboardApplicationStart
-			}
+			msg.ReplyMarkup = inlineKeyboardMarkup
+		} else {
+			msg.ReplyMarkup = keyboardApplicationStart
+		}
 
-			if _, err := bot.Send(msg); err != nil {
-				return fmt.Errorf("sentToTelegram(), botcommand.WaitingForAcceptance: %w", err)
-			}
+		if _, err := bot.Send(msg); err != nil {
+			return fmt.Errorf("sentToTelegram(), botcommand.WaitingForAcceptance: %w", err)
 		}
 
 	case botcommand.ContinueDataPolling:
@@ -3553,7 +3551,7 @@ func UserDataToString(userID int64, userDat cache.DataPollingCache) string {
 		}
 
 	} else {
-		ageString = "возраст не будет указан в грамоте/дипломе"
+		ageString = cons.NoAge
 	}
 	body = append(body, fmt.Sprintf("<dd><p>      %v</p></dd>", ageString))
 	text = strings.Join(body, "\n")
@@ -3626,9 +3624,6 @@ func UserDataToStringForTelegramm(userID int64) string {
 		body = append(body, fmt.Sprintf("      %s", usdata.FNP))
 		text = strings.Join(body, "\n")
 
-		body = append(body, fmt.Sprintf("%v", "_________________________________"))
-		body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.Age.EnumIndex(), enumapplic.Age.String()))
-
 		var ageString string
 
 		if strings.TrimSpace(usdata.Age) != "0" {
@@ -3679,7 +3674,15 @@ func UserDataToStringForTelegramm(userID int64) string {
 			}
 
 		} else {
-			ageString = "возраст не будет указан в грамоте/дипломе"
+			ageString = cons.NoAge
+		}
+
+		body = append(body, fmt.Sprintf("%v", "_________________________________"))
+
+		if ageString == cons.NoAge {
+			body = append(body, fmt.Sprintf("(%v). <s><i><b>%s:</b></i></s>", enumapplic.Age.EnumIndex(), enumapplic.Age.String()))
+		} else {
+			body = append(body, fmt.Sprintf("(%v). <i><b>%s:</b></i>", enumapplic.Age.EnumIndex(), enumapplic.Age.String()))
 		}
 
 		body = append(body, fmt.Sprintf("      %v", ageString))

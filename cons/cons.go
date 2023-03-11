@@ -51,6 +51,7 @@ const (
 	TimeshortForm              string       = "2006-01-02"
 	Comma                      string       = ","
 	Zero                       string       = "0"
+	NoAge                       string       = "возраст не будет указан в грамоте/дипломе"
 )
 
 func (s InlineButton) String() string {
