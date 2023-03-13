@@ -2269,7 +2269,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64) {
 	var path string
 	var degree string
 
-	if userData.LeaderFNP != "" {
+	if strings.TrimSpace(userData.LeaderFNP) != "" {
 		path = "./external/imgs/%s_%s_curator.jpg"
 	} else {
 		path = "./external/imgs/%s_%s.jpg"
@@ -2629,7 +2629,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64) {
 
 	// 9. Leader's FNP
 
-	if userData.LeaderFNP != "" {
+	if strings.TrimSpace(userData.LeaderFNP) != "" {
 		y = 668
 		x = 194
 
@@ -3269,7 +3269,7 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 
 	y = y + step
 	pdf.SetXY(25, y)
-	if usersRequisition.LeaderFNP != "" {
+	if strings.TrimSpace(usersRequisition.LeaderFNP) != "" {
 		err = pdf.Text(fmt.Sprintf("Руководитель: %s", usersRequisition.LeaderFNP))
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func ConvertRequisitionToPDF(), pdf.Text(usersRequisition.LeaderFNP): %v", err.Error()))
