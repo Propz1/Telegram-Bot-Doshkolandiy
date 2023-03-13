@@ -7,46 +7,11 @@ import (
 	"telegrammBot/internal/enumapplic"
 )
 
-type TempUsersIDCache struct {
-	usersIDCache map[int64]struct{}
-	mu           sync.Mutex
-}
-
 type userBotState map[int64]bs.BotState
 
 type BotState struct {
 	userBotState userBotState
 	mu           sync.RWMutex
-}
-
-func NewTempUsersIDCache() *TempUsersIDCache {
-	var t TempUsersIDCache
-	t.usersIDCache = make(map[int64]struct{})
-	return &t
-}
-
-func (t *TempUsersIDCache) Check(userID int64) bool {
-	t.mu.Lock()
-	_, found := t.usersIDCache[userID]
-	t.mu.Unlock()
-	return found
-}
-
-func (t *TempUsersIDCache) Add(userID int64) {
-	t.mu.Lock()
-	t.usersIDCache[userID] = struct{}{}
-	t.mu.Unlock()
-}
-
-func (t *TempUsersIDCache) Delete(userID int64) {
-	t.mu.Lock()
-	if t.usersIDCache != nil {
-		_, found := t.usersIDCache[userID]
-		if found {
-			delete(t.usersIDCache, userID)
-		}
-	}
-	t.mu.Unlock()
 }
 
 func NewCacheBotSt() BotState {
@@ -105,14 +70,15 @@ type DataPolling struct {
 }
 
 type DataOfClosingRequisition struct {
-	RequisitionNumber int64
-	TableDB           string
-	Diploma           bool
-	DiplomaNumber     int64
-	Degree            string
-	PublicationLink   string
-	PublicationDate   string
-	UserID            int64
+	//RequisitionNumber int64
+	//TableDB           string
+	//Diploma           bool
+	//DiplomaNumber     int64
+	//Degree            string
+	//PublicationLink   string
+	//PublicationDate   string
+	UserID   int64
+	UserData DataPolling
 }
 
 type ClosingRequisition struct {
@@ -156,31 +122,62 @@ func (c *ClosingRequisition) Set(userID int64, enum enumapplic.ApplicEnum, text 
 	var mu sync.RWMutex
 	mu.Lock()
 
-	st := c.closingRequisitionCache[userID]
+	storage := c.closingRequisitionCache[userID]
 
 	switch enum {
-	case enumapplic.RequisitionNumber:
-		num, _ := strconv.Atoi(text)
-		st.RequisitionNumber = int64(num)
-	case enumapplic.TableDB:
-		st.TableDB = text
-	case enumapplic.Diploma:
-		st.Diploma, _ = strconv.ParseBool(text)
-	case enumapplic.DiplomaNumber:
-		num, _ := strconv.Atoi(text)
-		st.DiplomaNumber = int64(num)
-	case enumapplic.Degree:
-		st.Degree = text
-	case enumapplic.PublicationLink:
-		st.PublicationLink = text
-	case enumapplic.PublicationDate:
-		st.PublicationDate = text
 	case enumapplic.UserID:
 		uid, _ := strconv.Atoi(text)
-		st.UserID = int64(uid)
+		storage.UserID = int64(uid)
+	case enumapplic.Contest:
+		storage.UserData.Contest = text
+	case enumapplic.FNP:
+		storage.UserData.FNP = text
+	case enumapplic.Age:
+		storage.UserData.Age = text
+	case enumapplic.NameInstitution:
+		storage.UserData.NameInstitution = text
+	case enumapplic.Locality:
+		storage.UserData.Locality = text
+	case enumapplic.NamingUnit:
+		storage.UserData.NamingUnit = text
+	case enumapplic.PublicationTitle:
+		storage.UserData.PublicationTitle = text
+	case enumapplic.FNPLeader:
+		storage.UserData.LeaderFNP = text
+	case enumapplic.Email:
+		storage.UserData.Email = text
+	case enumapplic.DocumentType:
+		storage.UserData.DocumentType = text
+	case enumapplic.PlaceDeliveryOfDocuments:
+		storage.UserData.PlaceDeliveryDocuments = text
+	case enumapplic.Photo:
+		storage.UserData.Photo = text
+	case enumapplic.File:
+		storage.UserData.Files = append(storage.UserData.Files, text)
+	case enumapplic.RequisitionNumber:
+		num, _ := strconv.Atoi(text)
+		storage.UserData.RequisitionNumber = int64(num)
+	case enumapplic.RequisitionPDF:
+		storage.UserData.RequisitionPDFpath = text
+	case enumapplic.TableDB:
+		storage.UserData.TableDB = text
+	case enumapplic.Diploma:
+		storage.UserData.Diploma, _ = strconv.ParseBool(text)
+	case enumapplic.DiplomaNumber:
+		num, _ := strconv.Atoi(text)
+		storage.UserData.DiplomaNumber = int64(num)
+	case enumapplic.Agree:
+		storage.UserData.Agree = true
+	case enumapplic.PublicationLink:
+		storage.UserData.PublicationLink = text
+	case enumapplic.PublicationDate:
+		storage.UserData.PublicationDate = text
+	case enumapplic.Degree:
+		num, _ := strconv.Atoi(text)
+		storage.UserData.Degree = num
 	}
 
-	c.closingRequisitionCache[userID] = st
+	c.closingRequisitionCache[userID] = storage
 	mu.Unlock()
 }
 
@@ -215,59 +212,59 @@ func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	var mu sync.RWMutex
 	mu.Lock()
 
-	st := c.userPollingCache[userID]
+	storage := c.userPollingCache[userID]
 
 	switch enum {
 	case enumapplic.Contest:
-		st.Contest = text
+		storage.Contest = text
 	case enumapplic.FNP:
-		st.FNP = text
+		storage.FNP = text
 	case enumapplic.Age:
-		st.Age = text
+		storage.Age = text
 	case enumapplic.NameInstitution:
-		st.NameInstitution = text
+		storage.NameInstitution = text
 	case enumapplic.Locality:
-		st.Locality = text
+		storage.Locality = text
 	case enumapplic.NamingUnit:
-		st.NamingUnit = text
+		storage.NamingUnit = text
 	case enumapplic.PublicationTitle:
-		st.PublicationTitle = text
+		storage.PublicationTitle = text
 	case enumapplic.FNPLeader:
-		st.LeaderFNP = text
+		storage.LeaderFNP = text
 	case enumapplic.Email:
-		st.Email = text
+		storage.Email = text
 	case enumapplic.DocumentType:
-		st.DocumentType = text
+		storage.DocumentType = text
 	case enumapplic.PlaceDeliveryOfDocuments:
-		st.PlaceDeliveryDocuments = text
+		storage.PlaceDeliveryDocuments = text
 	case enumapplic.Photo:
-		st.Photo = text
+		storage.Photo = text
 	case enumapplic.File:
-		st.Files = append(st.Files, text)
+		storage.Files = append(storage.Files, text)
 	case enumapplic.RequisitionNumber:
 		num, _ := strconv.Atoi(text)
-		st.RequisitionNumber = int64(num)
+		storage.RequisitionNumber = int64(num)
 	case enumapplic.RequisitionPDF:
-		st.RequisitionPDFpath = text
+		storage.RequisitionPDFpath = text
 	case enumapplic.TableDB:
-		st.TableDB = text
+		storage.TableDB = text
 	case enumapplic.Diploma:
-		st.Diploma, _ = strconv.ParseBool(text)
+		storage.Diploma, _ = strconv.ParseBool(text)
 	case enumapplic.DiplomaNumber:
 		num, _ := strconv.Atoi(text)
-		st.DiplomaNumber = int64(num)
+		storage.DiplomaNumber = int64(num)
 	case enumapplic.Agree:
-		st.Agree = true
+		storage.Agree = true
 	case enumapplic.PublicationLink:
-		st.PublicationLink = text
+		storage.PublicationLink = text
 	case enumapplic.PublicationDate:
-		st.PublicationDate = text
+		storage.PublicationDate = text
 	case enumapplic.Degree:
 		num, _ := strconv.Atoi(text)
-		st.Degree = num
+		storage.Degree = num
 	}
 
-	c.userPollingCache[userID] = st
+	c.userPollingCache[userID] = storage
 	mu.Unlock()
 }
 

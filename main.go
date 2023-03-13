@@ -16,7 +16,6 @@ import (
 	"telegrammBot/internal/botstate"
 	"telegrammBot/internal/cache"
 	"telegrammBot/internal/enumapplic"
-	"telegrammBot/internal/errs"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -124,7 +123,6 @@ var (
 		cons.ContestTheatricalBackstage.String(): "TheatricalBackstage",
 	}
 
-	tempUsersIDCache   = cache.NewTempUsersIDCache()
 	userPolling        = cache.NewCacheDataPolling()
 	closingRequisition = cache.NewCacheDataClosingRequisition()
 	cellOptionCaption  = gopdf.CellOption{Align: 16}
@@ -261,6 +259,7 @@ func main() {
 			messageText := string(messageByteText[:])
 
 			switch messageText {
+
 			case botcommand.Start.String():
 
 				err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Здравствуйте, %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.Start, "", "", false)
@@ -320,7 +319,6 @@ func main() {
 					go deleteClosingRequisition(update.Message.Chat.ID)
 				} else {
 					go deleteUserPolling(update.Message.Chat.ID, *userPolling)
-					go checkUsersIDCache(update.Message.Chat.ID, bot)
 				}
 
 				err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
@@ -337,7 +335,6 @@ func main() {
 					go deleteClosingRequisition(update.Message.Chat.ID)
 				} else {
 					go deleteUserPolling(update.Message.Chat.ID, *userPolling)
-					go checkUsersIDCache(update.Message.Chat.ID, bot)
 				}
 
 				err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
@@ -361,7 +358,8 @@ func main() {
 				stateBot := cacheBotSt.Get(update.Message.Chat.ID)
 
 				switch stateBot {
-				case botstate.GetDiploma:
+
+				case botstate.GetDiploma: //This command is only available to users
 
 					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 					defer cancel()
@@ -391,6 +389,7 @@ func main() {
 						}
 
 						switch {
+
 						case sent:
 
 							err := sentToTelegram(bot, update.Message.Chat.ID, "Данная заявка закрыта, диплом/грамота Вам уже были отправлены.", nil, cons.StyleTextCommon, botcommand.AccessDenied, "", "", false)
@@ -415,8 +414,8 @@ func main() {
 						default:
 
 							wg.Add(2)
-							go FillInCertificatesPDFForms(&wg, userID, *userPolling)
-							go FillInDiplomasPDFForms(&wg, userID, *userPolling)
+							go FillInCertificatesPDFForms(&wg, userID)
+							go FillInDiplomasPDFForms(&wg, userID)
 							wg.Wait()
 
 							temp := ""
@@ -444,11 +443,11 @@ func main() {
 							cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 							go deleteUserPolling(userID, *userPolling)
-							go checkUsersIDCache(userID, bot)
+
 						}
 					}
 
-				case botstate.AskPublicationDate:
+				case botstate.AskPublicationDate: //This botstate is only available for the admin
 
 					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PublicationDate, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskPublicationLink)
@@ -459,7 +458,7 @@ func main() {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationDate, error sending to user: %+v\n", err))
 					}
 
-				case botstate.AskPublicationLink:
+				case botstate.AskPublicationLink: //This botstate is only available for the admin
 
 					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PublicationLink, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
@@ -470,7 +469,7 @@ func main() {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationLink, error sending to user: %+v\n", err))
 					}
 
-				case botstate.AskRequisitionNumber:
+				case botstate.AskRequisitionNumber: // This botstate is available only for the admin
 
 					_, err := strconv.Atoi(messageText)
 
@@ -489,7 +488,7 @@ func main() {
 						err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите степень:", nil, cons.StyleTextCommon, botcommand.SelectDegree, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botstate.AskRequisitionNumber, error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskRequisitionNumber, error sending to admin: %+v\n", err))
 						}
 					}
 
@@ -747,7 +746,7 @@ func main() {
 								t := time.Now()
 								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, *userPolling, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
+								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, error sending letter to admin's email: %+v\n", err.Error()))
 								}
@@ -755,7 +754,6 @@ func main() {
 								if send {
 									cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 									go deleteUserPolling(update.Message.Chat.ID, *userPolling)
-									go checkUsersIDCache(update.Message.Chat.ID, bot)
 								}
 
 								err = sentToTelegram(bot, update.Message.Chat.ID, "Поздравляем, Ваша заявка зарегестрирована! Благодарим Вас за участие, ваша заявка будет обработана в течение трех дней.", nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
@@ -779,7 +777,7 @@ func main() {
 							}
 							defer dbpool.Close()
 
-							userID, err := GetRequisitionForAdmin(ctx, *userPolling, closingRequisition.Get(update.Message.Chat.ID).RequisitionNumber, closingRequisition.Get(update.Message.Chat.ID).TableDB, closingRequisition.Get(update.Message.Chat.ID).Degree, closingRequisition.Get(update.Message.Chat.ID).PublicationDate, closingRequisition.Get(update.Message.Chat.ID).PublicationLink, dbpool)
+							err = GetRequisitionForAdmin(ctx, update.Message.Chat.ID, closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber, closingRequisition.Get(update.Message.Chat.ID).UserData.Degree, closingRequisition.Get(update.Message.Chat.ID).UserData.TableDB, closingRequisition.Get(update.Message.Chat.ID).UserData.PublicationDate, closingRequisition.Get(update.Message.Chat.ID).UserData.PublicationLink, dbpool)
 
 							if err != nil {
 								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, GetRequisitionForAdmin(): %+v\n", err.Error()))
@@ -789,17 +787,17 @@ func main() {
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, sending for admin: %+v\n", err.Error()))
 								}
+
 							} else {
-								closingRequisition.Set(update.Message.Chat.ID, enumapplic.UserID, strconv.Itoa(int(userID)))
 
 								wg.Add(2)
-								go FillInCertificatesPDFForms(&wg, userID, *userPolling)
-								go FillInDiplomasPDFForms(&wg, userID, *userPolling)
+								go FillInCertificatesPDFForms(&wg, update.Message.Chat.ID)
+								go FillInDiplomasPDFForms(&wg, update.Message.Chat.ID)
 								wg.Wait()
 
 								// Send to admin for check
 								temp := ""
-								for _, path := range userPolling.Get(userID).Files {
+								for _, path := range closingRequisition.Get(update.Message.Chat.ID).UserData.Files {
 									// When some files are the same
 									if temp != "" && temp == path {
 										continue
@@ -834,114 +832,88 @@ func main() {
 						}
 						defer dbpool.Close()
 
-						userID := closingRequisition.Get(update.Message.Chat.ID).UserID
+						switch closingRequisition.Get(update.Message.Chat.ID).UserData.PlaceDeliveryDocuments {
 
-						switch userPolling.Get(userID).PlaceDeliveryDocuments {
-						case cons.PlaceDeliveryOfDocuments1: // Email
+						case cons.PlaceDeliveryOfDocuments1: // The user wants to get certificate/diploma on Email
 
 							t := time.Now()
 							formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-							sent, err := SentEmail(userPolling.Get(userID).Email, userID, *userPolling, false, fmt.Sprintf("%s №%v от %s ", userPolling.Get(userID).DocumentType, userPolling.Get(userID).RequisitionNumber, formattedTime), userPolling.Get(userID).Files, "")
+							sent, err := SentEmail(closingRequisition.Get(update.Message.Chat.ID).UserData.Email, closingRequisition.Get(update.Message.Chat.ID).UserID, false, fmt.Sprintf("%s №%v от %s ", closingRequisition.Get(update.Message.Chat.ID).UserData.DocumentType, closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber, formattedTime), closingRequisition.Get(update.Message.Chat.ID).UserData.Files, "")
 							if err != nil {
 								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1:, error sending letter to admin's email: %+v\n", err.Error()))
 							}
 
 							if sent {
-								err = UpdateRequisition(ctx, true, true, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool)
+								err = UpdateRequisition(ctx, true, true, closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber, closingRequisition.Get(update.Message.Chat.ID).UserData.TableDB, closingRequisition.Get(update.Message.Chat.ID).UserData.Degree, closingRequisition.Get(update.Message.Chat.ID).UserData.PublicationLink, closingRequisition.Get(update.Message.Chat.ID).UserData.PublicationDate, dbpool)
 
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1:, UpdateRequisition() for admin: %v\n", err))
 
-									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка! Заявка №%v НЕ закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
+									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка! Заявка №%v НЕ закрыта!", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 									if err != nil {
 										zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1: %v\n", err))
 									}
 
 									cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
+									go deleteClosingRequisition(update.Message.Chat.ID)
 
-									// thisIsAdmin == true, therefore
-									// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
-									if userPolling.Get(userID).RequisitionNumber != 0 {
-										go deleteUserPolling(userID, *userPolling)
-										go checkUsersIDCache(userID, bot)
-									}
 								} else {
-									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
+									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 									if err != nil {
 										zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1: %+v\n", err.Error()))
 									}
 
 									cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
-
-									// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
-									if userPolling.Get(closingRequisition.Get(update.Message.Chat.ID).UserID).RequisitionNumber != 0 {
-										go deleteUserPolling(closingRequisition.Get(update.Message.Chat.ID).UserID, *userPolling)
-										go checkUsersIDCache(closingRequisition.Get(update.Message.Chat.ID).UserID, bot)
-									}
-
 									go deleteClosingRequisition(update.Message.Chat.ID)
 								}
 							}
 
 							if !sent {
-								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Не удалось отправить письмо. Заявка №%v не закрыта.", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
+								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Не удалось отправить письмо. Заявка №%v не закрыта.", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
 								}
+
+								cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
+								go deleteClosingRequisition(update.Message.Chat.ID)
 							}
 
-						case cons.PlaceDeliveryOfDocuments2: // Telegram
+						case cons.PlaceDeliveryOfDocuments2: // The user wants to get certificate/diploma in Telegram
 
-							err = UpdateRequisition(ctx, true, false, userPolling.Get(userID).RequisitionNumber, userPolling.Get(userID).TableDB, userPolling.Get(userID).Degree, userPolling.Get(userID).PublicationLink, userPolling.Get(userID).PublicationDate, dbpool)
+							err = UpdateRequisition(ctx, true, false, closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber,
+								closingRequisition.Get(update.Message.Chat.ID).UserData.TableDB, closingRequisition.Get(update.Message.Chat.ID).UserData.Degree,
+								closingRequisition.Get(update.Message.Chat.ID).UserData.PublicationLink,
+								closingRequisition.Get(update.Message.Chat.ID).UserData.PublicationDate, dbpool)
 
 							if err != nil {
 								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments2, UpdateRequisition() for admin: %+v\n", err))
 							}
 
-							err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", userPolling.Get(userID).RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
+							err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 
 							if err != nil {
 								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments2: %+v\n", err.Error()))
 							}
 
 							cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
+							go deleteClosingRequisition(update.Message.Chat.ID)
 
-							if !thisIsAdmin(update.Message.Chat.ID) {
-								go deleteUserPolling(update.Message.Chat.ID, *userPolling)
-								go checkUsersIDCache(update.Message.Chat.ID, bot)
-							}
-
-							if thisIsAdmin(update.Message.Chat.ID) {
-								// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
-								if userPolling.Get(closingRequisition.Get(update.Message.Chat.ID).UserID).RequisitionNumber != 0 {
-									go deleteUserPolling(closingRequisition.Get(update.Message.Chat.ID).UserID, *userPolling)
-									go checkUsersIDCache(closingRequisition.Get(update.Message.Chat.ID).UserID, bot)
-								}
-
-								go deleteClosingRequisition(update.Message.Chat.ID)
-							}
 						}
 					} else if messageText == botcommand.CancelApplication.String() {
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
 
 						if thisIsAdmin(update.Message.Chat.ID) {
-							// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
-							if userPolling.Get(closingRequisition.Get(update.Message.Chat.ID).UserID).RequisitionNumber != 0 {
-								go deleteUserPolling(closingRequisition.Get(update.Message.Chat.ID).UserID, *userPolling)
-								go checkUsersIDCache(closingRequisition.Get(update.Message.Chat.ID).UserID, bot)
-							}
-
 							go deleteClosingRequisition(update.Message.Chat.ID)
 						}
 
 						if !thisIsAdmin(update.Message.Chat.ID) {
 							go deleteUserPolling(update.Message.Chat.ID, *userPolling)
-							go checkUsersIDCache(update.Message.Chat.ID, bot)
 						}
+
 					} else if messageText == botcommand.CancelCloseRequisition.String() && thisIsAdmin(update.Message.Chat.ID) { // excess condition
 						err = sentToTelegram(bot, update.Message.Chat.ID, "Выход в главное меню", nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
 
@@ -950,13 +922,6 @@ func main() {
 						}
 
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
-
-						// When RequisitionNumber == 0, most likely or the user is working on a new application, or the map "userPolling" is empty therefore, we do not clean in this case
-						if userPolling.Get(closingRequisition.Get(update.Message.Chat.ID).UserID).RequisitionNumber != 0 {
-							go deleteUserPolling(closingRequisition.Get(update.Message.Chat.ID).UserID, *userPolling)
-							go checkUsersIDCache(closingRequisition.Get(update.Message.Chat.ID).UserID, bot)
-						}
-
 						go deleteClosingRequisition(update.Message.Chat.ID)
 					}
 
@@ -1319,7 +1284,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPhoto)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фотографию Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.PlaceDeliveryOfDocuments1: %+v\n", err.Error()))
@@ -1345,7 +1310,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPhoto)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фотографию Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.PlaceDeliveryOfDocuments2: %+v\n", err.Error()))
@@ -1657,7 +1622,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		deleteUserPolling(id, *userPolling)
-		go checkUsersIDCache(id, bot)
+		//go checkUsersIDCache(id, bot)
 
 	case botcommand.Cancel:
 
@@ -1677,7 +1642,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			deleteClosingRequisition(id)
 		} else {
 			deleteUserPolling(id, *userPolling)
-			go checkUsersIDCache(id, bot)
+			//go checkUsersIDCache(id, bot)
 		}
 
 	case botcommand.CompleteApplication:
@@ -2134,7 +2099,9 @@ func AddRequisition(ctx context.Context, userID int64, dbpool *pgxpool.Pool) err
 	return row.Err()
 }
 
-func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCache, requisitionNumber int64, tableDB, degree, publicationDate, publicationLink string, dbpool *pgxpool.Pool) (userID int64, err error) {
+func GetRequisitionForAdmin(ctx context.Context, adminID int64, requisitionNumber int64, degree int, tableDB, publicationDate, publicationLink string, dbpool *pgxpool.Pool) error {
+
+	var userID int
 	var fnp string
 	var age string
 	var nameInstitution string
@@ -2151,47 +2118,44 @@ func GetRequisitionForAdmin(ctx context.Context, userPolling cache.DataPollingCa
 
 	row, err := dbpool.Query(ctx, fmt.Sprintf("SELECT user_id, user_fnp, COALESCE(group_age, ''), name_institution, locality, naming_unit, publication_title, leader_fnp, email, contest, document_type, place_delivery_of_document, diploma, COALESCE(diploma_number, 0) FROM %s LEFT JOIN diplomas ON %s.requisition_number=diplomas.requisition_number WHERE %s.requisition_number = $1", tableDB, tableDB, tableDB), requisitionNumber)
 	if err != nil {
-		return 0, fmt.Errorf("func GetRequisitionForAdmin(), query to db is failed: %w", err)
+		return fmt.Errorf("func GetRequisitionForAdmin(), query to db is failed: %w", err)
 	}
 
 	if row.Next() {
-		err = row.Scan(&userID, &fnp, &age, &nameInstitution, &locality, &namingUnit, &publicationTitle, &leaderFNP, &email, &contest, &documentType, &placeDeliveryOfDocument, &diploma, &diplomaNumber)
+		err := row.Scan(&userID, &fnp, &age, &nameInstitution, &locality,
+			&namingUnit, &publicationTitle, &leaderFNP, &email, &contest, &documentType,
+			&placeDeliveryOfDocument, &diploma, &diplomaNumber)
 
 		if err != nil {
-			return 0, fmt.Errorf("func GetRequisitionForAdmin(), scan datas of row is failed %w", err)
+			return fmt.Errorf("func GetRequisitionForAdmin(), scan datas of row is failed %w", err)
 		}
 
-		// When RequisitionNumber == 0 and Contest != ""  - most likely the user is working on a new requisition
-		if userPolling.Get(userID).RequisitionNumber == 0 && userPolling.Get(userID).Contest != "" {
-			tempUsersIDCache.Add(userID)
-			err = &errs.ErrCacheUserPolling{UserID: userID, RequisitionNumber: requisitionNumber}
-			return userID, errs.ErrorHandler(err)
-		}
-
-		userPolling.Set(userID, enumapplic.FNP, fnp)
-		userPolling.Set(userID, enumapplic.Age, age)
-		userPolling.Set(userID, enumapplic.NameInstitution, nameInstitution)
-		userPolling.Set(userID, enumapplic.Locality, locality)
-		userPolling.Set(userID, enumapplic.NamingUnit, namingUnit)
-		userPolling.Set(userID, enumapplic.PublicationTitle, publicationTitle)
-		userPolling.Set(userID, enumapplic.FNPLeader, leaderFNP)
-		userPolling.Set(userID, enumapplic.Email, email)
-		userPolling.Set(userID, enumapplic.Contest, contest)
-		userPolling.Set(userID, enumapplic.DocumentType, documentType)
-		userPolling.Set(userID, enumapplic.PlaceDeliveryOfDocuments, placeDeliveryOfDocument)
-		userPolling.Set(userID, enumapplic.RequisitionNumber, fmt.Sprintf("%v", requisitionNumber))
-		userPolling.Set(userID, enumapplic.PublicationLink, publicationLink)
-		userPolling.Set(userID, enumapplic.PublicationDate, publicationDate)
-		userPolling.Set(userID, enumapplic.Degree, degree)
-		userPolling.Set(userID, enumapplic.TableDB, cons.Certificate.String())
-		userPolling.Set(userID, enumapplic.Diploma, strconv.FormatBool(diploma))
+		closingRequisition.Set(adminID, enumapplic.UserID, strconv.Itoa(userID))
+		closingRequisition.Set(adminID, enumapplic.FNP, fnp)
+		closingRequisition.Set(adminID, enumapplic.Age, age)
+		closingRequisition.Set(adminID, enumapplic.NameInstitution, nameInstitution)
+		closingRequisition.Set(adminID, enumapplic.Locality, locality)
+		closingRequisition.Set(adminID, enumapplic.NamingUnit, namingUnit)
+		closingRequisition.Set(adminID, enumapplic.PublicationTitle, publicationTitle)
+		closingRequisition.Set(adminID, enumapplic.FNPLeader, leaderFNP)
+		closingRequisition.Set(adminID, enumapplic.Email, email)
+		closingRequisition.Set(adminID, enumapplic.Contest, contest)
+		closingRequisition.Set(adminID, enumapplic.DocumentType, documentType)
+		closingRequisition.Set(adminID, enumapplic.PlaceDeliveryOfDocuments, placeDeliveryOfDocument)
+		closingRequisition.Set(adminID, enumapplic.RequisitionNumber, fmt.Sprintf("%v", requisitionNumber))
+		closingRequisition.Set(adminID, enumapplic.PublicationLink, publicationLink)
+		closingRequisition.Set(adminID, enumapplic.PublicationDate, publicationDate)
+		closingRequisition.Set(adminID, enumapplic.Degree, strconv.Itoa(degree))
+		closingRequisition.Set(adminID, enumapplic.TableDB, cons.Certificate.String())
+		closingRequisition.Set(adminID, enumapplic.Diploma, strconv.FormatBool(diploma))
 
 		if diploma {
-			userPolling.Set(userID, enumapplic.DiplomaNumber, strconv.Itoa(int(diplomaNumber)))
+			closingRequisition.Set(adminID, enumapplic.DiplomaNumber, strconv.Itoa(int(diplomaNumber)))
 		}
+
 	}
 
-	return userID, row.Err()
+	return row.Err()
 }
 
 func GetRequisitionForUser(ctx context.Context, userid, requisitionNumber int64, dbpool *pgxpool.Pool) (userID int64, sent bool, err error) {
@@ -2286,8 +2250,16 @@ func UpdateRequisition(ctx context.Context, admin, cleanOut bool, requisitionNum
 	return row.Err()
 }
 
-func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.DataPollingCache) {
+func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64) {
 	defer wg.Done()
+
+	var userData cache.DataPolling
+
+	if thisIsAdmin(userID) {
+		userData = closingRequisition.Get(userID).UserData
+	} else {
+		userData = userPolling.Get(userID)
+	}
 
 	var x float64
 	var y float64 = 305.0
@@ -2297,15 +2269,13 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	var path string
 	var degree string
 
-	usersRequisition := userPolling.Get(userID)
-
-	if usersRequisition.LeaderFNP != "" {
+	if userData.LeaderFNP != "" {
 		path = "./external/imgs/%s_%s_curator.jpg"
 	} else {
 		path = "./external/imgs/%s_%s.jpg"
 	}
 
-	boilerplatePDFPath := fmt.Sprintf(path, contests[usersRequisition.Contest], cons.Certificate.String())
+	boilerplatePDFPath := fmt.Sprintf(path, contests[userData.Contest], cons.Certificate.String())
 
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
@@ -2334,7 +2304,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), SetFont: %v", err.Error()))
 	}
 
-	switch usersRequisition.Degree {
+	switch userData.Degree {
 	case 1:
 		degree = "I"
 	case 2:
@@ -2360,7 +2330,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SetFont(): %v", err.Error()))
 	}
 
-	err = pdf.Text(fmt.Sprintf("%v", usersRequisition.RequisitionNumber))
+	err = pdf.Text(fmt.Sprintf("%v", userData.RequisitionNumber))
 
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(): %v", err.Error()))
@@ -2375,7 +2345,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SetFont(): %v", err.Error()))
 	}
 
-	widthText, err = pdf.MeasureTextWidth(usersRequisition.FNP)
+	widthText, err = pdf.MeasureTextWidth(userData.FNP)
 
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(): %v", err.Error()))
@@ -2386,7 +2356,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	if widthText > maxWidthPDF {
 		var arrayText []string
 
-		arrayText, err = pdf.SplitText(usersRequisition.FNP, maxWidthPDF)
+		arrayText, err = pdf.SplitText(userData.FNP, maxWidthPDF)
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SplitText(): %v", err.Error()))
 		}
@@ -2411,20 +2381,20 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		}
 	} else {
 		pdf.SetXY(x, 275)
-		err = pdf.Text(usersRequisition.FNP)
+		err = pdf.Text(userData.FNP)
 		if err != nil {
-			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.FNP): %v", err.Error()))
+			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.FNP): %v", err.Error()))
 		}
 	}
 
 	// 4. Age
-	if strings.TrimSpace(usersRequisition.Age) != "0" {
+	if strings.TrimSpace(userData.Age) != "0" {
 
 		var ageString string
 		var ending string
 		var symbols string
 
-		groupAge := strings.TrimSpace(usersRequisition.Age)
+		groupAge := strings.TrimSpace(userData.Age)
 		ageString = groupAge
 
 		contain1 := strings.Contains(groupAge, "лет")
@@ -2491,14 +2461,14 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SetFont() Name institution: %v", err))
 	}
 
-	widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
+	widthText, err = pdf.MeasureTextWidth(userData.NameInstitution)
 
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.NameInstitution): %v", err))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(userData.NameInstitution): %v", err))
 	}
 
 	if widthText > maxWidthPDF-80 {
-		arrayText := strings.Split(usersRequisition.NameInstitution, " ")
+		arrayText := strings.Split(userData.NameInstitution, " ")
 
 		var t string
 
@@ -2512,7 +2482,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 			}
 
 			if widthText > maxWidthPDF-80 {
-				widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution[:len(t)-1])
+				widthText, err = pdf.MeasureTextWidth(userData.NameInstitution[:len(t)-1])
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(textPart1) name institution: %v", err.Error()))
@@ -2520,7 +2490,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 				x = centerX - widthText/2
 
-				textPart1 := usersRequisition.NameInstitution[:len(t)-1]
+				textPart1 := userData.NameInstitution[:len(t)-1]
 
 				pdf.SetXY(x, y)
 				err = pdf.Text(textPart1)
@@ -2529,7 +2499,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				}
 				y = y + step
 
-				textPart2 := usersRequisition.NameInstitution[len(t)-1:]
+				textPart2 := userData.NameInstitution[len(t)-1:]
 
 				widthText, err = pdf.MeasureTextWidth(textPart2)
 
@@ -2544,7 +2514,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(textPart2): %v", err.Error()))
 				}
-				y = y + step
+				y += step
 
 				zrlog.Info().Msg("Split long name institution")
 
@@ -2556,9 +2526,9 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		x = centerX - widthText/2
 
 		pdf.SetXY(x, y)
-		err = pdf.Text(usersRequisition.NameInstitution)
+		err = pdf.Text(userData.NameInstitution)
 		if err != nil {
-			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.NameInstitution): %v", err.Error()))
+			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.NameInstitution): %v", err.Error()))
 		}
 	}
 
@@ -2568,14 +2538,14 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 
 	pdf.SetTextColorCMYK(58, 46, 41, 94) // black
 
-	widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
+	widthText, err = pdf.MeasureTextWidth(userData.Locality)
 
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality): %v", err.Error()))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(userData.Locality): %v", err.Error()))
 	}
 
 	if widthText > maxWidthPDF-80 {
-		arrayText := strings.Split(usersRequisition.Locality, " ")
+		arrayText := strings.Split(userData.Locality, " ")
 
 		var t string
 
@@ -2589,7 +2559,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 			}
 
 			if widthText > maxWidthPDF-80 {
-				textPart1 := usersRequisition.Locality[:len(t)-1]
+				textPart1 := userData.Locality[:len(t)-1]
 
 				widthText, err = pdf.MeasureTextWidth(textPart1)
 
@@ -2606,7 +2576,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				}
 				y = y + step
 
-				textPart2 := usersRequisition.Locality[len(t)-1:]
+				textPart2 := userData.Locality[len(t)-1:]
 
 				widthText, err = pdf.MeasureTextWidth(textPart2)
 
@@ -2621,7 +2591,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(textPart2) locality: %v", err.Error()))
 				}
-				y = y + step
+				y += step
 				break
 			}
 		}
@@ -2629,9 +2599,9 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		x = centerX - widthText/2
 
 		pdf.SetXY(x, y)
-		err = pdf.Text(usersRequisition.Locality)
+		err = pdf.Text(userData.Locality)
 		if err != nil {
-			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.Locality): %v", err.Error()))
+			zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.Locality): %v", err.Error()))
 		}
 	}
 
@@ -2640,10 +2610,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	pdf.SetXY(152, 622)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) // black
 
-	err = pdf.Text(usersRequisition.NamingUnit)
+	err = pdf.Text(userData.NamingUnit)
 
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.NamingUnit): %v", err.Error()))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.NamingUnit): %v", err.Error()))
 	}
 
 	// 8. Publication title
@@ -2651,15 +2621,15 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	pdf.SetXY(194, 646)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) // black
 
-	err = pdf.Text(usersRequisition.PublicationTitle)
+	err = pdf.Text(userData.PublicationTitle)
 
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.PublicationTitle): %v", err.Error()))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.PublicationTitle): %v", err.Error()))
 	}
 
 	// 9. Leader's FNP
 
-	if usersRequisition.LeaderFNP != "" {
+	if userData.LeaderFNP != "" {
 		y = 668
 		x = 194
 
@@ -2668,12 +2638,12 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		var arrayLeaders []string
 		var maxWidth float64
 
-		contain := strings.Contains(usersRequisition.LeaderFNP, cons.Comma)
+		contain := strings.Contains(userData.LeaderFNP, cons.Comma)
 
 		switch contain {
 		case true:
 
-			arrayLeaders = strings.Split(usersRequisition.LeaderFNP, cons.Comma)
+			arrayLeaders = strings.Split(userData.LeaderFNP, cons.Comma)
 
 			for i, leader := range arrayLeaders {
 				if i == 0 {
@@ -2736,17 +2706,17 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		case false:
 
 			maxWidth = (maxWidthPDF + 225) / 2
-			widthText, err = pdf.MeasureTextWidth(usersRequisition.LeaderFNP)
+			widthText, err = pdf.MeasureTextWidth(userData.LeaderFNP)
 			if err != nil {
-				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(usersRequisition.LeaderFNP): %v", err.Error()))
+				zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.MeasureTextWidth(userData.LeaderFNP): %v", err.Error()))
 			}
 
 			if widthText > maxWidth {
 				var arrayText []string
 
-				arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidth)
+				arrayText, err = pdf.SplitText(userData.LeaderFNP, maxWidth)
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SplitText(usersRequisition.LeaderFNP, maxWidth): %v", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SplitText(userData.LeaderFNP, maxWidth): %v", err.Error()))
 				}
 
 				for k, t := range arrayText {
@@ -2764,9 +2734,9 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 				}
 			} else {
 				pdf.SetXY(x, y)
-				err = pdf.Text(usersRequisition.LeaderFNP)
+				err = pdf.Text(userData.LeaderFNP)
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.LeaderFNP): %v", err.Error()))
+					zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.LeaderFNP): %v", err.Error()))
 				}
 			}
 		}
@@ -2777,10 +2747,10 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	pdf.SetXY(426, 718)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) // black
 
-	err = pdf.Text(usersRequisition.PublicationDate)
+	err = pdf.Text(userData.PublicationDate)
 
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.PublicationDate): %v", err.Error()))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.PublicationDate): %v", err.Error()))
 	}
 
 	// 11. Publication link
@@ -2788,13 +2758,13 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	pdf.SetXY(50, 740)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) // black
 
-	err = pdf.Text(usersRequisition.PublicationLink)
+	err = pdf.Text(userData.PublicationLink)
 
 	if err != nil {
-		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(usersRequisition.PublicationLink): %v", err.Error()))
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.Text(userData.PublicationLink): %v", err.Error()))
 	}
 
-	path = fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.Certificate), usersRequisition.RequisitionNumber)
+	path = fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.Certificate), userData.RequisitionNumber)
 
 	err = pdf.WritePdf(path)
 
@@ -2802,7 +2772,11 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.WritePdf(path): %v", err.Error()))
 	}
 
-	userPolling.Set(userID, enumapplic.File, path)
+	if thisIsAdmin(userID) {
+		closingRequisition.Set(userID, enumapplic.File, path)
+	} else {
+		userPolling.Set(userID, enumapplic.File, path)
+	}
 
 	err = pdf.Close()
 
@@ -2811,7 +2785,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64, userPolling ca
 	}
 }
 
-func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.DataPollingCache) {
+func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64) {
 	defer wg.Done()
 
 	var x float64
@@ -2820,11 +2794,16 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 	var widthText float64
 	var centerX float64 = 297.5
 	var degree string
+	var userData cache.DataPolling
 
-	usersRequisition := userPolling.Get(userID)
+	if thisIsAdmin(userID) {
+		userData = closingRequisition.Get(userID).UserData
+	} else {
+		userData = userPolling.Get(userID)
+	}
 
-	if usersRequisition.Diploma {
-		boilerplatePDFPath := fmt.Sprintf("./external/imgs/%s_%s.jpg", contests[usersRequisition.Contest], cons.Diploma.String())
+	if userData.Diploma {
+		boilerplatePDFPath := fmt.Sprintf("./external/imgs/%s_%s.jpg", contests[userData.Contest], cons.Diploma.String())
 
 		pdf := gopdf.GoPdf{}
 		pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
@@ -2856,7 +2835,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.SetFont(): %v", err.Error()))
 		}
 
-		err = pdf.Text(fmt.Sprintf("%v", usersRequisition.DiplomaNumber))
+		err = pdf.Text(fmt.Sprintf("%v", userData.DiplomaNumber))
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.DiplomaNumber): %v", err.Error()))
@@ -2874,12 +2853,12 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		y = 262
 
-		contain := strings.Contains(usersRequisition.LeaderFNP, cons.Comma)
+		contain := strings.Contains(userData.LeaderFNP, cons.Comma)
 
 		switch contain {
 		case true:
 
-			arrayLeaders = strings.Split(usersRequisition.LeaderFNP, cons.Comma)
+			arrayLeaders = strings.Split(userData.LeaderFNP, cons.Comma)
 
 			for i, leader := range arrayLeaders {
 				if i == 0 {
@@ -2936,7 +2915,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			if widthText > maxWidthPDF {
 				var arrayText []string
 
-				arrayText, err = pdf.SplitText(usersRequisition.LeaderFNP, maxWidthPDF)
+				arrayText, err = pdf.SplitText(userData.LeaderFNP, maxWidthPDF)
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.SplitText(usersRequisition.LeaderFNP, maxWidthPDF): %v", err.Error()))
 				}
@@ -2960,7 +2939,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					y = y + 1.2*step
 				}
 			} else {
-				widthText, err = pdf.MeasureTextWidth(usersRequisition.LeaderFNP)
+				widthText, err = pdf.MeasureTextWidth(userData.LeaderFNP)
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(usersRequisition.LeaderFNP): %v", err.Error()))
@@ -2969,7 +2948,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 				x = centerX - widthText/2
 
 				pdf.SetXY(x, y)
-				err = pdf.Text(usersRequisition.LeaderFNP)
+				err = pdf.Text(userData.LeaderFNP)
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.LeaderFNP): %v", err.Error()))
@@ -2988,14 +2967,14 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		y = pdf.GetY() + 1.5*step
 
-		widthText, err = pdf.MeasureTextWidth(usersRequisition.NameInstitution)
+		widthText, err = pdf.MeasureTextWidth(userData.NameInstitution)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(usersRequisition.NameInstitution): %v", err.Error()))
 		}
 
 		if widthText > maxWidthPDF-80 {
-			arrayText := strings.Split(usersRequisition.NameInstitution, " ")
+			arrayText := strings.Split(userData.NameInstitution, " ")
 
 			var t string
 
@@ -3009,7 +2988,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 				}
 
 				if widthText > maxWidthPDF-80 {
-					textPart1 := usersRequisition.NameInstitution[:len(t)-1]
+					textPart1 := userData.NameInstitution[:len(t)-1]
 
 					widthText, err = pdf.MeasureTextWidth(textPart1)
 
@@ -3026,7 +3005,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					}
 					y = y + step
 
-					textPart2 := usersRequisition.NameInstitution[len(t)-1:]
+					textPart2 := userData.NameInstitution[len(t)-1:]
 
 					widthText, err = pdf.MeasureTextWidth(textPart2)
 
@@ -3050,7 +3029,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			x = centerX - widthText/2
 
 			pdf.SetXY(x, y)
-			err = pdf.Text(usersRequisition.NameInstitution)
+			err = pdf.Text(userData.NameInstitution)
 			if err != nil {
 				zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.NameInstitution): %v", err.Error()))
 			}
@@ -3065,14 +3044,14 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		y = pdf.GetY() + 1.5*step
 
-		widthText, err = pdf.MeasureTextWidth(usersRequisition.Locality)
+		widthText, err = pdf.MeasureTextWidth(userData.Locality)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.MeasureTextWidth(usersRequisition.Locality): %v", err.Error()))
 		}
 
 		if widthText > maxWidthPDF-80 {
-			arrayText := strings.Split(usersRequisition.Locality, " ")
+			arrayText := strings.Split(userData.Locality, " ")
 
 			var t string
 
@@ -3086,7 +3065,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 				}
 
 				if widthText > maxWidthPDF-80 {
-					textPart1 := usersRequisition.Locality[:len(t)-1]
+					textPart1 := userData.Locality[:len(t)-1]
 
 					widthText, err = pdf.MeasureTextWidth(textPart1)
 
@@ -3103,7 +3082,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 					}
 					y = y + step
 
-					textPart2 := usersRequisition.Locality[len(t)-1:]
+					textPart2 := userData.Locality[len(t)-1:]
 
 					widthText, err = pdf.MeasureTextWidth(textPart2)
 
@@ -3126,7 +3105,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			x = centerX - widthText/2
 
 			pdf.SetXY(x, y)
-			err = pdf.Text(usersRequisition.Locality)
+			err = pdf.Text(userData.Locality)
 			if err != nil {
 				zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.Locality): %v", err.Error()))
 			}
@@ -3140,7 +3119,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.SetFont(): %v", err.Error()))
 		}
 
-		err = pdf.Text(usersRequisition.FNP)
+		err = pdf.Text(userData.FNP)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.FNP): %v", err.Error()))
@@ -3150,7 +3129,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		pdf.SetXY(153, 653)
 
-		err = pdf.Text(usersRequisition.NamingUnit)
+		err = pdf.Text(userData.NamingUnit)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.NamingUnit): %v", err.Error()))
@@ -3160,7 +3139,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		pdf.SetXY(195, 674)
 
-		err = pdf.Text(usersRequisition.PublicationTitle)
+		err = pdf.Text(userData.PublicationTitle)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.PublicationTitle): %v", err.Error()))
@@ -3170,7 +3149,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		pdf.SetXY(139, 697)
 
-		err = pdf.Text(fmt.Sprintf("%v", usersRequisition.RequisitionNumber))
+		err = pdf.Text(fmt.Sprintf("%v", userData.RequisitionNumber))
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.RequisitionNumber): %v", err.Error()))
@@ -3180,7 +3159,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		var textDegree string
 
-		switch usersRequisition.Degree {
+		switch userData.Degree {
 		case 1:
 			degree = "I"
 			textDegree = fmt.Sprintf(",   %s", degree)
@@ -3204,7 +3183,7 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		pdf.SetXY(447, 736)
 
-		err = pdf.Text(usersRequisition.PublicationDate)
+		err = pdf.Text(userData.PublicationDate)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.PublicationDate): %v", err.Error()))
@@ -3214,13 +3193,13 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 
 		pdf.SetXY(56, 757)
 
-		err = pdf.Text(usersRequisition.PublicationLink)
+		err = pdf.Text(userData.PublicationLink)
 
 		if err != nil {
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.Text(usersRequisition.PublicationLink): %v", err.Error()))
 		}
 
-		path := fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.Diploma), usersRequisition.RequisitionNumber)
+		path := fmt.Sprintf("./external/files/usersfiles/%s №%v.pdf", string(cons.Diploma), userData.RequisitionNumber)
 
 		err = pdf.WritePdf(path)
 
@@ -3228,7 +3207,11 @@ func FillInDiplomasPDFForms(wg *sync.WaitGroup, userID int64, userPolling cache.
 			zrlog.Error().Msg(fmt.Sprintf("func FillInDiplomasPDFForms(), pdf.WritePdf(path): %v", err.Error()))
 		}
 
-		userPolling.Set(userID, enumapplic.File, path)
+		if thisIsAdmin(userID) {
+			closingRequisition.Set(userID, enumapplic.File, path)
+		} else {
+			userPolling.Set(userID, enumapplic.File, path)
+		}
 
 		err = pdf.Close()
 
@@ -3435,11 +3418,12 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	return true, nil
 }
 
-func SentEmail(to string, userID int64, userDat cache.DataPollingCache, toAdmin bool, subject string, files []string, message string) (bool, error) {
-	usdat := userDat.Get(userID)
+func SentEmail(to string, userID int64, toAdmin bool, subject string, files []string, message string) (bool, error) {
+
+	userData := userPolling.Get(userID)
 
 	if toAdmin {
-		message = UserDataToString(userID, userDat)
+		message = FormatUserDataToText(userData)
 	}
 
 	m := gomail.NewMessage()
@@ -3449,7 +3433,7 @@ func SentEmail(to string, userID int64, userDat cache.DataPollingCache, toAdmin 
 	m.SetHeader("Subject", subject)
 
 	if toAdmin {
-		m.Embed(usdat.Photo)
+		m.Embed(userData.Photo)
 	}
 
 	if len(files) > 0 {
@@ -3479,8 +3463,7 @@ func SentEmail(to string, userID int64, userDat cache.DataPollingCache, toAdmin 
 	return true, nil
 }
 
-func UserDataToString(userID int64, userDat cache.DataPollingCache) string {
-	usdata := userDat.Get(userID)
+func FormatUserDataToText(userData cache.DataPolling) string {
 
 	var text string
 
@@ -3491,11 +3474,11 @@ func UserDataToString(userID int64, userDat cache.DataPollingCache) string {
 	body = append(body, "<style type=\"text/css\">BODY {margin: 0; /* Убираем отступы в браузере */}#toplayer {background: #F5FFFA; /* Цвет фона */height: 800px /* Высота слоя */}</style>")
 
 	body = append(body, fmt.Sprintf("<div id=\"toplayer\"><dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Contest.EnumIndex(), enumapplic.Contest.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Contest))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.Contest))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.FNP.EnumIndex(), enumapplic.FNP.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.FNP))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", userData.FNP))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Age.EnumIndex(), enumapplic.Age.String()))
@@ -3503,11 +3486,11 @@ func UserDataToString(userID int64, userDat cache.DataPollingCache) string {
 
 	var ageString string
 
-	if strings.TrimSpace(usdata.Age) != cons.Zero {
+	if strings.TrimSpace(userData.Age) != cons.Zero {
 		var ending string
 		var symbols string
 
-		groupAge := strings.TrimSpace(usdata.Age)
+		groupAge := strings.TrimSpace(userData.Age)
 		ageString = groupAge
 
 		contain1 := strings.Contains(groupAge, "лет")
@@ -3557,40 +3540,40 @@ func UserDataToString(userID int64, userDat cache.DataPollingCache) string {
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NameInstitution.EnumIndex(), enumapplic.NameInstitution.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NameInstitution))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.NameInstitution))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Locality.EnumIndex(), enumapplic.Locality.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", usdata.Locality))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p><dd>", userData.Locality))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.NamingUnit.EnumIndex(), enumapplic.NamingUnit.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.NamingUnit))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.NamingUnit))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.PublicationTitle.EnumIndex(), enumapplic.PublicationTitle.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PublicationTitle))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.PublicationTitle))
 	text = strings.Join(body, "\n")
 
-	if usdata.LeaderFNP == "" {
+	if userData.LeaderFNP == "" {
 		body = append(body, fmt.Sprintf("<dt><p><b>(%v).</b> <s><i><b>%s:</b></i></s></p></dt>", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()))
 		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", "-"))
 	} else {
 		body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.FNPLeader.EnumIndex(), enumapplic.FNPLeader.String()))
-		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.LeaderFNP))
+		body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.LeaderFNP))
 	}
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.Email.EnumIndex(), enumapplic.Email.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.Email))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.Email))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b></p></dt>", enumapplic.DocumentType.EnumIndex(), enumapplic.DocumentType.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.DocumentType))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.DocumentType))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.PlaceDeliveryOfDocuments.EnumIndex(), enumapplic.PlaceDeliveryOfDocuments.String()))
-	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", usdata.PlaceDeliveryDocuments))
+	body = append(body, fmt.Sprintf("<dd><p>      %s</p></dd>", userData.PlaceDeliveryDocuments))
 	text = strings.Join(body, "\n")
 
 	body = append(body, fmt.Sprintf("<dt><p><b>(%v). %s:</b><p></dt>", enumapplic.Photo.EnumIndex(), enumapplic.Photo.String()))
@@ -3748,22 +3731,22 @@ func UserDataToStringForTelegramm(userID int64) string {
 
 		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.RequisitionNumber.String()))
-		body = append(body, fmt.Sprintf("   %v", data.RequisitionNumber))
+		body = append(body, fmt.Sprintf("   %v", data.UserData.RequisitionNumber))
 		text = strings.Join(body, "\n")
 
 		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.Degree.String()))
-		body = append(body, fmt.Sprintf("   %s", data.Degree))
+		body = append(body, fmt.Sprintf("   %v", data.UserData.Degree))
 		text = strings.Join(body, "\n")
 
 		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PublicationDate.String()))
-		body = append(body, fmt.Sprintf("   %s", data.PublicationDate))
+		body = append(body, fmt.Sprintf("   %s", data.UserData.PublicationDate))
 		text = strings.Join(body, "\n")
 
 		body = append(body, "_________________________________")
 		body = append(body, fmt.Sprintf(" <i><b>%s:</b></i>", enumapplic.PublicationLink.String()))
-		body = append(body, fmt.Sprintf("   %s", data.PublicationLink))
+		body = append(body, fmt.Sprintf("   %s", data.UserData.PublicationLink))
 		text = strings.Join(body, "\n")
 	}
 
@@ -3918,7 +3901,6 @@ func deleteUserPolling(userID int64, userData cache.DataPollingCache) {
 
 func deleteClosingRequisition(userID int64) {
 	closingRequisition.Delete(userID)
-	cacheBotSt.Set(userID, botstate.Undefined)
 }
 
 func dateStringToUnixNano(dateString string) int64 {
@@ -3984,23 +3966,23 @@ func unixNanoToDateString(publicationDate int64) string {
 	return fmt.Sprintf("%s.%s.%s", d, m, y)
 }
 
-func checkUsersIDCache(userID int64, bot *tgbotapi.BotAPI) {
-	if tempUsersIDCache.Check(userID) {
-		tempUsersIDCache.Delete(userID)
+// func checkUsersIDCache(userID int64, bot *tgbotapi.BotAPI) {
+// 	if tempUsersIDCache.Check(userID) {
+// 		tempUsersIDCache.Delete(userID)
 
-		adminID, err := strconv.ParseInt(os.Getenv("ADMIN_ID"), 10, 64)
+// 		adminID, err := strconv.ParseInt(os.Getenv("ADMIN_ID"), 10, 64)
 
-		if err != nil {
-			zrlog.Error().Msg(fmt.Sprintf("func checkUsersIDCache(), trconv.ParseInt(): %v\n", err))
-		}
+// 		if err != nil {
+// 			zrlog.Error().Msg(fmt.Sprintf("func checkUsersIDCache(), trconv.ParseInt(): %v\n", err))
+// 		}
 
-		err = sentToTelegram(bot, adminID, fmt.Sprintf("Можно закрывать заявки для пользователя %v!", userID), nil, cons.StyleTextCommon, botcommand.Undefined, "", "", false)
+// 		err = sentToTelegram(bot, adminID, fmt.Sprintf("Можно закрывать заявки для пользователя %v!", userID), nil, cons.StyleTextCommon, botcommand.Undefined, "", "", false)
 
-		if err != nil {
-			zrlog.Error().Msg(fmt.Sprintf("func checkUsersIDCache(), sentToTelegramm() for admin: %v\n", err))
-		}
-	}
-}
+// 		if err != nil {
+// 			zrlog.Error().Msg(fmt.Sprintf("func checkUsersIDCache(), sentToTelegramm() for admin: %v\n", err))
+// 		}
+// 	}
+// }
 
 func convertAgeToString(age int) string {
 	var ending string
