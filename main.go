@@ -16,6 +16,7 @@ import (
 	"telegrammBot/internal/botstate"
 	"telegrammBot/internal/cache"
 	"telegrammBot/internal/enumapplic"
+	"telegrammBot/internal/errs"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -265,7 +266,14 @@ func main() {
 				err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Здравствуйте, %v!", update.Message.Chat.FirstName), nil, cons.StyleTextCommon, botcommand.Start, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.Start.String(), error sending to user: %+v\n", err))
+
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.Start.String(), error sending to user %v: %+v", update.Message.Chat.ID, err))
+
+					botBlocked := errs.ErrorHandlerBotBlocked(err)
+
+					if botBlocked {
+						go deleteUserPolling(update.Message.Chat.ID, *userPolling)
+					}
 				}
 
 				cacheBotSt.Set(update.Message.Chat.ID, botstate.Start)
@@ -277,7 +285,13 @@ func main() {
 				err = sentToTelegram(bot, update.Message.Chat.ID, "Номер заявки:", nil, cons.StyleTextCommon, botcommand.GetDiploma, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.GetDiploma.String(), error sending to user: %+v\n", err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.GetDiploma.String(), error sending to user %v: %+v\n", update.Message.Chat.ID, err))
+
+					botBlocked := errs.ErrorHandlerBotBlocked(err)
+
+					if botBlocked {
+						go deleteUserPolling(update.Message.Chat.ID, *userPolling)
+					}
 				}
 
 			case botcommand.CloseRequisitionStart.String():
@@ -287,7 +301,7 @@ func main() {
 				err = sentToTelegram(bot, update.Message.Chat.ID, "Номер заявки:", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.CloseRequisitionStart.String(), error sending to user: %+v\n", err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.CloseRequisitionStart.String(), error sending to admin: %+v\n", err))
 				}
 
 			case botcommand.CompleteApplication.String():
@@ -297,7 +311,7 @@ func main() {
 				err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.CompleteApplication, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.CompleteApplication.String(), error sending to user: %+v\n", err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.CompleteApplication.String(), error sending to user %v: %+v\n", update.Message.Chat.ID, err))
 				}
 
 			case botcommand.SelectProject.String():
@@ -306,7 +320,7 @@ func main() {
 						err = sentToTelegram(bot, update.Message.Chat.ID, "Для продолжения необходимо дать согласние на обработку персональных данных. Или нажмите \"Отмена\"", nil, cons.StyleTextCommon, botcommand.WaitingForAcceptance, "", "", false)
 
 						if err != nil {
-							zrlog.Error().Msg(fmt.Sprintf("botcommand.SelectProject.String(), error sending to user: %+v\n", err))
+							zrlog.Error().Msg(fmt.Sprintf("botcommand.SelectProject.String(), error sending to user %v: %+v\n", update.Message.Chat.ID, err))
 						}
 					}
 				}
@@ -361,28 +375,40 @@ func main() {
 
 				case botstate.GetDiploma: //This command is only available to users
 
-					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-					defer cancel()
+					text := strings.TrimSpace(messageText)
 
-					dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
-					defer dbpool.Close()
-					if err != nil {
-						zrlog.Fatal().Msg(fmt.Sprintf("botstate.GetDiploma, unable to establish connection to database: %+v\n", err.Error()))
-						os.Exit(1)
+					if strings.HasPrefix(text, "№") {
+						text = strings.TrimPrefix(text, "№")
+						text = strings.TrimSpace(messageText)
 					}
 
-					dbpool.Config().MaxConns = 12
-
-					requisitionNumber, err := strconv.Atoi(messageText)
+					requisitionNumber, err := strconv.Atoi(text)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, unable to convert string to int (strconv.Atoi): %+v\n", err.Error()))
 
-						err := sentToTelegram(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+						err := sentToTelegram(bot, update.Message.Chat.ID,
+							"Некорректно введен номер заявки.\n Здесь необходимо указать номер заявки (цифрами), которую вы регистрировали ранее для участия в конкурсе.\n Если Вы еще не регистрировали заявку, тогда нажмите \"Отмена\" или введите номер заявки:",
+							nil, cons.StyleTextCommon, botcommand.GetDiploma, "", "", false)
+
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, error sending to user: %+v\n", err))
 						}
+
 					} else {
+
+						ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+						defer cancel()
+
+						dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+						defer dbpool.Close()
+						if err != nil {
+							zrlog.Fatal().Msg(fmt.Sprintf("botstate.GetDiploma, unable to establish connection to database: %+v\n", err.Error()))
+							os.Exit(1)
+						}
+
+						dbpool.Config().MaxConns = 12
+
 						userID, sent, err := GetRequisitionForUser(ctx, update.Message.Chat.ID, int64(requisitionNumber), dbpool)
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, GetRequisitionForUser(): %+v\n", err))
@@ -746,7 +772,7 @@ func main() {
 								t := time.Now()
 								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
+								send, err := SentEmail(os.Getenv("ADMIN_EMAIL"), update.Message.Chat.ID, true, true, fmt.Sprintf("Заявка №%v от %s (%s)", numReq, formattedTime, userPolling.Get(update.Message.Chat.ID).DocumentType), userPolling.Get(update.Message.Chat.ID).Files, "")
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, error sending letter to admin's email: %+v\n", err.Error()))
 								}
@@ -765,7 +791,7 @@ func main() {
 						}
 
 						if thisIsAdmin(update.Message.Chat.ID) {
-							ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+							ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 							defer cancel()
 
 							dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
@@ -782,7 +808,7 @@ func main() {
 							if err != nil {
 								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, GetRequisitionForAdmin(): %+v\n", err.Error()))
 
-								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка закрытия заявки!\n%s", err.Error()), nil, cons.StyleTextCommon, botcommand.CheckDataPause, "", "", false)
+								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка закрытия заявки!\n%s", err.Error()), nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
 
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, sending for admin: %+v\n", err.Error()))
@@ -820,7 +846,7 @@ func main() {
 							}
 						}
 					} else if messageText == botcommand.SendPDFFiles.String() && thisIsAdmin(update.Message.Chat.ID) {
-						ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+						ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 						defer cancel()
 
 						dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
@@ -839,9 +865,9 @@ func main() {
 							t := time.Now()
 							formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
-							sent, err := SentEmail(closingRequisition.Get(update.Message.Chat.ID).UserData.Email, closingRequisition.Get(update.Message.Chat.ID).UserID, false, fmt.Sprintf("%s №%v от %s ", closingRequisition.Get(update.Message.Chat.ID).UserData.DocumentType, closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber, formattedTime), closingRequisition.Get(update.Message.Chat.ID).UserData.Files, "")
+							sent, err := SentEmail(closingRequisition.Get(update.Message.Chat.ID).UserData.Email, closingRequisition.Get(update.Message.Chat.ID).UserID, false, false, fmt.Sprintf("%s №%v от %s ", closingRequisition.Get(update.Message.Chat.ID).UserData.DocumentType, closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber, formattedTime), closingRequisition.Get(update.Message.Chat.ID).UserData.Files, "")
 							if err != nil {
-								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1:, error sending letter to admin's email: %+v\n", err.Error()))
+								zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1:, error sending letter to users's email: %+v\n", err.Error()))
 							}
 
 							if sent {
@@ -850,14 +876,11 @@ func main() {
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1:, UpdateRequisition() for admin: %v\n", err))
 
-									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка! Заявка №%v НЕ закрыта!", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
+									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Ошибка! Заявка №%v НЕ закрыта!", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
 
 									if err != nil {
 										zrlog.Error().Msg(fmt.Sprintf("case cons.PlaceDeliveryOfDocuments1: %v\n", err))
 									}
-
-									cacheBotSt.Set(update.Message.Chat.ID, botstate.Undefined)
-									go deleteClosingRequisition(update.Message.Chat.ID)
 
 								} else {
 									err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Заявка №%v закрыта!", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
@@ -872,7 +895,7 @@ func main() {
 							}
 
 							if !sent {
-								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Не удалось отправить письмо. Заявка №%v не закрыта.", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
+								err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("Не удалось отправить письмо. Заявка №%v не закрыта.", closingRequisition.Get(update.Message.Chat.ID).UserData.RequisitionNumber), nil, cons.StyleTextCommon, botcommand.Cancel, "", "", false)
 
 								if err != nil {
 									zrlog.Error().Msg(fmt.Sprintf("Error sending to user: %+v\n", err.Error()))
@@ -1622,7 +1645,6 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		deleteUserPolling(id, *userPolling)
-		//go checkUsersIDCache(id, bot)
 
 	case botcommand.Cancel:
 
@@ -1638,11 +1660,12 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			return fmt.Errorf("sentToTelegram(), botcommand.Cancel: %w", err)
 		}
 
+		cacheBotSt.Set(id, botstate.Start)
+
 		if thisIsAdmin(id) {
 			deleteClosingRequisition(id)
 		} else {
 			deleteUserPolling(id, *userPolling)
-			//go checkUsersIDCache(id, bot)
 		}
 
 	case botcommand.CompleteApplication:
@@ -1970,18 +1993,6 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 		if _, err := bot.Send(msg); err != nil {
 			return fmt.Errorf("sentToTelegram(), botcommand.CheckData: %w", err)
-		}
-
-	case botcommand.CheckDataPause:
-
-		msg := tgbotapi.NewMessage(id, message, styleText)
-
-		if thisIsAdmin(id) {
-			msg.ReplyMarkup = keyboardConfirmForAdmin
-		}
-
-		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.CheckDataPause: %w", err)
 		}
 
 	case botcommand.CheckPDFFiles:
@@ -2339,7 +2350,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64) {
 	// 3. Name
 
 	pdf.SetTextColorCMYK(0, 100, 100, 0) // Red
-	err = pdf.SetFont("TelegraphLine", "", 22)
+	err = pdf.SetFont("TelegraphLine", "", 18)
 
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SetFont(): %v", err.Error()))
@@ -2456,7 +2467,7 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64) {
 	y = pdf.GetY() + 2*step
 
 	pdf.SetTextColorCMYK(58, 46, 41, 94) // black
-	err = pdf.SetFont("TelegraphLine", "", 18)
+	err = pdf.SetFont("TelegraphLine", "", 16)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SetFont() Name institution: %v", err))
 	}
@@ -2609,6 +2620,11 @@ func FillInCertificatesPDFForms(wg *sync.WaitGroup, userID int64) {
 
 	pdf.SetXY(152, 622)
 	pdf.SetTextColorCMYK(58, 46, 41, 94) // black
+
+	err = pdf.SetFont("TelegraphLine", "", 18)
+	if err != nil {
+		zrlog.Error().Msg(fmt.Sprintf("func FillInCertificatesPDFForms(), pdf.SetFont() Name institution: %v", err))
+	}
 
 	err = pdf.Text(userData.NamingUnit)
 
@@ -3418,11 +3434,11 @@ func ConvertRequisitionToPDF(userID int64) (bool, error) {
 	return true, nil
 }
 
-func SentEmail(to string, userID int64, toAdmin bool, subject string, files []string, message string) (bool, error) {
+func SentEmail(to string, userID int64, toAdmin bool, requisition bool, subject string, files []string, message string) (bool, error) {
 
 	userData := userPolling.Get(userID)
 
-	if toAdmin {
+	if toAdmin && requisition {
 		message = FormatUserDataToText(userData)
 	}
 
@@ -3432,7 +3448,7 @@ func SentEmail(to string, userID int64, toAdmin bool, subject string, files []st
 	m.SetHeader("To", to)
 	m.SetHeader("Subject", subject)
 
-	if toAdmin {
+	if toAdmin && requisition {
 		m.Embed(userData.Photo)
 	}
 
