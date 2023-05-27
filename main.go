@@ -115,13 +115,19 @@ var (
 		"Покормите птиц зимой":                   "BirdsFeeding",
 		cons.ContestShrovetide.String():          "Shrovetide",
 		cons.ContestFable.String():               "Fable",
-		"Защитники отечества":                    "DefendersFatherland",
+		cons.ContestDefendersFatherland.String(): "DefendersFatherland",
 		cons.ContestSpring.String():              "Spring",
 		cons.ContestMarchEighth.String():         "MarchEighth",
 		cons.ContestEarth.String():               "Earth",
 		cons.ContestSpaceAdventures.String():     "SpaceAdventures",
 		cons.ContestFeatheredFriends.String():    "FeatheredFriends",
 		cons.ContestTheatricalBackstage.String(): "TheatricalBackstage",
+		cons.ContestOurFriends.String():          "OurFriends",
+		cons.ContestPrimroses.String():           "Primroses",
+		cons.ContestVictoryDay.String():          "VictoryDay",
+		cons.ContestMyFamily.String():            "MyFamily",
+		cons.ContestMotherRussia.String():        "MotherRussia",
+		cons.ContestChildProtectionDay.String():  "ChildProtectionDay",
 	}
 
 	userPolling        = cache.NewCacheDataPolling()
@@ -193,6 +199,11 @@ func main() {
 
 		if update.Message != nil {
 			if update.Message.Photo != nil {
+
+				//TEST
+				fmt.Printf("%v\n", cacheBotSt.Get(update.Message.Chat.ID))
+				//TEST
+
 				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskPhoto {
 					path := *update.Message.Photo
 
@@ -1012,6 +1023,42 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestFather): %+v\n", err.Error()))
 				}
 
+			case string(cons.ContestMyFamily): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMyFamily.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestMyFamily))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestMyFamily): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestChildProtectionDay): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestChildProtectionDay.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestChildProtectionDay))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestChildProtectionDay): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestMotherRussia): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMotherRussia.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestMotherRussia))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestMotherRussia): %+v\n", err.Error()))
+				}
+
 			case string(cons.ContestAutumn): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestAutumn.String())
 
@@ -1203,6 +1250,41 @@ func main() {
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestTheatricalBackstage): %+v\n", err.Error()))
+				}
+			case string(cons.ContestOurFriends): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestOurFriends.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestOurFriends))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestOurFriends): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestVictoryDay): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestVictoryDay.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestVictoryDay))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestVictoryDay): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestPrimroses): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestPrimroses.String())
+
+				// Concise description of contest
+				description = GetConciseDescription(string(cons.ContestPrimroses))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestPrimroses): %+v\n", err.Error()))
 				}
 
 			case string(cons.Degree1): // CallBackQwery
@@ -1693,6 +1775,12 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton18 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton19 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton20 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton21 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton22 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton23 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton24 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton25 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton26 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTitmouse.String(), string(cons.ContestTitmouse)))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
@@ -1703,56 +1791,74 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton3 = append(inlineKeyboardButton3, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFather.String(), string(cons.ContestFather)))
 			rowsButton = append(rowsButton, inlineKeyboardButton3)
 
-			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(cons.ContestAutumn.String(), string(cons.ContestAutumn)))
+			inlineKeyboardButton4 = append(inlineKeyboardButton4, tgbotapi.NewInlineKeyboardButtonData(cons.ContestMyFamily.String(), string(cons.ContestMyFamily)))
 			rowsButton = append(rowsButton, inlineKeyboardButton4)
 
-			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(cons.ContestWinter.String(), string(cons.ContestWinter)))
+			inlineKeyboardButton5 = append(inlineKeyboardButton5, tgbotapi.NewInlineKeyboardButtonData(cons.ContestChildProtectionDay.String(), string(cons.ContestChildProtectionDay)))
 			rowsButton = append(rowsButton, inlineKeyboardButton5)
 
-			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSnowflakes.String(), string(cons.ContestSnowflakes)))
+			inlineKeyboardButton6 = append(inlineKeyboardButton6, tgbotapi.NewInlineKeyboardButtonData(cons.ContestMotherRussia.String(), string(cons.ContestMotherRussia)))
 			rowsButton = append(rowsButton, inlineKeyboardButton6)
 
-			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSnowman.String(), string(cons.ContestSnowman)))
+			inlineKeyboardButton7 = append(inlineKeyboardButton7, tgbotapi.NewInlineKeyboardButtonData(cons.ContestAutumn.String(), string(cons.ContestAutumn)))
 			rowsButton = append(rowsButton, inlineKeyboardButton7)
 
-			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSymbol.String(), string(cons.ContestSymbol)))
+			inlineKeyboardButton8 = append(inlineKeyboardButton8, tgbotapi.NewInlineKeyboardButtonData(cons.ContestWinter.String(), string(cons.ContestWinter)))
 			rowsButton = append(rowsButton, inlineKeyboardButton8)
 
-			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(cons.ContestHearts.String(), string(cons.ContestHearts)))
+			inlineKeyboardButton9 = append(inlineKeyboardButton9, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSnowflakes.String(), string(cons.ContestSnowflakes)))
 			rowsButton = append(rowsButton, inlineKeyboardButton9)
 
-			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSecrets.String(), string(cons.ContestSecrets)))
+			inlineKeyboardButton10 = append(inlineKeyboardButton10, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSnowman.String(), string(cons.ContestSnowman)))
 			rowsButton = append(rowsButton, inlineKeyboardButton10)
 
-			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(cons.ContestBirdsFeeding.String(), string(cons.ContestBirdsFeeding)))
+			inlineKeyboardButton11 = append(inlineKeyboardButton11, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSymbol.String(), string(cons.ContestSymbol)))
 			rowsButton = append(rowsButton, inlineKeyboardButton11)
 
-			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(cons.ContestShrovetide.String(), string(cons.ContestShrovetide)))
+			inlineKeyboardButton12 = append(inlineKeyboardButton12, tgbotapi.NewInlineKeyboardButtonData(cons.ContestHearts.String(), string(cons.ContestHearts)))
 			rowsButton = append(rowsButton, inlineKeyboardButton12)
 
-			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFable.String(), string(cons.ContestFable)))
+			inlineKeyboardButton13 = append(inlineKeyboardButton13, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSecrets.String(), string(cons.ContestSecrets)))
 			rowsButton = append(rowsButton, inlineKeyboardButton13)
 
-			inlineKeyboardButton14 = append(inlineKeyboardButton14, tgbotapi.NewInlineKeyboardButtonData(cons.ContestDefendersFatherland.String(), string(cons.ContestDefendersFatherland)))
+			inlineKeyboardButton14 = append(inlineKeyboardButton14, tgbotapi.NewInlineKeyboardButtonData(cons.ContestBirdsFeeding.String(), string(cons.ContestBirdsFeeding)))
 			rowsButton = append(rowsButton, inlineKeyboardButton14)
 
-			inlineKeyboardButton15 = append(inlineKeyboardButton15, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSpring.String(), string(cons.ContestSpring)))
+			inlineKeyboardButton15 = append(inlineKeyboardButton15, tgbotapi.NewInlineKeyboardButtonData(cons.ContestShrovetide.String(), string(cons.ContestShrovetide)))
 			rowsButton = append(rowsButton, inlineKeyboardButton15)
 
-			inlineKeyboardButton16 = append(inlineKeyboardButton16, tgbotapi.NewInlineKeyboardButtonData(cons.ContestMarchEighth.String(), string(cons.ContestMarchEighth)))
+			inlineKeyboardButton16 = append(inlineKeyboardButton16, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFable.String(), string(cons.ContestFable)))
 			rowsButton = append(rowsButton, inlineKeyboardButton16)
 
-			inlineKeyboardButton17 = append(inlineKeyboardButton17, tgbotapi.NewInlineKeyboardButtonData(cons.ContestEarth.String(), string(cons.ContestEarth)))
+			inlineKeyboardButton17 = append(inlineKeyboardButton17, tgbotapi.NewInlineKeyboardButtonData(cons.ContestDefendersFatherland.String(), string(cons.ContestDefendersFatherland)))
 			rowsButton = append(rowsButton, inlineKeyboardButton17)
 
-			inlineKeyboardButton18 = append(inlineKeyboardButton18, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSpaceAdventures.String(), string(cons.ContestSpaceAdventures)))
+			inlineKeyboardButton18 = append(inlineKeyboardButton18, tgbotapi.NewInlineKeyboardButtonData(cons.ContestVictoryDay.String(), string(cons.ContestVictoryDay)))
 			rowsButton = append(rowsButton, inlineKeyboardButton18)
 
-			inlineKeyboardButton19 = append(inlineKeyboardButton19, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFeatheredFriends.String(), string(cons.ContestFeatheredFriends)))
+			inlineKeyboardButton19 = append(inlineKeyboardButton19, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSpring.String(), string(cons.ContestSpring)))
 			rowsButton = append(rowsButton, inlineKeyboardButton19)
 
-			inlineKeyboardButton20 = append(inlineKeyboardButton20, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTheatricalBackstage.String(), string(cons.ContestTheatricalBackstage)))
+			inlineKeyboardButton20 = append(inlineKeyboardButton20, tgbotapi.NewInlineKeyboardButtonData(cons.ContestPrimroses.String(), string(cons.ContestPrimroses)))
 			rowsButton = append(rowsButton, inlineKeyboardButton20)
+
+			inlineKeyboardButton21 = append(inlineKeyboardButton21, tgbotapi.NewInlineKeyboardButtonData(cons.ContestMarchEighth.String(), string(cons.ContestMarchEighth)))
+			rowsButton = append(rowsButton, inlineKeyboardButton21)
+
+			inlineKeyboardButton22 = append(inlineKeyboardButton22, tgbotapi.NewInlineKeyboardButtonData(cons.ContestEarth.String(), string(cons.ContestEarth)))
+			rowsButton = append(rowsButton, inlineKeyboardButton22)
+
+			inlineKeyboardButton23 = append(inlineKeyboardButton23, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSpaceAdventures.String(), string(cons.ContestSpaceAdventures)))
+			rowsButton = append(rowsButton, inlineKeyboardButton23)
+
+			inlineKeyboardButton24 = append(inlineKeyboardButton24, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFeatheredFriends.String(), string(cons.ContestFeatheredFriends)))
+			rowsButton = append(rowsButton, inlineKeyboardButton24)
+
+			inlineKeyboardButton25 = append(inlineKeyboardButton25, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTheatricalBackstage.String(), string(cons.ContestTheatricalBackstage)))
+			rowsButton = append(rowsButton, inlineKeyboardButton25)
+
+			inlineKeyboardButton26 = append(inlineKeyboardButton26, tgbotapi.NewInlineKeyboardButtonData(cons.ContestOurFriends.String(), string(cons.ContestOurFriends)))
+			rowsButton = append(rowsButton, inlineKeyboardButton26)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -3794,6 +3900,12 @@ func GetConciseDescription(contest string) string {
 	contests[string(cons.ContestSpaceAdventures)] = struct{}{}
 	contests[string(cons.ContestFeatheredFriends)] = struct{}{}
 	contests[string(cons.ContestTheatricalBackstage)] = struct{}{}
+	contests[string(cons.ContestOurFriends)] = struct{}{}
+	contests[string(cons.ContestVictoryDay)] = struct{}{}
+	contests[string(cons.ContestPrimroses)] = struct{}{}
+	contests[string(cons.ContestMyFamily)] = struct{}{}
+	contests[string(cons.ContestChildProtectionDay)] = struct{}{}
+	contests[string(cons.ContestMotherRussia)] = struct{}{}
 
 	_, ok := contests[contest]
 

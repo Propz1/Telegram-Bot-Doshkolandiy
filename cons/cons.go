@@ -36,6 +36,12 @@ const (
 	ContestSpaceAdventures     InlineButton = "SpaceAdventures"
 	ContestFeatheredFriends    InlineButton = "FeatheredFriends"
 	ContestTheatricalBackstage InlineButton = "TheatricalBackstage"
+	ContestOurFriends          InlineButton = "OurFriends"
+	ContestPrimroses           InlineButton = "Primroses"
+	ContestVictoryDay          InlineButton = "VictoryDay"
+	ContestMyFamily            InlineButton = "MyFamily"
+	ContestMotherRussia        InlineButton = "MotherRussia"
+	ContestChildProtectionDay  InlineButton = "ChildProtectionDay"
 	Agree                      InlineButton = "Согласен на обработку данных"
 	Degree1                    InlineButton = "DEGREE1"
 	Degree2                    InlineButton = "DEGREE2"
@@ -51,7 +57,7 @@ const (
 	TimeshortForm              string       = "2006-01-02"
 	Comma                      string       = ","
 	Zero                       string       = "0"
-	NoAge                       string       = "возраст не будет указан в грамоте/дипломе"
+	NoAge                      string       = "возраст не будет указан в грамоте/дипломе"
 )
 
 func (s InlineButton) String() string {
@@ -85,7 +91,7 @@ func (s InlineButton) String() string {
 	case ContestFable:
 		return emoji.Sprint("В гостях у сказки :fairy:")
 	case ContestDefendersFatherland:
-		return "Защитники отечества"
+		return emoji.Sprint("Защитники отечества ⚔️")
 	case ContestSpring:
 		return emoji.Sprint("Весна :blossom:")
 	case ContestMarchEighth:
@@ -98,6 +104,18 @@ func (s InlineButton) String() string {
 		return emoji.Sprint("Пернатые друзья :owl:")
 	case ContestTheatricalBackstage:
 		return emoji.Sprint("Театральное закулисье 🎭")
+	case ContestOurFriends:
+		return "Наши друзья - Эколята"
+	case ContestPrimroses:
+		return emoji.Sprint("Первоцветы - лета первые шаги 🌺")
+	case ContestVictoryDay:
+		return "День Победы!"
+	case ContestMyFamily:
+		return "Моя семья - мое богатство"
+	case ContestMotherRussia:
+		return "Матушка Россия"
+	case ContestChildProtectionDay:
+		return "День защиты детей"
 	case Degree1:
 		return "1"
 	case Degree2:
