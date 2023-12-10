@@ -102,17 +102,17 @@ var (
 	)
 
 	contests = map[string]string{
-		"Синичка невеличка и ee друзья":          "Titmouse",
-		"Мама лучший друг":                       "Mather",
-		"Папа лучший друг":                       "Father",
+		cons.ContestTitmouse.String():            "Titmouse",
+		cons.ContestMather.String():              "Mather",
+		cons.ContestFather.String():              "Father",
 		cons.ContestAutumn.String():              "Autumn",
-		"Зимушка-зима в гости к нам пришла":      "Winter",
+		cons.ContestWinter.String():              "Winter",
 		cons.ContestSnowflakes.String():          "Snowflakes",
 		cons.ContestSnowman.String():             "Snowman",
-		"Символ года":                            "Symbol",
+		cons.ContestSymbol.String():              "Symbol",
 		cons.ContestHearts.String():              "Hearts",
 		cons.ContestSecrets.String():             "Secrets",
-		"Покормите птиц зимой":                   "BirdsFeeding",
+		cons.ContestBirdsFeeding.String():        "BirdsFeeding",
 		cons.ContestShrovetide.String():          "Shrovetide",
 		cons.ContestFable.String():               "Fable",
 		cons.ContestDefendersFatherland.String(): "DefendersFatherland",
@@ -128,6 +128,8 @@ var (
 		cons.ContestMyFamily.String():            "MyFamily",
 		cons.ContestMotherRussia.String():        "MotherRussia",
 		cons.ContestChildProtectionDay.String():  "ChildProtectionDay",
+		cons.ContestFire.String():                "Fire",
+		cons.ContestTrafficLight.String():        "TrafficLight",
 	}
 
 	userPolling        = cache.NewCacheDataPolling()
@@ -199,10 +201,6 @@ func main() {
 
 		if update.Message != nil {
 			if update.Message.Photo != nil {
-
-				//TEST
-				fmt.Printf("%v\n", cacheBotSt.Get(update.Message.Chat.ID))
-				//TEST
 
 				if cacheBotSt.Get(update.Message.Chat.ID) == botstate.AskPhoto {
 					path := *update.Message.Photo
@@ -408,7 +406,7 @@ func main() {
 
 					} else {
 
-						ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+						ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 						defer cancel()
 
 						dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
@@ -977,7 +975,6 @@ func main() {
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestTitmouse.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestTitmouse))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -990,7 +987,6 @@ func main() {
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestDefendersFatherland.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestDefendersFatherland))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1002,7 +998,6 @@ func main() {
 			case string(cons.ContestMather): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMather.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestMather))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1014,7 +1009,6 @@ func main() {
 			case string(cons.ContestFather): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFather.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestFather))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1026,7 +1020,6 @@ func main() {
 			case string(cons.ContestMyFamily): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMyFamily.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestMyFamily))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1038,7 +1031,6 @@ func main() {
 			case string(cons.ContestChildProtectionDay): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestChildProtectionDay.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestChildProtectionDay))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1050,7 +1042,6 @@ func main() {
 			case string(cons.ContestMotherRussia): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMotherRussia.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestMotherRussia))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1062,7 +1053,6 @@ func main() {
 			case string(cons.ContestAutumn): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestAutumn.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestAutumn))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1074,7 +1064,6 @@ func main() {
 			case string(cons.ContestWinter): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestWinter.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestWinter))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1086,7 +1075,6 @@ func main() {
 			case string(cons.ContestSnowflakes): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSnowflakes.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestSnowflakes))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1098,7 +1086,6 @@ func main() {
 			case string(cons.ContestSnowman): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSnowman.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestSnowman))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1110,7 +1097,6 @@ func main() {
 			case string(cons.ContestSymbol): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSymbol.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestSymbol))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1122,7 +1108,6 @@ func main() {
 			case string(cons.ContestHearts): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestHearts.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestHearts))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1134,7 +1119,6 @@ func main() {
 			case string(cons.ContestSecrets): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSecrets.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestSecrets))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1147,7 +1131,6 @@ func main() {
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestBirdsFeeding.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestBirdsFeeding))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1159,7 +1142,6 @@ func main() {
 			case string(cons.ContestShrovetide): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestShrovetide.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestShrovetide))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1171,7 +1153,6 @@ func main() {
 			case string(cons.ContestFable): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFable.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestFable))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1183,7 +1164,6 @@ func main() {
 			case string(cons.ContestSpring): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSpring.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestSpring))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1195,7 +1175,6 @@ func main() {
 			case string(cons.ContestMarchEighth): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMarchEighth.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestMarchEighth))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1207,7 +1186,6 @@ func main() {
 			case string(cons.ContestEarth): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestEarth.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestEarth))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1219,7 +1197,6 @@ func main() {
 			case string(cons.ContestSpaceAdventures): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSpaceAdventures.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestSpaceAdventures))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1231,7 +1208,6 @@ func main() {
 			case string(cons.ContestFeatheredFriends): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFeatheredFriends.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestFeatheredFriends))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1243,7 +1219,6 @@ func main() {
 			case string(cons.ContestTheatricalBackstage): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestTheatricalBackstage.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestTheatricalBackstage))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1254,7 +1229,6 @@ func main() {
 			case string(cons.ContestOurFriends): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestOurFriends.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestOurFriends))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1266,7 +1240,6 @@ func main() {
 			case string(cons.ContestVictoryDay): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestVictoryDay.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestVictoryDay))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
@@ -1278,13 +1251,34 @@ func main() {
 			case string(cons.ContestPrimroses): // CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestPrimroses.String())
 
-				// Concise description of contest
 				description = GetConciseDescription(string(cons.ContestPrimroses))
 
 				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
 
 				if err != nil {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestPrimroses): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestFire): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFire.String())
+
+				description = GetConciseDescription(string(cons.ContestFire))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestFire): %+v\n", err.Error()))
+				}
+
+			case string(cons.ContestTrafficLight): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestTrafficLight.String())
+
+				description = GetConciseDescription(string(cons.ContestTrafficLight))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestTrafficLight): %+v\n", err.Error()))
 				}
 
 			case string(cons.Degree1): // CallBackQwery
@@ -1781,6 +1775,8 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton24 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton25 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton26 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton27 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton28 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTitmouse.String(), string(cons.ContestTitmouse)))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
@@ -1859,6 +1855,12 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 			inlineKeyboardButton26 = append(inlineKeyboardButton26, tgbotapi.NewInlineKeyboardButtonData(cons.ContestOurFriends.String(), string(cons.ContestOurFriends)))
 			rowsButton = append(rowsButton, inlineKeyboardButton26)
+
+			inlineKeyboardButton27 = append(inlineKeyboardButton27, tgbotapi.NewInlineKeyboardButtonData(cons.ContestFire.String(), string(cons.ContestFire)))
+			rowsButton = append(rowsButton, inlineKeyboardButton27)
+
+			inlineKeyboardButton28 = append(inlineKeyboardButton28, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTrafficLight.String(), string(cons.ContestTrafficLight)))
+			rowsButton = append(rowsButton, inlineKeyboardButton28)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -3906,6 +3908,8 @@ func GetConciseDescription(contest string) string {
 	contests[string(cons.ContestMyFamily)] = struct{}{}
 	contests[string(cons.ContestChildProtectionDay)] = struct{}{}
 	contests[string(cons.ContestMotherRussia)] = struct{}{}
+	contests[string(cons.ContestFire)] = struct{}{}
+	contests[string(cons.ContestTrafficLight)] = struct{}{}
 
 	_, ok := contests[contest]
 
@@ -4072,7 +4076,7 @@ func dateStringToUnixNano(dateString string) int64 {
 func unixNanoToDateString(publicationDate int64) string {
 	t := time.Unix(0, publicationDate)
 
-	dateString := t.Format(cons.TimeshortForm)
+	dateString := t.Format(cons.TimeshortForm) //yyyy-mm-dd
 
 	var d string
 	var m string
@@ -4085,9 +4089,9 @@ func unixNanoToDateString(publicationDate int64) string {
 		case 0:
 			y = v
 		case 1:
-			d = v
-		case 2:
 			m = v
+		case 2:
+			d = v
 		}
 	}
 

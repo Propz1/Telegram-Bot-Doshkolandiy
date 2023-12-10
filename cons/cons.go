@@ -42,6 +42,8 @@ const (
 	ContestMyFamily            InlineButton = "MyFamily"
 	ContestMotherRussia        InlineButton = "MotherRussia"
 	ContestChildProtectionDay  InlineButton = "ChildProtectionDay"
+	ContestFire                InlineButton = "Fire"
+	ContestTrafficLight        InlineButton = "TrafficLight"
 	Agree                      InlineButton = "Согласен на обработку данных"
 	Degree1                    InlineButton = "DEGREE1"
 	Degree2                    InlineButton = "DEGREE2"
@@ -116,6 +118,10 @@ func (s InlineButton) String() string {
 		return "Матушка Россия"
 	case ContestChildProtectionDay:
 		return "День защиты детей"
+	case ContestFire:
+		return emoji.Sprint("Не шути, дружок, с огнем 🔥")
+	case ContestTrafficLight:
+		return emoji.Sprint("В гостях у светофорика 🚦")
 	case Degree1:
 		return "1"
 	case Degree2:
