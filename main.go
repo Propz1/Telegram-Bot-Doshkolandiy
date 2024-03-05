@@ -69,7 +69,7 @@ var (
 	keyboardConfirm = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(botcommand.Confirm.String()),
-			tgbotapi.NewKeyboardButton(botcommand.SelectCorrection.String()),
+			//tgbotapi.NewKeyboardButton(botcommand.SelectCorrection.String()),
 		),
 
 		tgbotapi.NewKeyboardButtonRow(
