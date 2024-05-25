@@ -59,6 +59,7 @@ type DataPolling struct {
 	DocumentType           string
 	PlaceDeliveryDocuments string
 	RequisitionNumber      int64
+	RequisitionStartDate   int64
 	RequisitionPDFpath     string
 	TableDB                string
 	Diploma                bool
@@ -208,7 +209,7 @@ func (c *DataPollingCache) Get(userID int64) DataPolling {
 	return st
 }
 
-func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text string) {
+func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text string, value int64) {
 	var mu sync.RWMutex
 	mu.Lock()
 
@@ -242,8 +243,9 @@ func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	case enumapplic.File:
 		storage.Files = append(storage.Files, text)
 	case enumapplic.RequisitionNumber:
-		num, _ := strconv.Atoi(text)
-		storage.RequisitionNumber = int64(num)
+		storage.RequisitionNumber = value
+	case enumapplic.RequisitionStartDate:
+		storage.RequisitionStartDate = value
 	case enumapplic.RequisitionPDF:
 		storage.RequisitionPDFpath = text
 	case enumapplic.TableDB:
@@ -251,8 +253,7 @@ func (c *DataPollingCache) Set(userID int64, enum enumapplic.ApplicEnum, text st
 	case enumapplic.Diploma:
 		storage.Diploma, _ = strconv.ParseBool(text)
 	case enumapplic.DiplomaNumber:
-		num, _ := strconv.Atoi(text)
-		storage.DiplomaNumber = int64(num)
+		storage.DiplomaNumber = value
 	case enumapplic.Agree:
 		storage.Agree = true
 	case enumapplic.PublicationLink:

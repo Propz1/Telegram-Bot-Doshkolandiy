@@ -22,6 +22,7 @@ const (
 	Checking
 	CancelCorrection
 	RequisitionNumber
+	RequisitionStartDate
 	RequisitionPDF
 	DocumentPDF
 	TableDB
