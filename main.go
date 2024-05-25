@@ -678,7 +678,7 @@ func main() {
 									zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, error sending file pdf to user: %v\n", err))
 								}
 
-								// Email
+								//Email
 								t := time.Now()
 								formattedTime := fmt.Sprintf("%02d.%02d.%d", t.Day(), t.Month(), t.Year())
 
@@ -872,7 +872,7 @@ func main() {
 
 			switch callbackQueryText {
 
-			case string(cons.ContestTitmouse): // CallBackQwery
+			case string(cons.ContestTitmouse): //CallBackQwery
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestTitmouse.String(), 0)
 
@@ -884,7 +884,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, 	case string(cons.ContestTitmouse): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestDefendersFatherland): // CallBackQwery
+			case string(cons.ContestDefendersFatherland): //CallBackQwery
 
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestDefendersFatherland.String(), 0)
 
@@ -896,7 +896,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestDefendersFatherland): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestMather): // CallBackQwery
+			case string(cons.ContestMather): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMather.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestMather))
@@ -907,7 +907,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestMather): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestFather): // CallBackQwery
+			case string(cons.ContestFather): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestFather.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestFather))
@@ -918,7 +918,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestFather): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestMyFamily): // CallBackQwery
+			case string(cons.ContestMyFamily): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMyFamily.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestMyFamily))
@@ -929,7 +929,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestMyFamily): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestChildProtectionDay): // CallBackQwery
+			case string(cons.ContestChildProtectionDay): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestChildProtectionDay.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestChildProtectionDay))
@@ -940,7 +940,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestChildProtectionDay): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestMotherRussia): // CallBackQwery
+			case string(cons.ContestMotherRussia): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestMotherRussia.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestMotherRussia))
@@ -951,7 +951,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestMotherRussia): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestAutumn): // CallBackQwery
+			case string(cons.ContestAutumn): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestAutumn.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestAutumn))
@@ -962,7 +962,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestAutumn): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestWinter): // CallBackQwery
+			case string(cons.ContestWinter): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestWinter.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestWinter))
@@ -973,7 +973,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestWinter): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestSnowflakes): // CallBackQwery
+			case string(cons.ContestSnowflakes): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSnowflakes.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestSnowflakes))
@@ -984,7 +984,7 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSnowflakes): %+v\n", err.Error()))
 				}
 
-			case string(cons.ContestSnowman): // CallBackQwery
+			case string(cons.ContestSnowman): //CallBackQwery
 				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSnowman.String(), 0)
 
 				description = GetConciseDescription(string(cons.ContestSnowman))
@@ -1310,7 +1310,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPhoto)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фотографию Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фотографию (только одну) Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.PlaceDeliveryOfDocuments2: %+v\n", err.Error()))
@@ -1465,7 +1465,7 @@ func main() {
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskPhotoCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фото Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Отправьте фотографию (только одну) Вашей работы:", enumapplic.Photo.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.Photo.String(): %+v\n", err.Error()))
