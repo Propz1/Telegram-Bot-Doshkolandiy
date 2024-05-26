@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/mail"
 	"os"
 	"path"
 	"strconv"
@@ -295,7 +296,7 @@ func main() {
 				err := sentToTelegram(bot, update.Message.Chat.ID, "", nil, cons.StyleTextCommon, botcommand.GetDiploma, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.GetDiploma.String(), error sending to user %v: %+v\n", update.Message.Chat.ID, err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.GetDiploma.String(), error sending to user %v: (%T %+v)\n", update.Message.Chat.ID, err, err))
 
 					botBlocked := errs.ErrorHandlerBotBlocked(err)
 
@@ -321,7 +322,7 @@ func main() {
 				err = sentToTelegram(bot, update.Message.Chat.ID, "Выберите конкурс:", nil, cons.StyleTextCommon, botcommand.CompleteApplication, "", "", false)
 
 				if err != nil {
-					zrlog.Error().Msg(fmt.Sprintf("botcommand.CompleteApplication.String(), error sending to user %v: %+v\n", update.Message.Chat.ID, err))
+					zrlog.Error().Msg(fmt.Sprintf("botcommand.CompleteApplication.String(), error sending to user %v: (%T %+v)\n", update.Message.Chat.ID, err, err))
 				}
 
 			case botcommand.SelectProject.String():
@@ -383,15 +384,23 @@ func main() {
 
 				switch stateBot {
 
+				case botstate.GetDiploma:
+
+					err := sentToTelegram(bot, update.Message.Chat.ID, "Если у Вас остались вопросы, пожалуйста, напишите адниминстратору группы:\nhttps://vk.com/topic-138597952_49394008", nil, cons.StyleTextHTML, botcommand.Undefined, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("botstate.GetDiploma, error sending to user: (%T %+v)\n", err, err))
+					}
+
 				case botstate.AskPublicationDate: //This botstate is only available for the admin
 
 					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PublicationDate, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskPublicationLink)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Укажите ссылку на опубликованную работу:", nil, cons.StyleTextCommon, botcommand.GetPublicationLink, "", "", false)
+					err := sentToTelegram(bot, update.Message.Chat.ID, "Укажите ссылку на опубликованную работу:", nil, cons.StyleTextCommon, botcommand.GetPublicationLink, "", "", false)
 
 					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationDate, error sending to user: %+v\n", err))
+						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationDate, error sending to user: (%T %+v)\n", err, err))
 					}
 
 				case botstate.AskPublicationLink: //This botstate is only available for the admin
@@ -399,7 +408,7 @@ func main() {
 					closingRequisition.Set(update.Message.Chat.ID, enumapplic.PublicationLink, messageText)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationLink, error sending to user: %+v\n", err))
@@ -412,7 +421,7 @@ func main() {
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskRequisitionNumber, error convert strconv.Atoi: %+v\n", err))
 
-						err := sentToTelegram(bot, update.Message.Chat.ID, "Некорректно введен номер заявки. Введите цифрами:", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+						err := sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Некорректно введен номер заявки.\n Пожалуста, введите цифрами:", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("botstate.AskRequisitionNumber, error sending to user: %+v\n", err))
 						}
@@ -445,7 +454,7 @@ func main() {
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPCorrection, error sending to user: %+v\n", err))
@@ -477,7 +486,7 @@ func main() {
 
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskAgeCorrection, error sending to user: %+v\n", err.Error()))
@@ -499,7 +508,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.NameInstitution, messageText, 0)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskNameInstitutionCorrection, error sending to user: %+v\n", err))
@@ -521,7 +530,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.Locality, messageText, 0)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskLocalityCorrection, error sending to user: %+v\n", err))
@@ -543,7 +552,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.NamingUnit, messageText, 0)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskNamingUnitCorrection, error sending to user: %+v\n", err))
@@ -565,7 +574,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.PublicationTitle, messageText, 0)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskPublicationTitleCorrection, error sending to user: %+v\n", err))
@@ -577,7 +586,7 @@ func main() {
 						userPolling.Set(update.Message.Chat.ID, enumapplic.FNPLeader, messageText, 0)
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskEmail)
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+						err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты 📧:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPLeader, error sending to user: %+v\n", err))
@@ -586,7 +595,7 @@ func main() {
 						userPolling.Set(update.Message.Chat.ID, enumapplic.FNPLeader, "", 0)
 						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskEmail)
 
-						err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+						err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты 📧:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPLeader, error sending to user: %+v\n", err))
@@ -598,7 +607,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.FNPLeader, messageText, 0)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskFNPLeaderCorrection, error sending to user: %+v\n", err))
@@ -606,13 +615,22 @@ func main() {
 
 				case botstate.AskEmail:
 
-					userPolling.Set(update.Message.Chat.ID, enumapplic.Email, strings.TrimSpace(messageText), 0)
-					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskDocumentType)
+					if validEmail(strings.TrimSpace(messageText)) {
+						userPolling.Set(update.Message.Chat.ID, enumapplic.Email, strings.TrimSpace(messageText), 0)
+						cacheBotSt.Set(update.Message.Chat.ID, botstate.AskDocumentType)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DocumentType.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectDocumentType, "", "", false)
+						err := sentToTelegram(bot, update.Message.Chat.ID, fmt.Sprintf("%v. Выберите тип документа:", enumapplic.DocumentType.EnumIndex()), nil, cons.StyleTextCommon, botcommand.SelectDocumentType, "", "", false)
 
-					if err != nil {
-						zrlog.Error().Msg(fmt.Sprintf("botstate.AskEmail, error sending to user: %+v\n", err))
+						if err != nil {
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskEmail, error sending to user: %+v\n", err))
+						}
+
+					} else {
+						err := sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Некорректный адрес электронной почты.\n Пожалуйста, введите адрес email правильно.", nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+
+						if err != nil {
+							zrlog.Error().Msg(fmt.Sprintf("botstate.AskEmail, error sending to user: %+v\n", err))
+						}
 					}
 
 				case botstate.AskEmailCorrection:
@@ -620,7 +638,7 @@ func main() {
 					userPolling.Set(update.Message.Chat.ID, enumapplic.Email, strings.TrimSpace(messageText), 0)
 					cacheBotSt.Set(update.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("botstate.AskEmailCorrection, error sending to user: %+v\n", err))
@@ -859,7 +877,13 @@ func main() {
 					}
 
 				case botstate.Undefined:
-					// msgToUser = update.Message.Text
+
+					err := sentToTelegram(bot, update.Message.Chat.ID, "Если у Вас есть вопросы, пожалуйста, напишите адниминстратору группы:\nhttps://vk.com/topic-138597952_49394008", nil, cons.StyleTextHTML, botcommand.Undefined, "", "", false)
+
+					if err != nil {
+						zrlog.Error().Msg(fmt.Sprintf("botstate.Undefined, error sending to user: (%T %+v)\n", err, err))
+					}
+
 				}
 			}
 		}
@@ -1235,7 +1259,7 @@ func main() {
 					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDocumentTypeCorrection {
 						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.Certificate.String(): %+v\n", err.Error()))
@@ -1261,7 +1285,7 @@ func main() {
 					if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDocumentTypeCorrection {
 						cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+						err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.CertificateAndDiploma.String(): %+v\n", err.Error()))
@@ -1296,7 +1320,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, cons.PlaceDeliveryOfDocuments1: %+v\n", err.Error()))
@@ -1322,7 +1346,7 @@ func main() {
 
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case cons.PlaceDeliveryOfDocuments2: %+v\n", err.Error()))
@@ -1333,7 +1357,7 @@ func main() {
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskCheckData)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, "⚠️ Пожалуйста, проверьте введенные данные:", nil, cons.StyleTextCommon, botcommand.CheckData, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.CancelCorrection.String(): %+v\n", err.Error()))
@@ -1429,7 +1453,7 @@ func main() {
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.SelectCorrection {
 					cacheBotSt.Set(update.CallbackQuery.Message.Chat.ID, botstate.AskEmailCorrection)
 
-					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
+					err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, fmt.Sprintf("%v. Введите адрес электронной почты 📧:", enumapplic.Email.EnumIndex()), nil, cons.StyleTextCommon, botcommand.ContinueDataPolling, "", "", false)
 
 					if err != nil {
 						zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case enumapplic.Enail.String(): %+v\n", err.Error()))
@@ -1688,7 +1712,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.Start: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.Start: (%T, %+v), %w", err, err, err)
 		}
 
 	case botcommand.AccessDenied:
@@ -1999,7 +2023,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 		}
 
 		if _, err := bot.Send(msg); err != nil {
-			return fmt.Errorf("sentToTelegram(), botcommand.WaitingForAcceptance: %w", err)
+			return fmt.Errorf("sentToTelegram(), botcommand.WaitingForAcceptance: (%T %+v) %w", err, err, err)
 		}
 
 	case botcommand.ContinueDataPolling:
@@ -4207,4 +4231,9 @@ func convertAgeToString(age int) string {
 	}
 
 	return ending
+}
+
+func validEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
