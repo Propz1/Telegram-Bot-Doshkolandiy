@@ -44,6 +44,7 @@ const (
 	ContestChildProtectionDay  InlineButton = "ChildProtectionDay"
 	ContestFire                InlineButton = "Fire"
 	ContestTrafficLight        InlineButton = "TrafficLight"
+	ContestSummerPalette       InlineButton = "SummerPalette"
 	Agree                      InlineButton = "Согласен на обработку данных"
 	Degree1                    InlineButton = "DEGREE1"
 	Degree2                    InlineButton = "DEGREE2"
@@ -122,6 +123,8 @@ func (s InlineButton) String() string {
 		return emoji.Sprint("Не шути, дружок, с огнем 🔥")
 	case ContestTrafficLight:
 		return emoji.Sprint("В гостях у светофорика 🚦")
+	case ContestSummerPalette:
+		return emoji.Sprint("Летняя палитра 🦋")
 	case Degree1:
 		return "1"
 	case Degree2:

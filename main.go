@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	_ "net/http/pprof"
 	"net/mail"
 	"os"
 	"path"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync"
@@ -132,6 +134,7 @@ var (
 		cons.ContestChildProtectionDay.String():  "ChildProtectionDay",
 		cons.ContestFire.String():                "Fire",
 		cons.ContestTrafficLight.String():        "TrafficLight",
+		cons.ContestSummerPalette.String():       "SummerPalette",
 	}
 
 	userPolling        = cache.NewCacheDataPolling()
@@ -146,6 +149,7 @@ var (
 )
 
 func main() {
+
 	logFile, err := os.OpenFile("./temp/info.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 	if err != nil {
 		zrlog.Error().Msg(fmt.Sprintf("the file info.log doesn't open: %v", err))
@@ -160,6 +164,10 @@ func main() {
 		zrlog.Fatal().Msg("Error loading .env file: ")
 		os.Exit(1)
 	}
+
+	pprof.StartCPUProfile(logFile)
+	defer pprof.StopCPUProfile()
+	go http.ListenAndServe("0.0.0.0:6060", nil)
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("BOT_TOKEN"))
 	if err != nil {
@@ -654,20 +662,21 @@ func main() {
 						if err != nil {
 							zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData: %+v\n", err))
 						}
+
 					} else if messageText == botcommand.Confirm.String() {
+
 						if !thisIsAdmin(update.Message.Chat.ID) {
 							err := sentToTelegram(bot, update.Message.Chat.ID, "Регистрирую...", nil, cons.StyleTextCommon, botcommand.RecordToDB, "", "", false)
 							if err != nil {
 								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, sending for user: %+v\n", err))
 							}
 
-							ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+							ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 							defer cancel()
 
 							dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("botstate.AskCheckData, unable to establish connection to database for users: %+v\n", err.Error()))
-								os.Exit(1)
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, unable to establish connection to database for users: %+v\n", err.Error()))
 							}
 							defer dbpool.Close()
 
@@ -676,8 +685,7 @@ func main() {
 							err = AddRequisition(ctx, update.Message.Chat.ID, dbpool)
 
 							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("botstate.AskCheckData, error append requisition to db for user: %+v\n", err.Error()))
-								os.Exit(1)
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, error append requisition to db for user: %+v\n", err.Error()))
 							}
 
 							ok, err := ConvertRequisitionToPDF(update.Message.Chat.ID)
@@ -726,8 +734,7 @@ func main() {
 							dbpool.Config().MaxConns = 12
 
 							if err != nil {
-								zrlog.Fatal().Msg(fmt.Sprintf("botstate.AskCheckData, unable to establish connection to database for admin: %+v\n", err.Error()))
-								os.Exit(1)
+								zrlog.Error().Msg(fmt.Sprintf("botstate.AskCheckData, unable to establish connection to database for admin: %+v\n", err.Error()))
 							}
 							defer dbpool.Close()
 
@@ -774,15 +781,14 @@ func main() {
 							}
 						}
 					} else if messageText == botcommand.SendPDFFiles.String() && thisIsAdmin(update.Message.Chat.ID) {
-						ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+						ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 						defer cancel()
 
 						dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 						dbpool.Config().MaxConns = 12
 
 						if err != nil {
-							zrlog.Fatal().Msg(fmt.Sprintf(" else if messageText == botcommand.SendPDFFiles.String() && thisIsAdmin(update.Message.Chat.ID), Unable to establish connection to database: %+v\n", err.Error()))
-							os.Exit(1)
+							zrlog.Error().Msg(fmt.Sprintf(" else if messageText == botcommand.SendPDFFiles.String() && thisIsAdmin(update.Message.Chat.ID), Unable to establish connection to database: %+v\n", err.Error()))
 						}
 						defer dbpool.Close()
 
@@ -1206,6 +1212,17 @@ func main() {
 					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestTrafficLight): %+v\n", err.Error()))
 				}
 
+			case string(cons.ContestSummerPalette): // CallBackQwery
+				userPolling.Set(update.CallbackQuery.Message.Chat.ID, enumapplic.Contest, cons.ContestSummerPalette.String(), 0)
+
+				description = GetConciseDescription(string(cons.ContestSummerPalette))
+
+				err = sentToTelegram(bot, update.CallbackQuery.Message.Chat.ID, description, nil, cons.StyleTextHTML, botcommand.SelectProject, "", "", false)
+
+				if err != nil {
+					zrlog.Error().Msg(fmt.Sprintf("CallBackQwery, case string(cons.ContestSummerPalette): %+v\n", err.Error()))
+				}
+
 			case string(cons.Degree1): // CallBackQwery
 
 				if cacheBotSt.Get(update.CallbackQuery.Message.Chat.ID) == botstate.AskDegree {
@@ -1613,6 +1630,16 @@ func main() {
 }
 
 func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[int]int, styleText string, command botcommand.BotCommand, button, header string, PDF bool) error {
+
+	defer func() error {
+		if errr := recover(); errr != nil {
+			//zrlog.Error().Msg(fmt.Sprintf("recover: %+v\n", errr))
+			return fmt.Errorf("recover: %+v", errr)
+		}
+
+		return nil
+	}()
+
 	switch command {
 
 	case botcommand.SelectCorrection:
@@ -1781,6 +1808,7 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 			inlineKeyboardButton26 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton27 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 			inlineKeyboardButton28 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
+			inlineKeyboardButton29 := make([]tgbotapi.InlineKeyboardButton, 0, 1)
 
 			inlineKeyboardButton1 = append(inlineKeyboardButton1, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTitmouse.String(), string(cons.ContestTitmouse)))
 			rowsButton = append(rowsButton, inlineKeyboardButton1)
@@ -1865,6 +1893,9 @@ func sentToTelegram(bot *tgbotapi.BotAPI, id int64, message string, lenBody map[
 
 			inlineKeyboardButton28 = append(inlineKeyboardButton28, tgbotapi.NewInlineKeyboardButtonData(cons.ContestTrafficLight.String(), string(cons.ContestTrafficLight)))
 			rowsButton = append(rowsButton, inlineKeyboardButton28)
+
+			inlineKeyboardButton29 = append(inlineKeyboardButton29, tgbotapi.NewInlineKeyboardButtonData(cons.ContestSummerPalette.String(), string(cons.ContestSummerPalette)))
+			rowsButton = append(rowsButton, inlineKeyboardButton29)
 
 			inlineKeyboardMarkup := tgbotapi.InlineKeyboardMarkup{InlineKeyboard: rowsButton}
 
@@ -3962,6 +3993,7 @@ func GetConciseDescription(contest string) string {
 	contests[string(cons.ContestMotherRussia)] = struct{}{}
 	contests[string(cons.ContestFire)] = struct{}{}
 	contests[string(cons.ContestTrafficLight)] = struct{}{}
+	contests[string(cons.ContestSummerPalette)] = struct{}{}
 
 	_, ok := contests[contest]
 
